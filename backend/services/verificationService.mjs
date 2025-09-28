@@ -1,5 +1,6 @@
 import { Op, fn, col, where as sqlWhere, literal } from 'sequelize';
 import Verification from '../models/verification.mjs';
+import { Setting } from '../models/setting.mjs';
 
 function twoDigitYear(d = new Date()) {
   return String(d.getFullYear()).slice(-2);
@@ -24,9 +25,25 @@ async function generateNextVerificationNumber() {
   return `${prefix}${padded}`; // e.g., 01-250001
 }
 
-function applyDocPathIfMissing(payload) {
+async function getSetting(key) {
+  const row = await Setting.findByPk(key);
+  return row ? row.value : null;
+}
+
+function joinPath(base, file) {
+  if (!base) return file;
+  // Normalize simple join without importing path (keeps it platform-agnostic for URLs too)
+  const b = String(base).replace(/[\\/]+$/,'');
+  const f = String(file).replace(/^[\\/]+/,'');
+  return `${b}/${f}`;
+}
+
+async function applyDocPathIfMissing(payload) {
   if (!payload.doc_scan_copy && payload.verification_no) {
-    payload.doc_scan_copy = `${payload.verification_no}.pdf`;
+    // Try verification-specific base first, then a generic base
+    const base = (await getSetting('verification.doc_base')) || (await getSetting('docs.base'));
+    const file = `${payload.verification_no}.pdf`;
+    payload.doc_scan_copy = base ? joinPath(base, file) : file;
   }
 }
 
@@ -78,7 +95,7 @@ export async function createVerification(payload) {
     err.status = 400;
     throw err;
   }
-  applyDocPathIfMissing(data);
+  await applyDocPathIfMissing(data);
   return Verification.create(data);
 }
 
@@ -101,7 +118,7 @@ export async function updateVerification(id, payload) {
     // leave as-is
   }
   const next = { ...prev, ...data };
-  applyDocPathIfMissing(next);
+  await applyDocPathIfMissing(next);
   await row.update(next);
   return row;
 }

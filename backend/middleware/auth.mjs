@@ -29,12 +29,13 @@ export async function jwtMiddleware(req, res, next) {
       };
     } catch (err) {
       // invalid token: do not block the request here (non-blocking middleware)
-      // Log a helpful message for debugging
-      try {
-        // Avoid logging the token itself to reduce accidental secret leakage
-        console.warn('Invalid JWT token provided:', err.message);
-      } catch (logErr) {
-        // swallow logging errors
+      // Optional: enable logging only when explicitly requested
+      if (process.env.LOG_INVALID_JWT === '1') {
+        try {
+          console.warn('Invalid JWT token provided:', err.message, 'path=', req.path);
+        } catch (_) {
+          // ignore
+        }
       }
       req.user = undefined;
     }

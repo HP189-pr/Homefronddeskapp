@@ -3,7 +3,7 @@ import { FaHome, FaPlus, FaSearch, FaSave } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 
 const initialForm = {
-  doc_rec_date: '',
+  doc_rec_date: '', 
   ivyearautonumber: '',
   institution_name: '',
   address1: '',
@@ -101,7 +101,7 @@ export default function InstitutionalVerification() {
         </button>
       </div>
 
-      {/* Form */}
+            <DateInputDMY name="doc_rec_date" value={form.doc_rec_date} onChange={onChange} className="border p-2 w-full" />
       <div style={{ border: '1px solid #ddd', padding: 16, borderRadius: 8, marginBottom: 24 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px,1fr))', gap: 12 }}>
           <div>

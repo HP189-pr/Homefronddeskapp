@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FaHome, FaPlus, FaSearch, FaSave } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaSave, FaFileCsv, FaEdit } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import { formatDateDMY } from '../../utils/date';
+import DateInputDMY from '../common/DateInputDMY';
+import TopBar from '../common/TopBar';
 
 const initialForm = {
   doc_rec_date: '',
@@ -8,6 +11,12 @@ const initialForm = {
   vryearautonumber: '', // temp vrYYYY#### (nullable)
   enrollment_no: '',
   studentname: '',
+  // counts
+  no_of_transcript: 0,
+  no_of_marksheet_set: 0,
+  no_of_degree: 0,
+  no_of_moi: 0,
+  no_of_backlog: 0,
   verification_count: 1,
   status: 'pending',
   fees_rec_no: '',
@@ -52,6 +61,12 @@ export default function Verification() {
     const { name, value, type, checked } = e.target;
     setForm((p) => ({ ...p, [name]: type === 'checkbox' ? checked : value }));
   };
+  const onChangeNum = (e) => {
+    const { name, value } = e.target;
+    const digits = String(value || '').replace(/[^0-9]/g, '').slice(0, 4);
+    const num = digits === '' ? '' : Number(digits);
+    setForm((p) => ({ ...p, [name]: num }));
+  };
   const onEdit = (row) => { setEditingId(row.id); setForm({ ...initialForm, ...row, doc_rec_date: row.doc_rec_date || '' }); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   const onReset = () => { setForm(initialForm); setEditingId(null); };
   const onSave = async () => {
@@ -62,62 +77,102 @@ export default function Verification() {
     if (res.ok) { await load(); onReset(); } else { const err = await res.json().catch(()=>({})); alert(err.error || 'Save failed'); }
   };
 
-  return (
-    <div style={{ padding: '20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-        <button title="Home" onClick={onHome} style={{ padding: '8px 12px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: 4 }}>
-          <FaHome /> Home
-        </button>
-  <h1 style={{ fontSize: 24, fontWeight: 'bold', margin: 0 }}>📜 Verification</h1>
-      </div>
+  const onReport = () => {
+    // simple CSV export of current items
+    const cols = ['doc_rec_date','verification_no','enrollment_no','studentname','no_of_transcript','no_of_marksheet_set','no_of_degree','no_of_moi','no_of_backlog','fees_rec_no','status','is_eca','eca_agency','eca_agency_other','eca_remark','remark'];
+    const lines = [cols.join(',')].concat(items.map(r => cols.map(k => {
+      const v = r[k];
+      const s = v == null ? '' : String(v).replace(/"/g,'""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    }).join(',')));
+    const csv = lines.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'verifications.csv'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  };
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <button onClick={onReset} style={{ padding: '8px 12px', background: '#28a745', color: '#fff', border: 'none', borderRadius: 4 }}>
-          <FaPlus /> Add New
-        </button>
-        <button onClick={load} style={{ padding: '8px 12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: 4 }}>
-          <FaSearch /> Search
-        </button>
-      </div>
+  return (
+  <div style={{ padding: '8px 16px 16px 6px' }}>
+      <TopBar
+        logo="📜"
+        title="Verification"
+        onHome={onHome}
+        actions={[
+          { key: 'add', label: 'Transcript Add', onClick: onReset, icon: <FaPlus />, variant: 'success' },
+          { key: 'search', label: 'Search', onClick: load, icon: <FaSearch />, variant: 'primary' },
+          { key: 'edit', label: 'Edit', onClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }), icon: <FaEdit />, variant: 'warning', disabled: !editingId },
+          { key: 'report', label: 'Report', onClick: onReport, icon: <FaFileCsv />, variant: 'info' },
+        ]}
+      />
 
       <div style={{ border: '1px solid #ddd', padding: 16, borderRadius: 8, marginBottom: 24 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px,1fr))', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px,1fr))', gap: 6 }}>
           <div>
             <label>Date</label>
-            <input type="date" name="doc_rec_date" value={form.doc_rec_date} onChange={onChange} className="border p-2 w-full" />
+            <DateInputDMY name="doc_rec_date" value={form.doc_rec_date} onChange={onChange} className="border p-2 w-full" />
           </div>
           <div>
-            <label>Enrollment No</label>
-            <input type="text" name="enrollment_no" value={form.enrollment_no} onChange={onChange} className="border p-2 w-full" />
+            <label>Enrollment</label>
+            <input
+              type="text"
+              name="enrollment_no"
+              value={form.enrollment_no}
+              onChange={(e) => {
+                const v = (e.target.value || '').slice(0, 16);
+                setForm((p) => ({ ...p, enrollment_no: v }));
+              }}
+              maxLength={16}
+              className="border p-2 w-full"
+            />
           </div>
-          <div>
+          <div style={{ gridColumn: 'auto / span 2' }}>
             <label>Student Name</label>
             <input type="text" name="studentname" value={form.studentname} onChange={onChange} className="border p-2 w-full" />
           </div>
-          <div>
-            <label>Status</label>
-            <select name="status" value={form.status} onChange={onChange} className="border p-2 w-full">
-              <option value="pending">pending</option>
-              <option value="in-progress">in-progress</option>
-              <option value="done">done</option>
-              <option value="cancel">cancel</option>
-            </select>
-          </div>
-          <div>
-            <label>Verification Count</label>
-            <input type="number" min={1} name="verification_count" value={form.verification_count} onChange={onChange} className="border p-2 w-full" />
-          </div>
-          <div>
-            <label>Fees Receipt No</label>
-            <input type="text" name="fees_rec_no" value={form.fees_rec_no} onChange={onChange} className="border p-2 w-full" />
-          </div>
-          <div>
-            <label>Final Number</label>
-            <input type="text" name="verification_no" value={form.verification_no} onChange={onChange} placeholder="auto on done" className="border p-2 w-full" />
-          </div>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <label>Remark</label>
-            <input type="text" name="remark" value={form.remark} onChange={onChange} className="border p-2 w-full" />
+          <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <label style={{ margin: 0 }}>Transcript</label>
+              <input type="number" min={0} max={9999} step={1} inputMode="numeric" pattern="\\d*" name="no_of_transcript" value={form.no_of_transcript} onChange={onChangeNum} className="border p-2" style={{ width: 64 }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <label style={{ margin: 0 }}>Marksheet</label>
+              <input type="number" min={0} max={9999} step={1} inputMode="numeric" pattern="\\d*" name="no_of_marksheet_set" value={form.no_of_marksheet_set} onChange={onChangeNum} className="border p-2" style={{ width: 64 }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <label style={{ margin: 0 }}>Degree</label>
+              <input type="number" min={0} max={9999} step={1} inputMode="numeric" pattern="\\d*" name="no_of_degree" value={form.no_of_degree} onChange={onChangeNum} className="border p-2" style={{ width: 64 }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <label style={{ margin: 0 }}>MOI</label>
+              <input type="number" min={0} max={9999} step={1} inputMode="numeric" pattern="\\d*" name="no_of_moi" value={form.no_of_moi} onChange={onChangeNum} className="border p-2" style={{ width: 64 }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <label style={{ margin: 0 }}>Back-log</label>
+              <input type="number" min={0} max={9999} step={1} inputMode="numeric" pattern="\\d*" name="no_of_backlog" value={form.no_of_backlog} onChange={onChangeNum} className="border p-2" style={{ width: 64 }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <label style={{ margin: 0 }}>Status</label>
+              <select name="status" value={form.status} onChange={onChange} className="border p-2" style={{ width: 110 }}>
+                <option value="pending">pending</option>
+                <option value="in-progress">in-progress</option>
+                <option value="done">done</option>
+                <option value="cancel">cancel</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <label style={{ margin: 0 }}>Fees</label>
+              <input type="text" name="fees_rec_no" value={form.fees_rec_no} onChange={onChange} className="border p-2" style={{ width: 120 }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <label style={{ margin: 0 }}>Final #</label>
+              <input type="text" name="verification_no" value={form.verification_no} onChange={onChange} placeholder="auto on done" className="border p-2" style={{ width: 120 }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <label style={{ margin: 0 }}>Remark</label>
+              <input type="text" name="remark" value={form.remark} onChange={onChange} className="border p-2" style={{ width: 160 }} />
+            </div>
           </div>
           <div>
             <label>Scan Copy (path)</label>
@@ -140,6 +195,9 @@ export default function Verification() {
             </>
           )}
         </div>
+        {form.verification_no && (
+          <div className="text-sm text-gray-700 mt-2">Auto file path: <span className="font-mono">{form.doc_scan_copy || `${form.verification_no}.pdf`}</span></div>
+        )}
         <div style={{ marginTop: 12 }}>
           <button disabled={!canSave} onClick={onSave} style={{ opacity: canSave ? 1 : 0.6, padding: '8px 12px', background: '#198754', color: '#fff', border: 'none', borderRadius: 4 }}>
             <FaSave /> Save
@@ -161,26 +219,50 @@ export default function Verification() {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
-        {items.map((row) => (
-          <div key={row.id} style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong>{row.studentname || '(no name)'}</strong>
-              <span style={{ fontSize: 12, padding: '2px 6px', borderRadius: 4, background: '#f1f3f5' }}>{row.status}</span>
-            </div>
-            <div style={{ fontSize: 12, color: '#555' }}>
-              <div>Final#: {row.verification_no || '-'}</div>
-              <div>Temp#: {row.vryearautonumber || '-'}</div>
-              <div>Enroll: {row.enrollment_no || '-'}</div>
-              <div>Count: {row.verification_count || 1}</div>
-              <div>ECA: {row.is_eca ? 'Yes' : 'No'}</div>
-            </div>
-            <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-              <button onClick={()=>onEdit(row)} style={{ padding: '6px 10px', background: '#ffc107', border: 'none', borderRadius: 4 }}>Edit</button>
-            </div>
-          </div>
-        ))}
-        {!items.length && <div style={{ opacity: 0.7 }}>No results</div>}
+      <div className="border rounded overflow-auto">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="px-3 py-2 text-left">Date</th>
+              <th className="px-3 py-2 text-left">Final #</th>
+              <th className="px-3 py-2 text-left">Enrollment</th>
+              <th className="px-3 py-2 text-left">Name</th>
+              <th className="px-3 py-2 text-left">T</th>
+              <th className="px-3 py-2 text-left">MS</th>
+              <th className="px-3 py-2 text-left">Deg</th>
+              <th className="px-3 py-2 text-left">MOI</th>
+              <th className="px-3 py-2 text-left">BL</th>
+              <th className="px-3 py-2 text-left">Fees Rec</th>
+              <th className="px-3 py-2 text-left">ECA Agency</th>
+              <th className="px-3 py-2 text-left">ECA Remark</th>
+              <th className="px-3 py-2 text-left">Remark</th>
+              <th className="px-3 py-2 text-left">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((row) => (
+              <tr key={row.id} className="border-t hover:bg-gray-50 cursor-pointer" onClick={()=>onEdit(row)}>
+                <td className="px-3 py-2">{row.doc_rec_date ? formatDateDMY(row.doc_rec_date) : '-'}</td>
+                <td className="px-3 py-2">{row.verification_no || '-'}</td>
+                <td className="px-3 py-2">{row.enrollment_no || '-'}</td>
+                <td className="px-3 py-2">{row.studentname || '-'}</td>
+                <td className="px-3 py-2">{row.no_of_transcript ?? 0}</td>
+                <td className="px-3 py-2">{row.no_of_marksheet_set ?? 0}</td>
+                <td className="px-3 py-2">{row.no_of_degree ?? 0}</td>
+                <td className="px-3 py-2">{row.no_of_moi ?? 0}</td>
+                <td className="px-3 py-2">{row.no_of_backlog ?? 0}</td>
+                <td className="px-3 py-2">{row.fees_rec_no || '-'}</td>
+                <td className="px-3 py-2">{row.is_eca ? (row.eca_agency || row.eca_agency_other || 'Yes') : '-'}</td>
+                <td className="px-3 py-2">{row.eca_remark || '-'}</td>
+                <td className="px-3 py-2">{row.remark || '-'}</td>
+                <td className="px-3 py-2 capitalize">{row.status}</td>
+              </tr>
+            ))}
+            {!items.length && (
+              <tr><td className="px-3 py-4 text-gray-500" colSpan={14}>No results</td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

@@ -83,7 +83,7 @@ const WorkArea = ({ selectedMenuItem }) => {
   };
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div className="w-full h-full">
       {renderPage()}
     </div>
   );

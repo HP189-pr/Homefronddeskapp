@@ -1,6 +1,7 @@
 // src/components/Auth/Login.jsx
 import React, { useEffect, useState, useRef } from 'react';
 import Clock from './Clock';
+import { formatDateDMY } from '../../utils/date';
 import { useAuth } from '../../hooks/useAuth';
 
 /**
@@ -69,15 +70,7 @@ const Login = ({ navigate }) => {
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
+  const formatDate = (dateString) => formatDateDMY(dateString);
 
   const handleChange = (e) => {
     const { id, value } = e.target;

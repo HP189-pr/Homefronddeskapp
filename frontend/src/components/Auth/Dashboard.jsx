@@ -134,11 +134,7 @@ const Dashboard = ({ selectedMenuItem, setSelectedMenuItem, isSidebarOpen, setSi
   };
 
   return (
-    <div
-      className={`flex h-screen w-screen transition-all duration-300 ${
-        isSidebarOpen ? 'pl-0' : 'pl-1'
-      }`}
-    >
+    <div className={`flex h-screen w-screen transition-all duration-300`}>
       {/* Sidebar (left) */}
       <Sidebar
         isOpen={isSidebarOpen}
@@ -147,11 +143,17 @@ const Dashboard = ({ selectedMenuItem, setSelectedMenuItem, isSidebarOpen, setSi
         handleSecureNavigation={handleSecureNavigation}
       />
 
-      {/* Main content area (center) */}
-      <div className="flex-grow flex flex-col bg-white ml-[1rem]">
-        <div className="flex-grow p-4 overflow-auto bg-gray-100">
+      {/* Spacer between sidebar and content */}
+      <div className="w-[10px] bg-gray-100" />
+
+      {/* Main content area (center, white) */}
+      <div className="flex-grow flex flex-col bg-white">
+        {/* Top spacer */}
+        <div className="h-[10px] bg-gray-100" />
+        {/* Inner content area */}
+        <div className="flex-1 p-4 overflow-hidden">
           {(!selectedMenuItem || selectedMenuItem === 'Dashboard') ? (
-            <div>
+            <div className="h-full overflow-auto">
               {/* Header */}
               <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white mb-6">
                 <div className="px-6 py-6 flex items-center justify-between gap-4">
@@ -183,17 +185,22 @@ const Dashboard = ({ selectedMenuItem, setSelectedMenuItem, isSidebarOpen, setSi
               </div>
 
               {/* Modules grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 pb-2">
                 {MODULES.filter(m => selectedModuleKeys.includes(m.key)).map((mod) => (
                   <ModuleCard key={mod.key} mod={mod} authFetch={authFetch} onOpen={() => setSelectedMenuItem(mod.openMenuLabel)} />
                 ))}
               </div>
             </div>
           ) : (
-            <WorkArea selectedMenuItem={selectedMenuItem} />
+            <div className="h-full overflow-auto">
+              <WorkArea selectedMenuItem={selectedMenuItem} />
+            </div>
           )}
         </div>
       </div>
+
+      {/* Spacer between content and chat */}
+      <div className="w-[10px] bg-gray-100" />
 
       {/* Chatbox (right side) */}
       <ChatBox />

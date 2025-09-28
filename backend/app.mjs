@@ -33,6 +33,7 @@ import provisionalRoutes from './routes/provisionalRoutes.mjs';
 import institutionalVerificationRoutes from './routes/institutionalVerificationRoutes.mjs';
 import documentReceiptRoutes from './routes/documentReceiptRoutes.mjs';
 import verificationPublicRoutes from './routes/verificationPublicRoutes.mjs';
+import { normalizeDMYDates } from './utils/dateFormat.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,6 +48,17 @@ const allowedOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
 app.use(cors({ origin: allowedOrigin, credentials: true }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Normalize DD-MM-YYYY date strings in req.body and req.query to ISO YYYY-MM-DD
+app.use((req, _res, next) => {
+  try {
+    if (req.body && typeof req.body === 'object') normalizeDMYDates(req.body);
+    if (req.query && typeof req.query === 'object') normalizeDMYDates(req.query);
+  } catch (e) {
+    // do not block request on parser errors; just continue
+  }
+  next();
+});
 
 // attach DB instance for convenience
 app.set('sequelize', sequelize);

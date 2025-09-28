@@ -19,6 +19,7 @@ import { MigrationRequest } from '../models/migration_request.mjs';
 import { ProvisionalRequest } from '../models/provisional_request.mjs';
 import { InstitutionalVerification } from '../models/institutional_verification.mjs';
 import { DocumentReceipt } from '../models/document_receipt.mjs';
+import { Setting } from '../models/setting.mjs';
 
 // Optionally define associations (if you want)
 const models = {
@@ -35,6 +36,7 @@ const models = {
   ProvisionalRequest,
   InstitutionalVerification,
   DocumentReceipt,
+  Setting,
 };
 
 export { sequelize };

@@ -5,6 +5,7 @@ import InstitutesAdmin from './InstitutesAdmin';
 import UsersAdmin from './UsersAdmin';
 import PermissionsAdmin from './PermissionsAdmin';
 import CourseAdmin from './CourseAdmin';
+import SystemSettings from './SystemSettings.jsx';
 
 /**
  * AdminDashboard
@@ -42,20 +43,22 @@ const AdminDashboard = () => {
         return <CourseAdmin />;
       case 'User Rights':
         return <PermissionsAdmin />;
+      case 'System Settings':
+        return <SystemSettings />;
       default:
         return <div className="text-gray-700">Select an admin section.</div>;
     }
   })();
 
   return (
-    <main className="flex-1 p-6 bg-gray-100 min-h-0 overflow-auto">
+    <main className="flex-1 p-3 bg-white min-h-0 overflow-auto">
       <div className="bg-white shadow rounded p-6 min-h-[220px]">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Admin Dashboard</h2>
         </div>
         {/* Section Tabs */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {['Institute Management','Course Management','User Management','User Rights'].map((name) => (
+          {['Institute Management','Course Management','User Management','User Rights','System Settings'].map((name) => (
             <button
               key={name}
               onClick={() => setSection(name)}

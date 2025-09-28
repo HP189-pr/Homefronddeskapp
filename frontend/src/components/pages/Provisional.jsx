@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FaHome, FaPlus, FaSearch, FaSave } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaSave } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import TopBar from '../common/TopBar';
+import DateInputDMY from '../common/DateInputDMY';
+import PageScaffold from '../common/PageScaffold';
 
 const initialForm = {
   doc_rec_date: '',
@@ -31,7 +34,6 @@ export default function Provisional() {
   };
 
   useEffect(() => { load(); }, []);
-
   const onHome = () => window.dispatchEvent(new CustomEvent('app:home'));
   const onChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
   const onEdit = (row) => { setEditingId(row.id); setForm({ ...initialForm, ...row, doc_rec_date: row.doc_rec_date || '' }); window.scrollTo({ top: 0, behavior: 'smooth' }); };
@@ -43,67 +45,65 @@ export default function Provisional() {
     if (res.ok) { await load(); onReset(); } else { const err = await res.json().catch(()=>({})); alert(err.error || 'Save failed'); }
   };
 
-  return (
-    <div style={{ padding: '20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-        <button title="Home" onClick={onHome} style={{ padding: '8px 12px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: 4 }}>
-          <FaHome /> Home
-        </button>
-        <h1 style={{ fontSize: 24, fontWeight: 'bold', margin: 0 }}>📄 Provisional</h1>
-      </div>
+  const header = (
+    <TopBar
+      logo="📄"
+      title="Provisional"
+      onHome={onHome}
+      actions={[
+        { key: 'add', label: 'Add New', onClick: onReset, icon: <FaPlus />, variant: 'success' },
+        { key: 'search', label: 'Search', onClick: load, icon: <FaSearch />, variant: 'primary' },
+      ]}
+    />
+  );
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <button onClick={onReset} style={{ padding: '8px 12px', background: '#28a745', color: '#fff', border: 'none', borderRadius: 4 }}>
-          <FaPlus /> Add New
-        </button>
-        <button onClick={load} style={{ padding: '8px 12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: 4 }}>
-          <FaSearch /> Search
-        </button>
-      </div>
-
-      <div style={{ border: '1px solid #ddd', padding: 16, borderRadius: 8, marginBottom: 24 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px,1fr))', gap: 12 }}>
-          <div>
-            <label>Date</label>
-            <input type="date" name="doc_rec_date" value={form.doc_rec_date} onChange={onChange} className="border p-2 w-full" />
-          </div>
-          <div>
-            <label>PR Year Auto No</label>
-            <input type="text" name="pryearautonumber" value={form.pryearautonumber} onChange={onChange} placeholder="auto" className="border p-2 w-full" />
-          </div>
-          <div>
-            <label>Enrollment No</label>
-            <input type="text" name="enrollment_no" value={form.enrollment_no} onChange={onChange} className="border p-2 w-full" />
-          </div>
-          <div>
-            <label>Student Name</label>
-            <input type="text" name="studentname" value={form.studentname} onChange={onChange} className="border p-2 w-full" />
-          </div>
-          <div>
-            <label>Status</label>
-            <select name="status" value={form.status} onChange={onChange} className="border p-2 w-full">
-              <option value="pending">pending</option>
-              <option value="done">done</option>
-              <option value="cancel">cancel</option>
-              <option value="correction">correction</option>
-            </select>
-          </div>
-          <div>
-            <label>Final Number</label>
-            <input type="text" name="provisional_number" value={form.provisional_number} onChange={onChange} placeholder="auto on done" className="border p-2 w-full" />
-          </div>
-          <div>
-            <label>Scan Copy (path)</label>
-            <input type="text" name="provisional_scan_copy" value={form.provisional_scan_copy} onChange={onChange} className="border p-2 w-full" />
-          </div>
+  const formBox = (
+    <div style={{ border: '1px solid #ddd', padding: 16, borderRadius: 8, marginBottom: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px,1fr))', gap: 12 }}>
+        <div>
+          <label>Date</label>
+          <DateInputDMY name="doc_rec_date" value={form.doc_rec_date} onChange={onChange} className="border p-2 w-full" />
         </div>
-        <div style={{ marginTop: 12 }}>
-          <button disabled={!canSave} onClick={onSave} style={{ opacity: canSave ? 1 : 0.6, padding: '8px 12px', background: '#198754', color: '#fff', border: 'none', borderRadius: 4 }}>
-            <FaSave /> Save
-          </button>
+        <div>
+          <label>PR Year Auto No</label>
+          <input type="text" name="pryearautonumber" value={form.pryearautonumber} onChange={onChange} placeholder="auto" className="border p-2 w-full" />
+        </div>
+        <div>
+          <label>Enrollment No</label>
+          <input type="text" name="enrollment_no" value={form.enrollment_no} onChange={onChange} className="border p-2 w-full" />
+        </div>
+        <div>
+          <label>Student Name</label>
+          <input type="text" name="studentname" value={form.studentname} onChange={onChange} className="border p-2 w-full" />
+        </div>
+        <div>
+          <label>Status</label>
+          <select name="status" value={form.status} onChange={onChange} className="border p-2 w-full">
+            <option value="pending">pending</option>
+            <option value="done">done</option>
+            <option value="cancel">cancel</option>
+            <option value="correction">correction</option>
+          </select>
+        </div>
+        <div>
+          <label>Final Number</label>
+          <input type="text" name="provisional_number" value={form.provisional_number} onChange={onChange} placeholder="auto on done" className="border p-2 w-full" />
+        </div>
+        <div>
+          <label>Scan Copy (path)</label>
+          <input type="text" name="provisional_scan_copy" value={form.provisional_scan_copy} onChange={onChange} className="border p-2 w-full" />
         </div>
       </div>
+      <div style={{ marginTop: 12 }}>
+        <button disabled={!canSave} onClick={onSave} style={{ opacity: canSave ? 1 : 0.6, padding: '8px 12px', background: '#198754', color: '#fff', border: 'none', borderRadius: 4 }}>
+          <FaSave /> Save
+        </button>
+      </div>
+    </div>
+  );
 
+  const records = (
+    <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         <input placeholder="Search..." value={q} onChange={(e)=>setQ(e.target.value)} className="border p-2" />
         <select value={status} onChange={(e)=>setStatus(e.target.value)} className="border p-2">
@@ -117,8 +117,7 @@ export default function Provisional() {
           <FaSearch /> Apply
         </button>
       </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, paddingBottom: 8 }}>
         {items.map((row) => (
           <div key={row.id} style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -138,5 +137,9 @@ export default function Provisional() {
         {!items.length && <div style={{ opacity: 0.7 }}>No results</div>}
       </div>
     </div>
+  );
+
+  return (
+    <PageScaffold header={header} form={formBox} records={records} />
   );
 }

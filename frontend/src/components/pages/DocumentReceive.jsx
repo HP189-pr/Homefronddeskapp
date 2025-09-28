@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { FaHome, FaPlus, FaSearch, FaSave } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaSave } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import { formatDateDMY } from '../../utils/date';
+import DateInputDMY from '../common/DateInputDMY';
+import TopBar from '../common/TopBar';
 
 const initialForm = {
   doc_rec_date: '',
@@ -19,6 +22,11 @@ const initialForm = {
   no_of_degree: 0,
   no_of_moi: 0,
   no_of_backlog: 0,
+  // ECA fields (for verification)
+  is_eca: false,
+  eca_agency: '',
+  eca_agency_other: '',
+  eca_remark: '',
   // receipts
   mgrec_no: '',
   prrec_no: '',
@@ -130,28 +138,22 @@ export default function DocumentReceive() {
   const showGtm = form.doc_type === 'gtm';
 
   return (
-    <div style={{ padding: '20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-        <button title="Home" onClick={onHome} style={{ padding: '8px 12px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: 4 }}>
-          <FaHome /> Home
-        </button>
-        <h1 style={{ fontSize: 24, fontWeight: 'bold', margin: 0 }}>📥 Document Receive</h1>
-      </div>
-
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <button onClick={onReset} style={{ padding: '8px 12px', background: '#28a745', color: '#fff', border: 'none', borderRadius: 4 }}>
-          <FaPlus /> Add New
-        </button>
-        <button onClick={load} style={{ padding: '8px 12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: 4 }}>
-          <FaSearch /> Search
-        </button>
-      </div>
+    <div style={{ padding: '8px 16px 16px 6px' }}>
+      <TopBar
+        logo="📥"
+        title="Document Receive"
+        onHome={onHome}
+        actions={[
+          { key: 'add', label: 'Add New', onClick: onReset, icon: <FaPlus />, variant: 'success' },
+          { key: 'search', label: 'Search', onClick: load, icon: <FaSearch />, variant: 'primary' },
+        ]}
+      />
 
       <div style={{ border: '1px solid #ddd', padding: 16, borderRadius: 8, marginBottom: 24 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px,1fr))', gap: 12 }}>
           <div>
             <label>Date</label>
-            <input type="date" name="doc_rec_date" value={form.doc_rec_date} onChange={onChange} className="border p-2 w-full" />
+            <DateInputDMY name="doc_rec_date" value={form.doc_rec_date} onChange={onChange} className="border p-2 w-full" />
           </div>
           <div>
             <label>Enrollment No</label>
@@ -180,10 +182,6 @@ export default function DocumentReceive() {
           {showVerification && (
             <>
               <div>
-                <label>VR Year Auto No</label>
-                <input type="text" name="vryearautonumber" value={form.vryearautonumber} onChange={onChange} placeholder="auto if blank" className="border p-2 w-full" />
-              </div>
-              <div>
                 <label>No. of Transcript</label>
                 <input type="number" name="no_of_transcript" value={form.no_of_transcript} onChange={onChangeNum} className="border p-2 w-full" />
               </div>
@@ -203,6 +201,38 @@ export default function DocumentReceive() {
                 <label>No. of Backlog</label>
                 <input type="number" name="no_of_backlog" value={form.no_of_backlog} onChange={onChangeNum} className="border p-2 w-full" />
               </div>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <input id="is_eca" type="checkbox" name="is_eca" checked={!!form.is_eca} onChange={(e)=>setForm(p=>({...p, is_eca: e.target.checked}))} />
+                <label htmlFor="is_eca">ECA</label>
+              </div>
+              {form.is_eca && (
+                <>
+                  <div>
+                    <label>ECA Agency</label>
+                    <select name="eca_agency" value={form.eca_agency} onChange={onChange} className="border p-2 w-full">
+                      <option value="">Select</option>
+                      <option value="WES">WES</option>
+                      <option value="IQAS">IQAS</option>
+                      <option value="ICES">ICES</option>
+                      <option value="ICAS">ICAS</option>
+                      <option value="CES">CES</option>
+                      <option value="ECE">ECE</option>
+                      <option value="PEBC">PEBC</option>
+                      <option value="OTHER">OTHER</option>
+                    </select>
+                  </div>
+                  {form.eca_agency === 'OTHER' && (
+                    <div>
+                      <label>Other Agency</label>
+                      <input type="text" name="eca_agency_other" value={form.eca_agency_other} onChange={onChange} className="border p-2 w-full" />
+                    </div>
+                  )}
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label>ECA Remark</label>
+                    <input type="text" name="eca_remark" value={form.eca_remark} onChange={onChange} className="border p-2 w-full" />
+                  </div>
+                </>
+              )}
             </>
           )}
 
@@ -337,7 +367,7 @@ export default function DocumentReceive() {
               }
               return (
                 <tr key={row.id} className="border-t hover:bg-gray-50 cursor-pointer" onClick={()=>onEdit(row)}>
-                  <td className="px-3 py-2">{row.doc_rec_date || '-'}</td>
+                  <td className="px-3 py-2">{row.doc_rec_date ? formatDateDMY(row.doc_rec_date) : '-'}</td>
                   <td className="px-3 py-2 capitalize">{row.doc_type}</td>
                   <td className="px-3 py-2">{row.enrollment_no || '-'}</td>
                   <td className="px-3 py-2">{row.studentname || '-'}</td>

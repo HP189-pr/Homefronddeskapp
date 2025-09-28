@@ -1,6 +1,7 @@
 // src/components/Admin/UsersAdmin.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { formatDateTimeIST } from '../../utils/date';
 
 const UsersAdmin = () => {
   const { authFetch, fetchUsers } = useAuth();
@@ -219,7 +220,7 @@ const UsersAdmin = () => {
                 {logs.map(l => (
                   <li key={l.id} className="p-2 border rounded">
                     <div className="text-sm text-gray-700">{l.action}</div>
-                    <div className="text-xs text-gray-500">{new Date(l.createdat).toLocaleString()}</div>
+                    <div className="text-xs text-gray-500">{formatDateTimeIST(l.createdat)}</div>
                     {l.meta && <pre className="text-xs bg-gray-50 p-2 mt-2 rounded overflow-auto">{JSON.stringify(l.meta)}</pre>}
                   </li>
                 ))}

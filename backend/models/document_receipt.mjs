@@ -45,6 +45,12 @@ export const DocumentReceipt = sequelize.define('DocumentReceipt', {
   mobile: { type: DataTypes.STRING, allowNull: true },
   email: { type: DataTypes.STRING, allowNull: true },
 
+  // ECA at receipt stage (for verification type)
+  is_eca: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  eca_agency: { type: DataTypes.ENUM('WES','IQAS','ICES','ICAS','CES','ECE','PEBC', 'OTHER'), allowNull: true },
+  eca_agency_other: { type: DataTypes.STRING, allowNull: true },
+  eca_remark: { type: DataTypes.TEXT, allowNull: true },
+
   // Simple status for tracking at receipt stage
   status: { type: DataTypes.ENUM('received','in-progress','done','cancel'), allowNull: false, defaultValue: 'received' },
 

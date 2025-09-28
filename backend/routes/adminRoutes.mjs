@@ -11,6 +11,7 @@ import { CourseMain } from '../models/course_main.mjs';
 import { CourseSub } from '../models/course_sub.mjs';
 import rightsController from '../controllers/rightsController.mjs';
 import { UserProfile } from '../models/userProfile.mjs';
+import { Setting } from '../models/setting.mjs';
 
 const router = express.Router();
 
@@ -327,6 +328,43 @@ router.patch('/course_sub/:id', async (req, res, next) => {
     for (const k of allowed) if (req.body[k] !== undefined) payload[k] = req.body[k];
     await row.update(payload);
     res.json(row);
+  } catch (e) { next(e); }
+});
+
+/* System Settings (key-value) */
+// List first 200 settings (to keep payload small)
+router.get('/settings', async (req, res, next) => {
+  try {
+    const list = await Setting.findAll({ order: [['key','ASC']], limit: 200 });
+    res.json({ settings: list });
+  } catch (e) { next(e); }
+});
+
+// Get one setting by key
+router.get('/settings/:key', async (req, res, next) => {
+  try {
+    const row = await Setting.findByPk(req.params.key);
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    res.json(row);
+  } catch (e) { next(e); }
+});
+
+// Upsert setting
+router.put('/settings/:key', async (req, res, next) => {
+  try {
+    const key = req.params.key;
+    const value = req.body?.value ?? null;
+    const [row, created] = await Setting.upsert({ key, value, updatedat: new Date() }, { returning: true });
+    // Sequelize upsert returns [instance, created] for postgres
+    res.json(row);
+  } catch (e) { next(e); }
+});
+
+// Delete setting
+router.delete('/settings/:key', async (req, res, next) => {
+  try {
+    const rows = await Setting.destroy({ where: { key: req.params.key } });
+    res.json({ ok: rows > 0 });
   } catch (e) { next(e); }
 });
 export default router;
