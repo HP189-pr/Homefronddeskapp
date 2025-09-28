@@ -32,6 +32,7 @@ import migrationRoutes from './routes/migrationRoutes.mjs';
 import provisionalRoutes from './routes/provisionalRoutes.mjs';
 import institutionalVerificationRoutes from './routes/institutionalVerificationRoutes.mjs';
 import documentReceiptRoutes from './routes/documentReceiptRoutes.mjs';
+import verificationPublicRoutes from './routes/verificationPublicRoutes.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,6 +68,7 @@ app.use('/api/profile', profileRoutes);
 // --- Admin routes ---
 app.use('/api/admin', requireAdmin, adminRoutes);
 app.use('/api/admin/verifications', requireAdmin, verificationRoutes);
+app.use('/api/verifications', verificationPublicRoutes);
 app.use('/api/admin/migrations', requireAdmin, migrationRoutes);
 app.use('/api/admin/provisionals', requireAdmin, provisionalRoutes);
 app.use('/api/admin/institutionals', requireAdmin, institutionalVerificationRoutes);

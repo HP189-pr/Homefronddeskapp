@@ -1,4 +1,4 @@
-import { Op, fn, col, where as sqlWhere } from 'sequelize';
+import { Op, fn, col, where as sqlWhere, literal } from 'sequelize';
 import Verification from '../models/verification.mjs';
 
 function twoDigitYear(d = new Date()) {
@@ -47,12 +47,14 @@ export async function listVerifications(params = {}) {
     ];
   }
 
-  // Order: temp number desc (nulls last), then id desc
+  // Order: final number desc (nulls last), then temp number desc (nulls last), then id desc
   const rows = await Verification.findAll({
     where,
     limit,
     offset,
     order: [
+      [literal("CASE WHEN verification_no IS NULL OR verification_no = '' THEN 1 ELSE 0 END"), 'ASC'],
+      ['verification_no', 'DESC'],
       [fn('COALESCE', col('vryearautonumber'), ''), 'DESC'],
       ['id', 'DESC'],
     ],

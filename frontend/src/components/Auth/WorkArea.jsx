@@ -37,6 +37,7 @@ const WorkArea = ({ selectedMenuItem }) => {
   const renderPage = () => {
     switch (selectedMenuItem) {
       case '📜 Transcript':
+      case '📜 Verification': // current Sidebar label
         return <Transcript />;
       case '📑 Migration': // legacy label
       case '🚀 Migration': // current Sidebar label
@@ -47,6 +48,7 @@ const WorkArea = ({ selectedMenuItem }) => {
       case '🏅 Degree':
         return <Degree />;
       case '🏛️ Institutional Verification':
+      case '🏛️ Inst-Verification': // current Sidebar label
         return <InstitutionalVerification />;
       case '📥 Document Receive':
         return <DocumentReceive />;

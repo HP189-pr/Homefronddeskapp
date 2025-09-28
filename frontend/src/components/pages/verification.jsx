@@ -32,8 +32,17 @@ export default function Verification() {
     const params = new URLSearchParams();
     if (q) params.set('q', q);
     if (status) params.set('status', status);
-    const res = await authFetch(`/api/admin/verifications?${params.toString()}`);
-    if (res.ok) { const data = await res.json(); setItems(data.items || []); }
+    // Try admin endpoint first (if user has rights), else fallback to public read-only endpoint
+    let res = await authFetch(`/api/admin/verifications?${params.toString()}`);
+    if (!res.ok && (res.status === 401 || res.status === 403)) {
+      res = await authFetch(`/api/verifications?${params.toString()}`);
+    }
+    if (res.ok) {
+      const data = await res.json();
+      setItems(data.items || []);
+    } else {
+      setItems([]);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -59,7 +68,7 @@ export default function Verification() {
         <button title="Home" onClick={onHome} style={{ padding: '8px 12px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: 4 }}>
           <FaHome /> Home
         </button>
-        <h1 style={{ fontSize: 24, fontWeight: 'bold', margin: 0 }}>✅ Verification</h1>
+  <h1 style={{ fontSize: 24, fontWeight: 'bold', margin: 0 }}>📜 Verification</h1>
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
