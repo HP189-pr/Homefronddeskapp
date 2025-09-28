@@ -5,7 +5,7 @@ import InstitutesAdmin from './InstitutesAdmin';
 import UsersAdmin from './UsersAdmin';
 import PermissionsAdmin from './PermissionsAdmin';
 import CourseAdmin from './CourseAdmin';
-import SystemSettings from './SystemSettings.jsx';
+import SystemSettings from './path.jsx';
 
 /**
  * AdminDashboard

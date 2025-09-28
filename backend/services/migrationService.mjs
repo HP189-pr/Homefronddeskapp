@@ -1,5 +1,7 @@
 import { Op, fn, col, where as sqlWhere } from 'sequelize';
 import MigrationRequest from '../models/migration_request.mjs';
+import { Setting } from '../models/path.mjs';
+import { findFileRecursive } from '../utils/fsSearch.mjs';
 
 function twoDigitYear(d = new Date()) { return String(d.getFullYear()).slice(-2); }
 
@@ -47,7 +49,14 @@ export async function createMigration(payload) {
     err.status = 400; throw err;
   }
   if (!data.migration_scan_copy && data.migration_number) {
-    data.migration_scan_copy = `${data.migration_number}.pdf`;
+    const base = (await Setting.findByPk('migration.doc_base'))?.value || (await Setting.findByPk('docs.base'))?.value || null;
+    const filename = `${data.migration_number}.pdf`;
+    if (base) {
+      const found = await findFileRecursive(filename, base, { maxDepth: 4 });
+      data.migration_scan_copy = found || '';
+    } else {
+      data.migration_scan_copy = '';
+    }
   }
   return MigrationRequest.create(data);
 }
@@ -63,7 +72,16 @@ export async function updateMigration(id, payload) {
     err.status = 400; throw err;
   }
   const next = { ...prev, ...data };
-  if (!next.migration_scan_copy && next.migration_number) next.migration_scan_copy = `${next.migration_number}.pdf`;
+  if (!next.migration_scan_copy && next.migration_number) {
+    const base = (await Setting.findByPk('migration.doc_base'))?.value || (await Setting.findByPk('docs.base'))?.value || null;
+    const filename = `${next.migration_number}.pdf`;
+    if (base) {
+      const found = await findFileRecursive(filename, base, { maxDepth: 4 });
+      next.migration_scan_copy = found || '';
+    } else {
+      next.migration_scan_copy = '';
+    }
+  }
   await row.update(next); return row;
 }
 

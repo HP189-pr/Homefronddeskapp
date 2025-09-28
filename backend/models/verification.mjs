@@ -34,8 +34,8 @@ export const Verification = sequelize.define('Verification', {
   eca_agency_other: { type: DataTypes.STRING, allowNull: true },
 
   mail_status: { type: DataTypes.STRING, allowNull: true },
-  mail_date: { type: DataTypes.DATEONLY, allowNull: true },
-  ref_no: { type: DataTypes.STRING, allowNull: true },
+  eca_mail_date: { type: DataTypes.DATEONLY, allowNull: true },
+  eca_ref_no: { type: DataTypes.STRING, allowNull: true },
   eca_remark: { type: DataTypes.TEXT, allowNull: true },
 
   createdat: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },

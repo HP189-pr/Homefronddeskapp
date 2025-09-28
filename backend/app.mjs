@@ -45,7 +45,7 @@ const app = express();
 app.use(helmet());
 // Single CORS setup (avoid duplicates); default to localhost:3000 for dev if not provided
 const allowedOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
-app.use(cors({ origin: allowedOrigin, credentials: true }));
+app.use(cors({ origin: allowedOrigin, credentials: true, exposedHeaders: ['Content-Disposition'] }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -68,7 +68,7 @@ app.use(jwtMiddleware);
 
 // Public / auth routes
 app.use('/api/auth', authRoutes);
-// Serve media (profile pictures)
+// Serve media (profile pictures, logs, tmp)
 app.use('/media', express.static(path.resolve(__dirname, './media')));
 
 // Example user routes

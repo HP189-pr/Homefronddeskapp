@@ -19,7 +19,7 @@ import { MigrationRequest } from '../models/migration_request.mjs';
 import { ProvisionalRequest } from '../models/provisional_request.mjs';
 import { InstitutionalVerification } from '../models/institutional_verification.mjs';
 import { DocumentReceipt } from '../models/document_receipt.mjs';
-import { Setting } from '../models/setting.mjs';
+import { Setting } from './path.mjs';
 
 // Optionally define associations (if you want)
 const models = {

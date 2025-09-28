@@ -11,7 +11,7 @@ import { CourseMain } from '../models/course_main.mjs';
 import { CourseSub } from '../models/course_sub.mjs';
 import rightsController from '../controllers/rightsController.mjs';
 import { UserProfile } from '../models/userProfile.mjs';
-import { Setting } from '../models/setting.mjs';
+import { Setting } from '../models/path.mjs';
 
 const router = express.Router();
 

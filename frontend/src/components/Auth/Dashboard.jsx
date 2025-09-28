@@ -146,8 +146,11 @@ const Dashboard = ({ selectedMenuItem, setSelectedMenuItem, isSidebarOpen, setSi
       {/* Spacer between sidebar and content */}
       <div className="w-[10px] bg-gray-100" />
 
-      {/* Main content area (center, white) */}
-      <div className="flex-grow flex flex-col bg-white">
+      {/* Main content area (center, white). Pad-right to avoid overlap with fixed chat rail */}
+      <div
+        className="flex-grow flex flex-col bg-white"
+        style={{ paddingRight: 'var(--chat-rail-width, calc(4rem + 10px))' }}
+      >
         {/* Top spacer */}
         <div className="h-[10px] bg-gray-100" />
         {/* Inner content area */}
@@ -198,9 +201,6 @@ const Dashboard = ({ selectedMenuItem, setSelectedMenuItem, isSidebarOpen, setSi
           )}
         </div>
       </div>
-
-      {/* Spacer between content and chat */}
-      <div className="w-[10px] bg-gray-100" />
 
       {/* Chatbox (right side) */}
       <ChatBox />

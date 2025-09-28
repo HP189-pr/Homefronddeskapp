@@ -152,14 +152,40 @@ const ChatBox = () => {
 
   const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + (b || 0), 0);
 
+  // Keep layout in sync: expose current rail width as a CSS variable
+  useEffect(() => {
+    const railWidth = !isAuthenticated
+      ? '0px'
+      : isOpen
+      ? 'calc(20rem + 10px)'
+      : 'calc(4rem + 10px)';
+    document.documentElement.style.setProperty('--chat-rail-width', railWidth);
+    return () => {
+      // On unmount, clear the variable
+      document.documentElement.style.removeProperty('--chat-rail-width');
+    };
+  }, [isAuthenticated, isOpen]);
+
   return (
     <div
-      className={`fixed top-0 right-0 h-full flex items-center transition-all duration-300 ease-in-out z-40 ${
-        isOpen ? 'w-80' : 'w-16'
-      }`}
+      className={
+        'fixed top-0 right-0 h-full flex items-center transition-all duration-300 ease-in-out z-40'
+      }
+      style={{ width: !isAuthenticated ? '0px' : (isOpen ? 'calc(20rem + 10px)' : 'calc(4rem + 10px)') }}
       aria-hidden={!isAuthenticated}
     >
-      <div className={`h-full bg-gray-800 text-white flex flex-col ${isOpen ? 'w-80' : 'w-16'}`}>
+      {/* Left spacer to match sidebar gap */}
+      <div className="w-[10px] h-full bg-gray-100" />
+
+      {/* Chat rail */}
+      <div className={`relative h-full bg-gray-800 text-white flex flex-col ${isOpen ? 'w-80' : 'w-16'}`}>
+        {/* Fixed header/title */}
+        <div className="absolute top-0 right-0 left-0 bg-gray-900 text-white h-12 flex items-center justify-between px-3 border-b border-gray-700">
+          <div className="font-semibold">Team Chat</div>
+          {totalUnread > 0 && (
+            <div className="text-xs bg-red-500 px-2 py-0.5 rounded">{totalUnread} new</div>
+          )}
+        </div>
         {/* collapsed avatars */}
         {!isOpen && (
           <div className="flex flex-col items-center py-3 space-y-3 overflow-auto mt-12">
@@ -301,22 +327,21 @@ const ChatBox = () => {
             </div>
           </div>
         )}
+        {/* toggle button */}
+        <button
+          onClick={toggleOpen}
+          className="absolute top-4 -left-6 w-10 h-10 bg-white border-2 border-blue-500 rounded-full flex items-center justify-center shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          aria-pressed={isOpen}
+          aria-label={isOpen ? 'Collapse chat' : 'Open chat'}
+        >
+          {isOpen ? <FiChevronRight className="text-blue-500 text-xl" /> : <FiChevronLeft className="text-blue-500 text-xl" />}
+          {!isOpen && totalUnread > 0 && (
+            <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
+              {totalUnread}
+            </div>
+          )}
+        </button>
       </div>
-
-      {/* toggle button */}
-      <button
-        onClick={toggleOpen}
-        className="absolute top-4 -left-6 w-10 h-10 bg-white border-2 border-blue-500 rounded-full flex items-center justify-center shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
-        aria-pressed={isOpen}
-        aria-label={isOpen ? 'Collapse chat' : 'Open chat'}
-      >
-        {isOpen ? <FiChevronRight className="text-blue-500 text-xl" /> : <FiChevronLeft className="text-blue-500 text-xl" />}
-        {!isOpen && totalUnread > 0 && (
-          <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
-            {totalUnread}
-          </div>
-        )}
-      </button>
     </div>
   );
 };

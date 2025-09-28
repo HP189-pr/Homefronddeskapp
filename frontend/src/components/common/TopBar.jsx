@@ -8,7 +8,7 @@ export default function TopBar({
   title,
   actions = [],
   onHome,
-  rightSpacerPx = 240,
+  rightSpacerPx = 0, // fallback only; primary spacing comes from CSS var
 }) {
   return (
     <div className="w-full" style={{ marginBottom: 12 }}>
@@ -38,11 +38,24 @@ export default function TopBar({
           </div>
         </div>
 
-        <div className="flex items-center" style={{ gap: 8, paddingRight: rightSpacerPx }}>
+        {/* Right side: reserve space for chat rail via CSS var; fallback to rightSpacerPx if needed */}
+        <div
+          className="flex items-center"
+          style={{ gap: 8, marginRight: '2px' }}
+        >
           <button
             title="Home"
             onClick={onHome}
-            style={{ padding: '8px 12px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: 4 }}
+            style={{
+              padding: '8px 12px',
+              background: '#6c757d',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
           >
             <FaHome /> Home
           </button>

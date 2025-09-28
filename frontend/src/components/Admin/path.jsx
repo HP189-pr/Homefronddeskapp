@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 
 const KNOWN_KEYS = [
   { key: 'verification.doc_base', label: 'Verification Docs Base Path' },
+  { key: 'migration.doc_base', label: 'Migration Docs Base Path' },
   { key: 'docs.base', label: 'Default Docs Base Path (fallback)' },
 ];
 

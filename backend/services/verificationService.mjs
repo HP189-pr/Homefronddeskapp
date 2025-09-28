@@ -1,6 +1,7 @@
 import { Op, fn, col, where as sqlWhere, literal } from 'sequelize';
 import Verification from '../models/verification.mjs';
-import { Setting } from '../models/setting.mjs';
+import { Setting } from '../models/path.mjs';
+import { findFileRecursive } from '../utils/fsSearch.mjs';
 
 function twoDigitYear(d = new Date()) {
   return String(d.getFullYear()).slice(-2);
@@ -40,10 +41,22 @@ function joinPath(base, file) {
 
 async function applyDocPathIfMissing(payload) {
   if (!payload.doc_scan_copy && payload.verification_no) {
-    // Try verification-specific base first, then a generic base
+    // If admin configured a base folder for verification, try to FIND the file across year-wise subfolders.
     const base = (await getSetting('verification.doc_base')) || (await getSetting('docs.base'));
-    const file = `${payload.verification_no}.pdf`;
-    payload.doc_scan_copy = base ? joinPath(base, file) : file;
+    const filename = `${payload.verification_no}.pdf`;
+    if (base) {
+      // Try file system search; only set absolute path if actually found.
+      const found = await findFileRecursive(filename, base, { maxDepth: 4 });
+      if (found) {
+        payload.doc_scan_copy = found;
+      } else {
+        // Leave blank if not found
+        payload.doc_scan_copy = '';
+      }
+    } else {
+      // No base configured: leave blank per request
+      payload.doc_scan_copy = '';
+    }
   }
 }
 
