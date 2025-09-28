@@ -3,7 +3,8 @@ import menuActions from './menuActions.jsx';
 
 
 const Topbar = ({ selectedMenuItem }) => {
-  const actions = menuActions[selectedMenuItem]?.() || []; // Call the function to get array, fallback to empty array if missing.
+  const getActions = menuActions[selectedMenuItem];
+  const actions = typeof getActions === 'function' ? getActions() : [];
 
   return (
     <div className="bg-gray-100 shadow-md p-3 flex items-center gap-4 min-h-[5rem]">

@@ -1,0 +1,18 @@
+{
+  "watch": [
+    "server.mjs",
+    "app.mjs",
+    "routes",
+    "controllers",
+    "services",
+    "models",
+    "middleware"
+  ],
+  "ext": "mjs,js,json",
+  "ignore": [
+    "../frontend/**",
+    "node_modules/**",
+    "**/*.test.*",
+    "**/*.spec.*"
+  ]
+}

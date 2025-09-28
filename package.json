@@ -1,0 +1,1 @@
+{"devDependencies":{"concurrently":"^9.2.1"},"scripts":{"dev":"concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\""},"dependencies":{"@mui/x-data-grid":"^8.11.3"}}

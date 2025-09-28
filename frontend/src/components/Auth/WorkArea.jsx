@@ -1,44 +1,74 @@
+// src/components/Layout/WorkArea.jsx
 import React, { useState, useEffect } from 'react';
-import Transcript from '../pages/Transcript';
-import Migration from '../pages/Migration';
-import Provisional from '../pages/Provisional';
+
+import Transcript from '../pages/verification';
+import Migration from '../pages/migration';
+import Provisional from '../pages/provisional';
 import Degree from '../pages/Degree';
-import InstitutionalVerification from '../pages/InstitutionalVerification';
-import AdminDashboard from './AdminDashboard';
+import InstitutionalVerification from '../pages/InstVerification';
+import DocumentReceive from '../pages/DocumentReceive';
+import Enrollment from '../pages/Enrollment';
+import AdminDashboard from '../Admin/AdminDashboard';
+import AdminPanelAccess from '../Admin/AdminPanelAccess';
 import ProfileUpdate from './ProfileUpdate';
-
-import menuActions from '../Menu/menuActions';
 import PropTypes from 'prop-types';
+import { useAuth } from '../../hooks/useAuth';
+import SimpleBoundary from '../common/SimpleBoundary';
 
-const WorkArea = ({ selectedSubmenu }) => {
-  const [topbarOptions, setTopbarOptions] = useState([]);
-  const [selectedTopbarMenu, setSelectedTopbarMenu] = useState(null); // Store selected menu
+const WorkArea = ({ selectedMenuItem }) => {
+  const { user } = useAuth();
+  const [adminUnlocked, setAdminUnlocked] = useState(false);
 
-  // Update topbar options when submenu changes
+  // On mount, if a recent admin verification exists in sessionStorage, auto-unlock
   useEffect(() => {
-    if (selectedSubmenu && menuActions[selectedSubmenu]) {
-      setTopbarOptions(menuActions[selectedSubmenu]());
-      setSelectedTopbarMenu(null); // Reset when submenu changes
-    } else {
-      setTopbarOptions([]);
+    try {
+      const v = sessionStorage.getItem('admin_verified');
+      const ts = parseInt(sessionStorage.getItem('admin_verified_ts') || '0', 10);
+      if (v === 'true' && ts && (Date.now() - ts) < 30 * 60 * 1000) {
+        setAdminUnlocked(true);
+      }
+    } catch (e) {
+      // ignore
     }
-  }, [selectedSubmenu]);
+  }, []);
 
-  // Function to render the selected page
+  // Global topbar removed: each page renders its own actions (Home/Add/Search/etc.)
+
   const renderPage = () => {
-    switch (selectedSubmenu) {
+    switch (selectedMenuItem) {
       case '📜 Transcript':
         return <Transcript />;
-      case '📑 Migration':
+      case '📑 Migration': // legacy label
+      case '🚀 Migration': // current Sidebar label
         return <Migration />;
-      case '📋 Provisional':
+      case '📋 Provisional': // legacy label
+      case '📄 Provisional': // current Sidebar label
         return <Provisional />;
       case '🏅 Degree':
         return <Degree />;
       case '🏛️ Institutional Verification':
         return <InstitutionalVerification />;
+      case '📥 Document Receive':
+        return <DocumentReceive />;
+      case 'Enrollment':
+        // Let the Enrollment component enforce its own permissions.
+        return (
+          <SimpleBoundary>
+            <Enrollment />
+          </SimpleBoundary>
+        );
       case 'Admin Panel':
-        return <AdminDashboard selectedTopbarMenu={selectedTopbarMenu} />; // ✅ Fixed prop name
+        // backend uses `usertype`; some older records may use `role` — accept either
+        const isAdmin = (user && (user.usertype === 'admin' || user.role === 'admin'));
+        if (!isAdmin) {
+          console.debug('Admin access denied for user:', user);
+          return <h2 style={{ padding: '20px', color: 'red' }}>Access Denied 🚫</h2>;
+        }
+        return adminUnlocked ? (
+          <AdminDashboard />
+        ) : (
+          <AdminPanelAccess onSuccess={() => setAdminUnlocked(true)} />
+        );
       case 'Profile Settings':
         return <ProfileUpdate />;
       default:
@@ -51,44 +81,14 @@ const WorkArea = ({ selectedSubmenu }) => {
   };
 
   return (
-    <div>
-      {/* Topbar Menu */}
-      {topbarOptions.length > 0 && (
-        <div
-          style={{
-            background: '#f5f5f5',
-            padding: '10px',
-            display: 'flex',
-            gap: '10px',
-          }}
-        >
-          {topbarOptions.map((option, index) => (
-            <button
-              key={index}
-              style={{
-                padding: '8px 12px',
-                background:
-                  selectedTopbarMenu === option ? '#0056b3' : '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}
-              onClick={() => setSelectedTopbarMenu(option)} // Set selected menu
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Main Work Area */}
-      <div style={{ padding: '20px' }}>{renderPage()}</div>
+    <div style={{ padding: '20px' }}>
+      {renderPage()}
     </div>
   );
 };
+
 WorkArea.propTypes = {
-  selectedSubmenu: PropTypes.string.isRequired,
+  selectedMenuItem: PropTypes.string,
 };
 
 export default WorkArea;

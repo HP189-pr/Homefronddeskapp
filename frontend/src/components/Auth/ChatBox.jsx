@@ -1,3 +1,4 @@
+//src/components/Auth/ChatBox.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';

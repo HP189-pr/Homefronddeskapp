@@ -11,6 +11,9 @@ backend/dist/
 # Environment files
 .env
 *.env
+# Explicitly ignore backend and frontend env files
+/backend/.env
+/frontend/.env
 
 # Logs
 npm-debug.log*

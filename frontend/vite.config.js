@@ -1,41 +1,43 @@
+// frontend/vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  root: '.', // main directory
+  root: resolve(__dirname, '.'), // frontend is the root for Vite
   build: {
     outDir: resolve(__dirname, './Dist'),
     emptyOutDir: true,
     rollupOptions: {
       input: resolve(__dirname, './index.html'),
-      // removed 'graphql' from externalization — bundle will include only what's needed
-      // external: [] // no externals needed for typical frontend bundles
     },
   },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
+      // Force Emotion + MUI styled engine to resolve from frontend/node_modules
+      '@emotion/styled': resolve(__dirname, './node_modules/@emotion/styled'),
+      '@emotion/react': resolve(__dirname, './node_modules/@emotion/react'),
+      '@mui/styled-engine': resolve(__dirname, './node_modules/@mui/styled-engine'),
     },
   },
   server: {
-    host: '0.0.0.0', // bind to all interfaces so LAN devices can access the dev server
+    host: '0.0.0.0',
     port: 3000,
     open: true,
-    // Proxy GraphQL requests to your backend (adjust target if your backend uses a different host/port)
+    fs: {
+      allow: [
+        resolve(__dirname, '.'),   // frontend
+        resolve(__dirname, '..'),  // project root (g:/frontdeskapp)
+      ],
+    },
     proxy: {
-      '/graphql': {
+      '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
       },
-      // Optionally proxy other API paths, e.g.:
-      // '/api': {
-      //   target: 'http://localhost:5000',
-      //   changeOrigin: true,
-      //   secure: false,
-      // }
     },
   },
 });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { useNavigate } from 'react-router-dom';
+import { useNav } from '../../navigation/NavigationContext';
 import { useAuth } from '../../hooks/useAuth';
 
 const BACKEND_MEDIA_URL = 'http://localhost:5000/media/Profpic/';
@@ -11,18 +11,19 @@ const modules = [
     name: 'Student Module',
     icon: '🎓',
     menu: [
-      '📜 Transcript',
+      'Enrollment',   
+      '📜 Verification',
       '🚀 Migration',
       '📄 Provisional',
       '🏅 Degree',
-      '🏛️ Institutional Verification',
+      '🏛️ Inst-Verification',
     ],
   },
   {
     id: 'office_management',
     name: 'Office Management',
     icon: '🏢',
-    menu: ['📥 Inward', '📤 Outward', '🏖️ Leave Management', '📦 Inventory'],
+    menu: ['📥 Document Receive', '📥 Inward', '📤 Outward', '🏖️ Leave Management', '📦 Inventory'],
   },
   {
     id: 'finance',
@@ -33,7 +34,7 @@ const modules = [
 ];
 
 const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
-  const navigate = useNavigate();
+  const { navigate } = useNav();
   const [selectedModule, setSelectedModule] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const { user, logout, verifyPassword } = useAuth();
@@ -42,7 +43,6 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
   );
 
   useEffect(() => {
-    console.log('User Data:', user); // Debugging line
     if (user?.usrpic) {
       setProfilePic(`${BACKEND_MEDIA_URL}${user.usrpic}`);
     } else {
@@ -61,10 +61,10 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
   };
 
   const handleSecurePageAccess = async (menuItem) => {
-    const isVerified = await verifyPassword();
-    if (isVerified) {
-      setSelectedMenuItem(menuItem);
-    }
+    // Don't prompt here; navigate to the secure page and let the page-level
+    // AdminPanelAccess handle prompting. If session cache shows verified,
+    // WorkArea will auto-unlock.
+    setSelectedMenuItem(menuItem);
   };
 
   const handleMenuClick = (menuItem) => {

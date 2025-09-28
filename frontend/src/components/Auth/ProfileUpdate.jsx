@@ -1,14 +1,11 @@
 // Path: src/components/Auth/ProfileUpdate.jsx
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import PropTypes from 'prop-types';
 import { useAuth } from '../../hooks/useAuth';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
-
 const ProfileUpdate = ({ setWorkArea }) => {
-  const { user, fetchUserProfile } = useAuth();
+  const { user, authFetch } = useAuth();
   const [profile, setProfile] = useState({
     identifier: '',
     first_name: '',
@@ -32,9 +29,7 @@ const ProfileUpdate = ({ setWorkArea }) => {
         phone: user.phone || '',
         address: user.address || '',
         city: user.city || '',
-        usrpic: user.usrpic
-          ? `${API_BASE_URL}/media/Profpic/${user.usrpic}`
-          : '/default-profile.png',
+        usrpic: user.usrpic ? `/media/Profpic/${user.usrpic}` : '/default-profile.png',
         profile_picture_file: null,
       });
     }
@@ -60,7 +55,6 @@ const ProfileUpdate = ({ setWorkArea }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token'); // ✅ match useAuth
     const formData = new FormData();
 
     const appendIfExists = (key, value) => {
@@ -79,21 +73,26 @@ const ProfileUpdate = ({ setWorkArea }) => {
     }
 
     try {
-      await axios.patch(`${API_BASE_URL}/api/profile/`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
+      const res = await authFetch('/api/profile', {
+        method: 'PATCH',
+        body: formData,
       });
-
-      alert('✅ Profile updated successfully!');
-      if (typeof fetchUserProfile === 'function') {
-        await fetchUserProfile();
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Failed to update' }));
+        throw new Error(err.error || 'Failed to update');
       }
-      setWorkArea(null);
+      const payload = await res.json().catch(() => ({}));
+      alert('Profile updated successfully');
+      // Update local stored user if server returned updated user
+      if (payload?.user) {
+        try {
+          localStorage.setItem('user', JSON.stringify(payload.user));
+        } catch {}
+      }
+      if (setWorkArea) setWorkArea(null);
     } catch (error) {
-      console.error('❌ Error updating profile:', error.response?.data || error.message);
-      alert('❌ Failed to update profile.');
+      console.error('Error updating profile:', error.message);
+      alert('Failed to update profile.');
     }
   };
 
@@ -218,7 +217,7 @@ const ProfileUpdate = ({ setWorkArea }) => {
 };
 
 ProfileUpdate.propTypes = {
-  setWorkArea: PropTypes.func.isRequired,
+  setWorkArea: PropTypes.func,
 };
 
 export default ProfileUpdate;

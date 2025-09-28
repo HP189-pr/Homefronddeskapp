@@ -1,7 +1,30 @@
 // src/hooks/useAuth.jsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import jwt_decode from 'jwt-decode';
+// lightweight JWT decoder to avoid bundler import issues (browser-friendly)
+const decodeJwt = (token) => {
+  try {
+    if (!token) return null;
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    // base64url -> base64
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    // pad base64 string
+    const pad = payload.length % 4;
+    const padded = payload + (pad ? '='.repeat(4 - pad) : '');
+    // atob works in browser
+    const str = atob(padded);
+    // decode percent-encoded characters
+    const json = decodeURIComponent(
+      Array.prototype.map
+        .call(str, (c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(json);
+  } catch (e) {
+    return null;
+  }
+};
 
 const AuthContext = createContext();
 
@@ -17,7 +40,7 @@ export const AuthProvider = ({ children }) => {
 
     if (token) {
       try {
-        const decoded = jwt_decode(token);
+        const decoded = decodeJwt(token);
         if (decoded.exp && decoded.exp * 1000 < Date.now()) {
           // token expired
           logout();
@@ -36,18 +59,55 @@ export const AuthProvider = ({ children }) => {
   // Helper to dispatch in-app navigation (matches AppRouter event)
   const navigateToLoginPage = () => {
     try {
-      window.history.pushState({ page: 'login', meta: { from: 'auth-logout' } }, '', window.location.pathname);
-      window.dispatchEvent(new CustomEvent('app:navigate', { detail: { page: 'login', meta: { from: 'auth-logout' } } }));
+      window.history.pushState(
+        { page: 'login', meta: { from: 'auth-logout' } },
+        '',
+        window.location.pathname
+      );
+      window.dispatchEvent(
+        new CustomEvent('app:navigate', {
+          detail: { page: 'login', meta: { from: 'auth-logout' } },
+        })
+      );
     } catch (err) {
       // Fallback: hard redirect
       window.location.href = '/';
     }
   };
 
+  // Cache keys (session-only)
+  const ADMIN_VERIFIED_KEY = 'admin_verified';
+  const ADMIN_VERIFIED_TS_KEY = 'admin_verified_ts';
+  const VERIFY_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
+
+  // Clear cached admin verification on logout
+  const clearAdminVerification = () => {
+    try {
+      sessionStorage.removeItem(ADMIN_VERIFIED_KEY);
+      sessionStorage.removeItem(ADMIN_VERIFIED_TS_KEY);
+    } catch (e) {
+      /* ignore */
+    }
+  };
+
+  /**
+   * authFetch(url, opts)
+   * - wrapper around fetch that attaches Authorization header automatically if token exists
+   */
+  const authFetch = async (url, opts = {}) => {
+    const token = localStorage.getItem('token');
+    const headers = { ...(opts.headers || {}) };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const final = {
+      ...opts,
+      headers,
+      credentials: opts.credentials ?? 'same-origin',
+    };
+    return fetch(url, final);
+  };
+
   /**
    * login(identifier, usrpassword)
-   * - identifier is normalized to lower-case (case-insensitive rule)
-   * - POST /api/login expected response { token, user }
    */
   const login = async (identifier, usrpassword) => {
     setLoading(true);
@@ -60,15 +120,19 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const res = await fetch('/api/login', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: id, usrpassword: password }),
+        body: JSON.stringify({
+          identifier: id,
+          usrpassword: password,
+          userid: id,
+          password,
+        }),
       });
 
       if (!res.ok) {
-        // 401 or other http errors
         console.error('Login failed status:', res.status);
         setIsAuthenticated(false);
         setUser(null);
@@ -78,7 +142,6 @@ export const AuthProvider = ({ children }) => {
 
       const payload = await res.json();
 
-      // Expecting payload: { token: '...', user: { ... } }
       if (payload?.token && payload?.user) {
         localStorage.setItem('token', payload.token);
         localStorage.setItem('user', JSON.stringify(payload.user));
@@ -88,7 +151,6 @@ export const AuthProvider = ({ children }) => {
         return true;
       }
 
-      // Unexpected payload
       setIsAuthenticated(false);
       setUser(null);
       setLoading(false);
@@ -104,38 +166,57 @@ export const AuthProvider = ({ children }) => {
 
   /**
    * logout()
-   * - clears local storage and sends the user back to the login page using in-app navigation
    */
   const logout = async () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    clearAdminVerification();
     setIsAuthenticated(false);
     setUser(null);
 
-    // Optionally notify backend (if you have a logout endpoint)
     try {
-      // Best-effort notify (no await blocking)
-      fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
+      fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+      }).catch(() => {});
     } catch (e) {
       // ignore
     }
 
-    // Navigate to the login page using AppRouter's custom event so SPA state remains consistent
     navigateToLoginPage();
   };
 
   /**
+   * fetchUserProfile()
+   * - GET /api/profile to refresh user and profile info
+   */
+  const fetchUserProfile = async () => {
+    try {
+      const res = await authFetch('/api/profile', {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+      });
+      if (!res.ok) return null;
+      const payload = await res.json();
+      if (payload?.user) {
+        setUser(payload.user);
+        try { localStorage.setItem('user', JSON.stringify(payload.user)); } catch {}
+      }
+      return payload;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  /**
    * fetchUsers()
-   * - GET /api/users -> { users: [...] }
-   * - returns [] if not authenticated or on error
    */
   const fetchUsers = async () => {
     if (!isAuthenticated) return [];
 
     try {
-      const res = await fetch('/api/users', {
+      const res = await authFetch('/api/users', {
         method: 'GET',
-        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
       });
 
@@ -153,39 +234,54 @@ export const AuthProvider = ({ children }) => {
 
   /**
    * verifyPassword()
-   * - prompts the user for their password and sends it to POST /api/verify-password
-   * - expects { ok: true } or similar
-   * - returns boolean
+   * - Requires caller to pass a password string
+   * - Checks sessionStorage cache
+   * - Calls backend POST /api/auth/verify-password
    */
-  const verifyPassword = async () => {
-    // It's better UX to use a modal; for now keep the prompt to match previous behaviour
-    const usrpassword = prompt('Enter your password to proceed:');
-    if (!usrpassword) return false;
-
+  const verifyPassword = async (usrpassword) => {
     try {
-      const res = await fetch('/api/verify-password', {
+      if (!usrpassword || typeof usrpassword !== 'string') return false;
+      const trimmed = usrpassword.trim();
+      if (!trimmed) return false;
+
+      // check cache
+      try {
+        const cached = sessionStorage.getItem(ADMIN_VERIFIED_KEY);
+        const ts = Number(sessionStorage.getItem(ADMIN_VERIFIED_TS_KEY) || '0');
+        if (cached === 'true' && Date.now() - ts < VERIFY_EXPIRY_MS) {
+          return true;
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      const res = await authFetch('/api/auth/verify-password', {
         method: 'POST',
-        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ usrpassword }),
+        body: JSON.stringify({ usrpassword: trimmed, password: trimmed }),
       });
 
       if (!res.ok) {
-        alert('Incorrect password!');
+        if (res.status >= 400 && res.status < 500) return false;
+        console.error('verifyPassword server error', res.status);
         return false;
       }
 
       const payload = await res.json();
-      // Accept several shapes: { ok: true }, { verified: true }, { success: true }
-      if (payload?.ok || payload?.verified || payload?.success) {
-        return true;
+      const ok = !!(payload?.ok || payload?.verified || payload?.success);
+
+      if (ok) {
+        try {
+          sessionStorage.setItem(ADMIN_VERIFIED_KEY, 'true');
+          sessionStorage.setItem(ADMIN_VERIFIED_TS_KEY, String(Date.now()));
+        } catch (e) {
+          /* ignore */
+        }
       }
 
-      alert('Incorrect password!');
-      return false;
+      return ok;
     } catch (err) {
       console.error('verifyPassword error', err);
-      alert('Error verifying password!');
       return false;
     }
   };
@@ -200,6 +296,8 @@ export const AuthProvider = ({ children }) => {
         logout,
         fetchUsers,
         verifyPassword,
+        authFetch, // expose for convenience
+        fetchUserProfile,
       }}
     >
       {children}

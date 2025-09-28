@@ -4,6 +4,8 @@ const menuActions = {
   '📋 Provisional': () => ['➕', '🔍'],
   '🏅 Degree': () => ['➕', '🔍'],
   '🏛️ Institutional Verification': () => ['🔍'],
+  'Enrollment': () => ['Add', 'View', 'Edit', 'Search'],
+
 
   '📥 Inward': () => ['➕', '✏️', '🔍'],
   '📤 Outward': () => ['➕', '✏️', '🔍'],
@@ -17,8 +19,8 @@ const menuActions = {
   'Admin Panel': () => [
     'User Management',
     'User Rights',
-    'Add College',
-    'Add Course',
+    'Institute Management',
+    'Course Management',
   ],
 };
 

@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import Login from './components/Auth/Login';
 import Sidebar from './components/Menu/Sidebar';
 import WorkArea from './components/Auth/WorkArea';
+import Dashboard from './components/Auth/Dashboard';
 
 // ProtectedRoute as a component inside AppRouter to use inline navigate
 const ProtectedRoute = ({ children, navigate }) => {
@@ -27,7 +28,7 @@ ProtectedRoute.propTypes = {
 };
 
 // Layout stays same
-const Layout = ({ setSelectedMenuItem, isSidebarOpen, setSidebarOpen }) => (
+const Layout = ({ setSelectedMenuItem, isSidebarOpen, setSidebarOpen, selectedMenuItem }) => (
   <div className="flex">
     <Sidebar
       isOpen={isSidebarOpen}
@@ -35,7 +36,7 @@ const Layout = ({ setSelectedMenuItem, isSidebarOpen, setSidebarOpen }) => (
       setSelectedMenuItem={setSelectedMenuItem}
     />
     <div className="flex-1">
-      <WorkArea selectedSubmenu={setSelectedMenuItem} />
+      <WorkArea selectedMenuItem={selectedMenuItem} />
     </div>
   </div>
 );
@@ -43,7 +44,7 @@ const Layout = ({ setSelectedMenuItem, isSidebarOpen, setSidebarOpen }) => (
 // Map page IDs to components. Use functions for components to pass navigate prop.
 const PAGES = {
   login: (props) => <Login {...props} />,
-  dashboard: (props) => <Layout {...props} />,
+  dashboard: (props) => <Dashboard {...props} />,
   // add others like 'student','transcript' mapping to components as needed
 };
 
@@ -71,9 +72,19 @@ export default function AppRouter() {
     };
     window.addEventListener('app:navigate', navHandler);
 
+    // allow pages to send user to home (dashboard + clear selection)
+    const homeHandler = () => {
+      setSelectedMenuItem(null);
+      setPage('dashboard');
+      window.history.pushState({ page: 'dashboard', ts: Date.now() }, '', window.location.pathname);
+      window.dispatchEvent(new CustomEvent('app:navigate', { detail: { page: 'dashboard' } }));
+    };
+    window.addEventListener('app:home', homeHandler);
+
     return () => {
       detach();
       window.removeEventListener('app:navigate', navHandler);
+      window.removeEventListener('app:home', homeHandler);
     };
   }, [initial]);
 
@@ -93,6 +104,7 @@ export default function AppRouter() {
     setSelectedMenuItem,
     isSidebarOpen,
     setSidebarOpen,
+    selectedMenuItem,
   };
 
   return (
