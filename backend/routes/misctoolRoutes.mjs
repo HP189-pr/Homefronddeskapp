@@ -33,11 +33,10 @@ const storage = multer.diskStorage({
 });
 const fileFilter = (req, file, cb) => {
   const ok = [
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
   ];
-  if (ok.includes(file.mimetype)) cb(null, true);
-  else cb(new Error('Only Excel files are allowed'));
+  if (ok.includes(file.mimetype) || path.extname(file.originalname).toLowerCase() === '.xlsx') cb(null, true);
+  else cb(new Error('Only .xlsx files are allowed'));
 };
 const upload = multer({ storage, fileFilter, limits: { fileSize: 10 * 1024 * 1024 } });
 

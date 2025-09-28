@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FaPlus, FaSearch, FaSave, FaFileCsv, FaEdit } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaSave, FaFileCsv, FaEdit, FaFileUpload, FaEye } from 'react-icons/fa';
+import axios from 'axios';
+import { saveAs } from 'file-saver';
 import { useAuth } from '../../hooks/useAuth';
 import { formatDateDMY } from '../../utils/date';
 import DateInputDMY from '../common/DateInputDMY';
@@ -44,6 +46,13 @@ export default function Verification() {
   const [filterStatus, setFilterStatus] = useState('');
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
+
+  // Excel upload preview/import state
+  const [excelFile, setExcelFile] = useState(null);
+  const [excelPreview, setExcelPreview] = useState(null); // response from preview API
+  const [excelBusy, setExcelBusy] = useState(false);
+  const [excelError, setExcelError] = useState('');
+  const [excelResult, setExcelResult] = useState(null); // response from confirm API
 
   const canSave = useMemo(() => !!form.doc_rec_date && !!form.studentname, [form]);
 
@@ -154,6 +163,113 @@ export default function Verification() {
     downloadCsv(rows);
   };
 
+  // --- Excel upload preview/import logic ---
+  const startExcel = () => { setPanelMode('excel'); setPanelOpen(true); };
+  const onExcelSelect = (e) => {
+    setExcelFile(e.target.files?.[0] || null);
+    setExcelPreview(null);
+    setExcelResult(null);
+    setExcelError('');
+  };
+  const doExcelPreview = async () => {
+    if (!excelFile) return;
+    setExcelBusy(true); setExcelError(''); setExcelResult(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', excelFile);
+      fd.append('table', 'Verification');
+      const headers = {};
+      const token = localStorage.getItem('token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await axios.post('/api/misc/upload-excel/preview', fd, {
+        headers: { ...headers, 'Content-Type': 'multipart/form-data' },
+      });
+      setExcelPreview(res.data);
+    } catch (e) {
+      setExcelError(e?.response?.data?.error || e.message || 'Preview failed');
+    } finally {
+      setExcelBusy(false);
+    }
+  };
+  const doExcelConfirm = async () => {
+    if (!excelPreview?.tempFileId) return;
+    setExcelBusy(true); setExcelError('');
+    try {
+      const body = { tempFileId: excelPreview.tempFileId, table: 'Verification' };
+      const headers = { 'Content-Type': 'application/json' };
+      const token = localStorage.getItem('token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await axios.post('/api/misc/upload-excel/confirm', body, { headers });
+      setExcelResult(res.data);
+      // reload listing after import
+      await load();
+    } catch (e) {
+      setExcelError(e?.response?.data?.error || e.message || 'Import failed');
+    } finally {
+      setExcelBusy(false);
+    }
+  };
+  const downloadImportLog = async () => {
+    if (!excelResult?.logUrl) return;
+    try {
+      const headers = {};
+      const token = localStorage.getItem('token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await axios.get(excelResult.logUrl, { responseType: 'blob', headers });
+      const type = res.headers['content-type'] || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      saveAs(new Blob([res.data], { type }), 'verification-import-log.xlsx');
+    } catch (e) {
+      setExcelError('Failed to download log');
+    }
+  };
+
+  // --- Report: generate PDF (demo) ---
+  const onReportPdf = async () => {
+    const rows = await load();
+    // Build a simple list with fixed baseline; 12pt ~ 4.23mm line height; use 6mm spacing
+    const elements = [];
+    const headerY = 20; // mm
+    elements.push({ type: 'text', xMm: 10, yMm: headerY, text: 'Verification Report', fontSize: 14 });
+    let y = headerY + 10; // start 10mm below header
+    const max = Math.min(rows.length, 30);
+    for (let i = 0; i < max; i++) {
+      const r = rows[i];
+      const line = `${(r.doc_rec_date || '').slice(0,10)}  ${r.verification_no || '-'}  ${r.enrollment_no || ''}  ${r.studentname || ''}`;
+      elements.push({ type: 'text', xMm: 10, yMm: y, text: line, fontSize: 9 });
+      y += 6; // 6mm per line
+      if (y > 280) break; // page limit simple guard
+    }
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      const token = localStorage.getItem('token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await axios.post('/api/misc/export/pdf', { widthMm: 210, heightMm: 297, inline: true, filename: 'verification-report.pdf', elements }, { responseType: 'blob', headers });
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (e) {
+      alert('PDF generation failed');
+    }
+  };
+
+  // --- View scan copy inline ---
+  const onViewScan = async (row) => {
+    if (!row?.id) return;
+    try {
+      const headers = {};
+      const token = localStorage.getItem('token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await axios.get(`/api/files/verification/${row.id}`, { responseType: 'blob', headers });
+      const blob = new Blob([res.data], { type: res.headers['content-type'] || 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (e) {
+      alert('Unable to open scan copy');
+    }
+  };
+
   // TopBar actions handlers
   const startAdd = () => { onReset(); setPanelMode('addEdit'); setPanelOpen(true); };
   const startSearch = () => { setPanelMode('search'); setPanelOpen(true); };
@@ -187,6 +303,7 @@ export default function Verification() {
           { key: 'add', label: 'Transcript Add', onClick: startAdd, icon: <FaPlus />, variant: 'success' },
           { key: 'search', label: 'Search', onClick: startSearch, icon: <FaSearch />, variant: 'primary' },
           { key: 'edit', label: 'Edit', onClick: () => { setPanelMode('addEdit'); setPanelOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }, icon: <FaEdit />, variant: 'warning', disabled: !editingId },
+          { key: 'excel', label: 'Excel Upload', onClick: startExcel, icon: <FaFileUpload />, variant: 'secondary' },
           { key: 'report', label: 'Report', onClick: startReport, icon: <FaFileCsv />, variant: 'info' },
         ]}
       />
@@ -319,22 +436,29 @@ export default function Verification() {
             </>
           )}
 
-          {(panelMode === 'search' || panelMode === 'report') && (
+          {(panelMode === 'search' || panelMode === 'report' || panelMode === 'excel') && (
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px,1fr))', gap: 6 }}>
-                <div>
+                {panelMode !== 'excel' && (
+                  <div>
                   <label>Date</label>
                   <DateInputDMY name="filterDate" value={filterDate} onChange={(e)=> setFilterDate(e.target.value)} className="border p-2 w-full" />
-                </div>
-                <div>
+                  </div>
+                )}
+                {panelMode !== 'excel' && (
+                  <div>
                   <label>Enrollment</label>
                   <input type="text" value={filterEnrollment} onChange={(e)=> setFilterEnrollment(e.target.value)} className="border p-2 w-full" />
-                </div>
-                <div>
+                  </div>
+                )}
+                {panelMode !== 'excel' && (
+                  <div>
                   <label>Student Name</label>
                   <input type="text" value={filterName} onChange={(e)=> setFilterName(e.target.value)} className="border p-2 w-full" />
-                </div>
-                <div>
+                  </div>
+                )}
+                {panelMode !== 'excel' && (
+                  <div>
                   <label>Status</label>
                   <select value={filterStatus} onChange={(e)=> setFilterStatus(e.target.value)} className="border p-2 w-full">
                     <option value="">All</option>
@@ -343,7 +467,19 @@ export default function Verification() {
                     <option value="done">done</option>
                     <option value="cancel">cancel</option>
                   </select>
-                </div>
+                  </div>
+                )}
+                {panelMode === 'excel' && (
+                  <>
+                    <div style={{ gridColumn: 'auto / span 2' }}>
+                      <label>Choose Excel (.xlsx)</label>
+                      <input type="file" accept=".xlsx" onChange={onExcelSelect} className="border p-2 w-full" />
+                    </div>
+                    <div style={{ gridColumn: 'auto / span 2' }} className="text-sm text-gray-600">
+                      Template expects headers matching Verification columns (case/space-insensitive). Required fields must be present.
+                    </div>
+                  </>
+                )}
               </div>
               <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {panelMode === 'search' && (
@@ -356,7 +492,65 @@ export default function Verification() {
                     <FaFileCsv /> Download CSV
                   </button>
                 )}
+                {panelMode === 'report' && (
+                  <button onClick={onReportPdf} style={{ padding: '8px 12px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: 4 }}>
+                    Open PDF
+                  </button>
+                )}
+                {panelMode === 'excel' && (
+                  <>
+                    <button disabled={!excelFile || excelBusy} onClick={doExcelPreview} style={{ padding: '8px 12px', background: '#0d6efd', color: '#fff', border: 'none', borderRadius: 4, opacity: !excelFile || excelBusy ? 0.7 : 1 }}>
+                      Preview
+                    </button>
+                    {excelPreview && (
+                      <button disabled={excelBusy} onClick={doExcelConfirm} style={{ padding: '8px 12px', background: '#198754', color: '#fff', border: 'none', borderRadius: 4 }}>
+                        Submit Import
+                      </button>
+                    )}
+                    {excelResult?.logUrl && (
+                      <button onClick={downloadImportLog} style={{ padding: '8px 12px', background: '#6610f2', color: '#fff', border: 'none', borderRadius: 4 }}>
+                        Download Log
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
+
+              {panelMode === 'excel' && (
+                <div className="mt-3">
+                  {excelError && <div className="text-red-600 text-sm mb-2">{excelError}</div>}
+                  {excelPreview && (
+                    <div className="border rounded p-2">
+                      <div className="text-sm">Rows: {excelPreview.totalRows}, Missing: {excelPreview.missingColumns?.join(', ') || 'none'}, Extra: {excelPreview.extraColumns?.join(', ') || 'none'}</div>
+                      <div className="overflow-auto mt-2">
+                        <table className="min-w-full text-sm border">
+                          <thead>
+                            <tr>
+                              {excelPreview.mappedColumns?.map((h) => (
+                                <th key={h} className="border px-2 py-1 text-left bg-gray-50">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {excelPreview.previewRows?.map((row, idx) => (
+                              <tr key={idx}>
+                                {excelPreview.mappedColumns?.map((h) => (
+                                  <td key={h} className="border px-2 py-1">{String(row[h] ?? '')}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                  {excelResult && (
+                    <div className="border rounded p-2 mt-2 text-sm">
+                      <div>Inserted: {excelResult.inserted}, Failed: {excelResult.failed}, Total: {excelResult.total}</div>
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
@@ -383,7 +577,7 @@ export default function Verification() {
               <th className="px-3 py-2 text-left">ECA Remark</th>
               <th className="px-3 py-2 text-left">Mail-Date</th>
               <th className="px-3 py-2 text-left">Fees Rec</th>
-              <th className="px-3 py-2 text-left">Filepath</th>
+              <th className="px-3 py-2 text-left">Scan</th>
               
             </tr>
           </thead>
@@ -413,7 +607,13 @@ export default function Verification() {
                 <td className="px-3 py-2">{row.eca_remark || '-'}</td>
                 <td className="px-3 py-2">{row.eca_mail_date ? formatDateDMY(row.eca_mail_date) : '-'}</td>
                 <td className="px-3 py-2">{row.fees_rec_no || '-'}</td>
-                <td className="px-3 py-2">{row.doc_scan_copy || '-'}</td>
+                <td className="px-3 py-2">
+                  {row.doc_scan_copy ? (
+                    <button onClick={(e) => { e.stopPropagation(); onViewScan(row); }} className="text-blue-600 hover:underline flex items-center gap-1">
+                      <FaEye /> View
+                    </button>
+                  ) : '-'}
+                </td>
               </tr>
             ))}
             {!items.length && (
