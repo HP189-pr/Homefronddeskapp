@@ -20,7 +20,10 @@ export default function Upload() {
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
   const [progress, setProgress] = useState(null); // { percent, processed, total, done, error, logUrl }
+  const [previewLimit, setPreviewLimit] = useState(200);
+  const [previewOffset, setPreviewOffset] = useState(0);
   const pollTimer = useRef(null);
+  const virtRef = useRef(null);
 
   const authHeaders = () => {
     const token = localStorage.getItem('token');
@@ -43,6 +46,7 @@ export default function Upload() {
   const onSelect = (e) => {
     setFile(e.target.files?.[0] || null);
     setPreview(null); setResult(null); setError(''); setProgress(null);
+    setPreviewOffset(0);
   };
 
   const doPreview = async () => {
@@ -53,6 +57,8 @@ export default function Upload() {
       fd.append('file', file);
       fd.append('table', service);
       if (sheetName) fd.append('sheetName', sheetName);
+      if (previewLimit) fd.append('previewLimit', String(previewLimit));
+      if (previewOffset) fd.append('previewOffset', String(previewOffset));
       const res = await axios.post('/api/misc/upload-excel/preview', fd, {
         headers: { ...authHeaders(), 'Content-Type': 'multipart/form-data' },
       });
@@ -63,6 +69,14 @@ export default function Upload() {
   const expected = e?.response?.data?.expectedColumns;
   setError(expected ? `${msg}. Expected: ${expected.join(', ')}` : msg);
     } finally { setBusy(false); }
+  };
+
+  const loadMorePreview = async () => {
+    if (!file) return;
+    const nextOffset = (preview?.nextOffset ?? 0);
+    if (nextOffset >= (preview?.totalRows ?? 0)) return;
+    setPreviewOffset(nextOffset);
+    await doPreview();
   };
 
   const doConfirm = async () => {
@@ -79,6 +93,18 @@ export default function Upload() {
     } catch (e) {
       setError(e?.response?.data?.error || e.message || 'Import failed');
     } finally { setBusy(false); stopPolling(); }
+  };
+
+  const stopUpload = async () => {
+    try {
+      const id = preview?.tempFileId;
+      if (!id) return;
+      await axios.post(`/api/misc/upload-excel/cancel/${encodeURIComponent(id)}`, {}, { headers: authHeaders() });
+      // Immediately fetch progress to update UI with cancelRequested flag
+      await fetchProgress(id);
+    } catch (_) {
+      // ignore
+    }
   };
 
   const downloadLog = async () => {
@@ -148,6 +174,12 @@ export default function Upload() {
           <div className="flex items-center gap-2">
             <CircularProgress variant="determinate" value={progress.percent || 0} size={24} />
             <span className="text-xs text-gray-700">{progress.percent || 0}%</span>
+            {!progress.done && (
+              <button onClick={stopUpload} className="bg-red-600 text-white rounded px-2 py-0.5 text-xs">Stop</button>
+            )}
+            {progress.canceled && (
+              <span className="text-xs text-red-700">Canceled</span>
+            )}
           </div>
         )}
         {(result?.logUrl || progress?.logUrl) && (
@@ -159,27 +191,31 @@ export default function Upload() {
 
       {preview && (
         <div className="border rounded p-3">
-          <div className="text-sm">Service: <b>{service}</b>, Sheet: <b>{preview.sheetName}</b>, Rows: {preview.totalRows}</div>
+          <div className="text-sm flex flex-wrap gap-3 items-center">
+            <span>Service: <b>{service}</b></span>
+            <span>Sheet: <b>{preview.sheetName}</b></span>
+            <span>Rows: {preview.totalRows}</span>
+            <span>Showing: {preview.previewRows?.length || 0} of {preview.totalRows}</span>
+            {preview.hasMore && (
+              <button onClick={loadMorePreview} className="bg-gray-200 border rounded px-2 py-0.5 text-xs">Load next {previewLimit}</button>
+            )}
+          </div>
           <div className="text-sm">Missing: {preview.missingColumns?.join(', ') || 'none'} | Extra: {preview.extraColumns?.join(', ') || 'none'}</div>
-          <div className="overflow-auto mt-2">
-            <table className="min-w-full text-sm border">
-              <thead>
-                <tr>
-                  {preview.mappedColumns?.map((h) => (
-                    <th key={h} className="border px-2 py-1 text-left bg-gray-50">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {preview.previewRows?.map((row, idx) => (
-                  <tr key={idx}>
-                    {preview.mappedColumns?.map((h) => (
-                      <td key={h} className="border px-2 py-1">{String(row[h] ?? '')}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="mt-3">
+            {/* Header grid */}
+            <div className="bg-gray-50 border rounded-t" style={{ display: 'grid', gridTemplateColumns: `repeat(${preview.mappedColumns?.length || 0}, minmax(100px, 1fr))` }}>
+              {preview.mappedColumns?.map((h) => (
+                <div key={h} className="border-r last:border-r-0 px-1 py-0.5 font-medium text-xs">{h}</div>
+              ))}
+            </div>
+            {/* Virtualized rows */}
+            <VirtualizedRows
+              ref={virtRef}
+              rows={preview.previewRows || []}
+              cols={preview.mappedColumns || []}
+              height={420}
+              rowHeight={28}
+            />
           </div>
         </div>
       )}
@@ -222,3 +258,47 @@ export default function Upload() {
     </div>
   );
 }
+
+// Virtualized row renderer for large datasets (no external deps)
+const VirtualizedRows = React.forwardRef(function VirtualizedRows(props, ref) {
+  const { rows, cols, height = 420, rowHeight = 36 } = props;
+  const containerRef = useRef(null);
+  React.useImperativeHandle(ref, () => ({ el: containerRef.current }));
+  const [scrollTop, setScrollTop] = useState(0);
+
+  const total = rows.length;
+  const viewportCount = Math.ceil(height / rowHeight);
+  const overscan = 8;
+  const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
+  const endIndex = Math.min(total, startIndex + viewportCount + overscan * 2);
+  const items = [];
+  for (let i = startIndex; i < endIndex; i++) items.push({ index: i, data: rows[i] });
+
+  return (
+    <div
+      ref={containerRef}
+      className="border border-t-0 rounded-b relative overflow-auto"
+      style={{ height }}
+      onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+    >
+      <div style={{ height: total * rowHeight, position: 'relative' }}>
+        {items.map(({ index, data }) => (
+          <div
+            key={index}
+            style={{ position: 'absolute', top: index * rowHeight, left: 0, right: 0, height: rowHeight, display: 'grid', gridTemplateColumns: `repeat(${cols.length}, minmax(100px, 1fr))` }}
+            className="border-b last:border-b-0 text-xs"
+          >
+            {cols.map((h) => {
+              const val = String(data?.[h] ?? '');
+              return (
+                <div key={h} className="px-1 py-0.5 whitespace-nowrap overflow-hidden text-ellipsis" title={val}>
+                  {val}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+});

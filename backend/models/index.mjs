@@ -16,6 +16,7 @@ import { CourseSub } from '../models/course_sub.mjs';
 import { UserProfile } from '../models/userProfile.mjs';
 import { Verification } from '../models/verification.mjs';
 import { Degree } from '../models/degree.mjs';
+import { Enrollment } from '../models/enrollment.mjs';
 import { MigrationRequest } from '../models/migration_request.mjs';
 import { ProvisionalRequest } from '../models/provisional_request.mjs';
 import { InstitutionalVerification } from '../models/institutional_verification.mjs';
@@ -34,6 +35,7 @@ const models = {
   UserProfile,
   Verification,
   Degree,
+  Enrollment,
   MigrationRequest,
   ProvisionalRequest,
   InstitutionalVerification,

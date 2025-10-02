@@ -10,26 +10,26 @@ export const Enrollment = sequelize.define('Enrollment', {
   },
   enrollment_no: {
     type: DataTypes.STRING,
-    allowNull: true,
+    allowNull: false,
   },
   student_name: {
     type: DataTypes.STRING,
-    allowNull: true,
+    allowNull: false,
   },
   institute_id: {
     type: DataTypes.INTEGER,
-    allowNull: true,
+    allowNull: false,
   },
   maincourse_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
+    type: DataTypes.STRING,
+    allowNull: false,
   },
   subcourse_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
+    type: DataTypes.STRING,
+    allowNull: false,
   },
   batch: {
-    type: DataTypes.STRING,
+    type: DataTypes.INTEGER,
     allowNull: true,
   },
   admission_date: {

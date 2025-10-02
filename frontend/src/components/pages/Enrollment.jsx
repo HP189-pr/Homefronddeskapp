@@ -172,9 +172,10 @@ export default function Enrollments() {
     setLoading(true);
     try {
       if (mode === "single" && q) {
-        const rec = await api(`/api/enrollments?enrollment_no=${encodeURIComponent(q)}`);
-        setRows(rec ? [rec] : []);
-        setCount(rec ? 1 : 0);
+        // Unified lookup: search by enrollment_no (exact, case-insensitive) OR student_name (contains, case-insensitive)
+        const res = await api(`/api/enrollments?q=${encodeURIComponent(q)}&limit=50`);
+        setRows(res?.rows || []);
+        setCount(res?.count || (res?.rows ? res.rows.length : 0));
       } else {
         const params = new URLSearchParams();
         if (Array.isArray(filters.institute_id) && filters.institute_id.length)
@@ -277,7 +278,14 @@ export default function Enrollments() {
 
           {mode === "single" ? (
             <>
-              <TextField label="Enrollment No" size="small" value={q} onChange={e => setQ(e.target.value)} />
+              <TextField
+                label="Enrollment No or Name"
+                placeholder="Type enrollment number or student name"
+                size="small"
+                value={q}
+                onChange={e => setQ(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') fetchList(); }}
+              />
               <Button variant="contained" onClick={fetchList}>Lookup</Button>
             </>
           ) : (

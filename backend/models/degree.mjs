@@ -14,11 +14,11 @@ export const Degree = sequelize.define('Degree', {
 	},
 	enrollment_no: {
 		type: DataTypes.STRING,
-		allowNull: true,
+		allowNull: false,
 	},
 	student_name_dg: {
 		type: DataTypes.STRING,
-		allowNull: true,
+		allowNull: false,
 	},
 	dg_address: {
 		type: DataTypes.TEXT,
@@ -66,7 +66,7 @@ export const Degree = sequelize.define('Degree', {
 	},
 	convocation_no: {
 		type: DataTypes.STRING,
-		allowNull: true,
+		allowNull: false,
 	},
 }, {
 	tableName: 'degree',

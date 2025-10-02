@@ -17,6 +17,10 @@ import {
   viewVerificationPdf,
   sampleExcel,
   getUploadProgress,
+  cancelUpload,
+  checkDegreeEnrollmentDuplicates,
+  pruneDegreeEnrollmentDuplicates,
+  pruneDegreeExactDuplicates,
 } from '../controllers/misctoolcontroller.mjs';
 
 const router = express.Router();
@@ -57,6 +61,7 @@ router.get('/birthdays/upcoming', getUpcomingBirthdays);
 router.post('/misc/upload-excel/preview', upload.single('file'), previewExcel);
 router.post('/misc/upload-excel/confirm', confirmExcel);
 router.get('/misc/upload-excel/status/:id', getUploadProgress);
+router.post('/misc/upload-excel/cancel/:id', cancelUpload);
 
 // PDF generation (precise mm layout). Accepts body with widthMm, heightMm, elements[]
 router.post('/misc/export/pdf', exportPdf);
@@ -66,5 +71,12 @@ router.get('/files/verification/:id', viewVerificationPdf);
 
 // Sample Excel by model
 router.get('/misc/sample-excel', sampleExcel);
+
+// Degree duplicate enrollment_no report (query: ?normalized=true|false&format=xlsx|json)
+router.get('/misc/degree/duplicates/enrollment', checkDegreeEnrollmentDuplicates);
+// Prune duplicate Degree enrollment_no by deleting rows with null dg_sr_no (query: ?normalized=true|false&dryRun=false&keepOne=true)
+router.post('/misc/degree/duplicates/enrollment/prune', pruneDegreeEnrollmentDuplicates);
+// Prune duplicates where name+enrollment+convocation all match (query: ?normalized=true|false&dryRun=false&keepOne=true)
+router.post('/misc/degree/duplicates/triple/prune', pruneDegreeExactDuplicates);
 
 export default router;
