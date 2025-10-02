@@ -48,7 +48,8 @@ const getModelColumns = (mdl) => {
   return cols;
 };
 
-const normalizeHeader = (h) => String(h || '').trim().toLowerCase().replace(/\s+|_/g, '');
+// Normalize a header string to a canonical key: lowercase alphanumeric only
+const normalizeHeader = (h) => String(h || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 
 // Aliases to make loose header matching friendlier (normalized keys -> model column)
 const HEADER_ALIASES = {
@@ -58,18 +59,43 @@ const HEADER_ALIASES = {
     ['institute', 'institute_name_dg'],
     ['institutename', 'institute_name_dg'],
     ['institutename_dg', 'institute_name_dg'],
+    ['college', 'institute_name_dg'],
+    ['collegename', 'institute_name_dg'],
     ['address', 'dg_address'],
     ['gender', 'dg_gender'],
     ['class', 'class_obtain'],
+    ['classobtained', 'class_obtain'],
+    ['grade', 'class_obtain'],
     ['language', 'course_language'],
+    ['languageofinstruction', 'course_language'],
     ['seatno', 'seat_last_exam'],
     ['seatnumber', 'seat_last_exam'],
     ['rollno', 'seat_last_exam'],
+    ['seat', 'seat_last_exam'],
     ['examyear', 'last_exam_year'],
+    ['year', 'last_exam_year'],
+    ['exam_year', 'last_exam_year'],
+    ['passingyear', 'last_exam_year'],
     ['exammonth', 'last_exam_month'],
+    ['month', 'last_exam_month'],
+    ['exam_month', 'last_exam_month'],
     ['dgrecno', 'dg_rec_no'],
+    ['recordno', 'dg_rec_no'],
     ['convocation', 'convocation_no'],
+    ['convo', 'convocation_no'],
+    ['convono', 'convocation_no'],
     ['dgsrno', 'dg_sr_no'],
+    ['srno', 'dg_sr_no'],
+    ['serialno', 'dg_sr_no'],
+    ['degree', 'degree_name'],
+    ['course', 'degree_name'],
+    ['coursename', 'degree_name'],
+    ['specialization', 'specialisation'],
+    ['branch', 'specialisation'],
+    ['enrollment', 'enrollment_no'],
+    ['enrollmentno', 'enrollment_no'],
+    ['enrolment', 'enrollment_no'],
+    ['enrolmentno', 'enrollment_no'],
   ]),
 };
 

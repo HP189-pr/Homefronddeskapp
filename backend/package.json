@@ -19,7 +19,8 @@
     "migrate": "sequelize db:migrate",
     "seed": "sequelize db:seed:all",
     "backfill:verifications": "node scripts/backfill-verifications-from-receipts.mjs",
-    "prepare": "husky install || echo husky skipped"
+    "prepare": "husky install || echo husky skipped",
+    "db:align": "node scripts/db-align-constraints.mjs"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
