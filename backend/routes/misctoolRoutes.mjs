@@ -15,6 +15,8 @@ import {
   confirmExcel,
   exportPdf,
   viewVerificationPdf,
+  sampleExcel,
+  getUploadProgress,
 } from '../controllers/misctoolcontroller.mjs';
 
 const router = express.Router();
@@ -54,11 +56,15 @@ router.get('/birthdays/upcoming', getUpcomingBirthdays);
 // Excel preview and confirm
 router.post('/misc/upload-excel/preview', upload.single('file'), previewExcel);
 router.post('/misc/upload-excel/confirm', confirmExcel);
+router.get('/misc/upload-excel/status/:id', getUploadProgress);
 
 // PDF generation (precise mm layout). Accepts body with widthMm, heightMm, elements[]
 router.post('/misc/export/pdf', exportPdf);
 
 // Secure PDF viewing by verification id (does not expose physical path)
 router.get('/files/verification/:id', viewVerificationPdf);
+
+// Sample Excel by model
+router.get('/misc/sample-excel', sampleExcel);
 
 export default router;

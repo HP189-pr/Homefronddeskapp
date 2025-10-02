@@ -23,6 +23,10 @@ for (const dir of [MEDIA_ROOT, TMP_DIR, LOGS_DIR]) {
 
 const mmToPt = (mm) => (mm * 72) / 25.4; // 1 inch = 25.4mm, 1 inch = 72pt
 
+// In-memory progress tracker keyed by tempFileId
+// Shape: { [tempFileId]: { table, sheetName, total, processed, startedAt, done, error?, logUrl?, inserted?, failed? } }
+const UPLOAD_PROGRESS = Object.create(null);
+
 const pickModel = (table) => {
   if (!table) return null;
   // Prefer sequelize's registry
@@ -46,15 +50,47 @@ const getModelColumns = (mdl) => {
 
 const normalizeHeader = (h) => String(h || '').trim().toLowerCase().replace(/\s+|_/g, '');
 
-const mapHeaders = (headers, modelCols) => {
+// Aliases to make loose header matching friendlier (normalized keys -> model column)
+const HEADER_ALIASES = {
+  Degree: new Map([
+    ['studentname', 'student_name_dg'],
+    ['student_namedg', 'student_name_dg'],
+    ['institute', 'institute_name_dg'],
+    ['institutename', 'institute_name_dg'],
+    ['institutename_dg', 'institute_name_dg'],
+    ['address', 'dg_address'],
+    ['gender', 'dg_gender'],
+    ['class', 'class_obtain'],
+    ['language', 'course_language'],
+    ['seatno', 'seat_last_exam'],
+    ['seatnumber', 'seat_last_exam'],
+    ['rollno', 'seat_last_exam'],
+    ['examyear', 'last_exam_year'],
+    ['exammonth', 'last_exam_month'],
+    ['dgrecno', 'dg_rec_no'],
+    ['convocation', 'convocation_no'],
+    ['dgsrno', 'dg_sr_no'],
+  ]),
+};
+
+const mapHeaders = (headers, modelCols, tableName) => {
   const modelMap = new Map(modelCols.map((c) => [normalizeHeader(c.name), c.name]));
+  const aliasMap = HEADER_ALIASES[tableName] || new Map();
   const headerToField = new Map();
   const missing = [];
   const extra = [];
 
   headers.forEach((h) => {
     const key = normalizeHeader(h);
-    const field = modelMap.get(key);
+    let field = modelMap.get(key);
+    if (!field) {
+      const aliasTo = aliasMap.get(key);
+      if (aliasTo) {
+        // ensure alias target exists in model
+        const target = modelCols.find((c) => c.name === aliasTo);
+        if (target) field = target.name;
+      }
+    }
     if (field) headerToField.set(h, field);
     else extra.push(h);
   });
@@ -97,7 +133,7 @@ const coerceValue = (val, typeKey) => {
 
 export const previewExcel = async (req, res) => {
   try {
-    const { table } = req.body; // e.g., 'Verification' (Sequelize model name)
+    const { table, sheetName } = req.body; // e.g., 'Verification' (Sequelize model name)
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     const tempFileId = path.parse(req.file.filename).name; // uuid without extension
 
@@ -107,12 +143,25 @@ export const previewExcel = async (req, res) => {
 
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(req.file.path);
-    const sheet = workbook.worksheets[0];
+    let sheet = null;
+    if (sheetName) {
+      sheet = workbook.getWorksheet(String(sheetName));
+      if (!sheet) return res.status(400).json({ error: `Sheet '${sheetName}' not found` });
+    } else {
+      sheet = workbook.worksheets[0];
+    }
     if (!sheet) return res.status(400).json({ error: 'No sheets found in Excel' });
 
     const headerRow = sheet.getRow(1);
     const headers = headerRow.values.filter((v) => v !== null && v !== undefined && v !== '' && v !== 0).map((v) => (typeof v === 'object' && v.text ? v.text : v));
-    const { headerToField, missing, extra } = mapHeaders(headers, columns);
+  const { headerToField, missing, extra } = mapHeaders(headers, columns, table);
+    const mapped = Array.from(headerToField.values());
+    if (!mapped.length) {
+      return res.status(400).json({
+        error: 'No column headers matched model fields. Please check headers and sheet name.',
+        expectedColumns: columns.map(c => c.name),
+      });
+    }
 
     // Build sample rows (up to 20)
     const maxPreview = 20;
@@ -128,15 +177,26 @@ export const previewExcel = async (req, res) => {
       if (Object.keys(obj).length) preview.push(obj);
     }
 
+    // initialize progress stub for this upload id
+    UPLOAD_PROGRESS[tempFileId] = {
+      table,
+      sheetName: sheet?.name,
+      total: Math.max(0, (sheet?.rowCount || 1) - 1),
+      processed: 0,
+      startedAt: Date.now(),
+      done: false,
+    };
+
     return res.json({
       tempFileId,
       table,
       headers,
-      mappedColumns: Array.from(headerToField.values()),
+      mappedColumns: mapped,
       missingColumns: missing,
       extraColumns: extra,
       previewRows: preview,
       totalRows: sheet.rowCount - 1,
+      sheetName: sheet?.name,
     });
   } catch (err) {
     console.error('❌ previewExcel error:', err);
@@ -147,7 +207,8 @@ export const previewExcel = async (req, res) => {
 export const confirmExcel = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { tempFileId, table } = req.body;
+    const startedAt = Date.now();
+    const { tempFileId, table, sheetName } = req.body;
     if (!tempFileId || !table) {
       await t.rollback();
       return res.status(400).json({ error: 'tempFileId and table are required' });
@@ -170,7 +231,16 @@ export const confirmExcel = async (req, res) => {
 
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(tmpPath);
-    const sheet = workbook.worksheets[0];
+    let sheet = null;
+    if (sheetName) {
+      sheet = workbook.getWorksheet(String(sheetName));
+      if (!sheet) {
+        await t.rollback();
+        return res.status(400).json({ error: `Sheet '${sheetName}' not found` });
+      }
+    } else {
+      sheet = workbook.worksheets[0];
+    }
     if (!sheet) {
       await t.rollback();
       return res.status(400).json({ error: 'No sheets found in Excel' });
@@ -178,14 +248,44 @@ export const confirmExcel = async (req, res) => {
 
     const headerRow = sheet.getRow(1);
     const headers = headerRow.values.filter((v) => v !== null && v !== undefined && v !== '' && v !== 0).map((v) => (typeof v === 'object' && v.text ? v.text : v));
-    const { headerToField, missing } = mapHeaders(headers, columns);
+    const { headerToField, missing } = mapHeaders(headers, columns, table);
+    const mapped = Array.from(headerToField.values());
+    if (!mapped.length) {
+      await t.rollback();
+      // mark progress error
+      if (tempFileId && UPLOAD_PROGRESS[tempFileId]) {
+        UPLOAD_PROGRESS[tempFileId].done = true;
+        UPLOAD_PROGRESS[tempFileId].error = 'No column headers matched model fields. Check headers/sheet.';
+      }
+      return res.status(400).json({ error: 'No column headers matched model fields. Check headers/sheet.' });
+    }
     if (missing.length) {
       await t.rollback();
+      if (tempFileId && UPLOAD_PROGRESS[tempFileId]) {
+        UPLOAD_PROGRESS[tempFileId].done = true;
+        UPLOAD_PROGRESS[tempFileId].error = 'Missing required columns';
+      }
       return res.status(400).json({ error: 'Missing required columns', missing });
     }
 
     const successes = [];
     const failures = [];
+    let processedRows = 0;
+
+    // initialize/update progress info
+    const totalRows = Math.max(0, sheet.rowCount - 1);
+    if (!UPLOAD_PROGRESS[tempFileId]) {
+      UPLOAD_PROGRESS[tempFileId] = { table, sheetName: sheet?.name, total: totalRows, processed: 0, startedAt, done: false };
+    } else {
+      UPLOAD_PROGRESS[tempFileId].table = table;
+      UPLOAD_PROGRESS[tempFileId].sheetName = sheet?.name;
+      UPLOAD_PROGRESS[tempFileId].total = totalRows;
+      UPLOAD_PROGRESS[tempFileId].startedAt = startedAt;
+      UPLOAD_PROGRESS[tempFileId].processed = 0;
+      UPLOAD_PROGRESS[tempFileId].done = false;
+      delete UPLOAD_PROGRESS[tempFileId].error;
+      delete UPLOAD_PROGRESS[tempFileId].logUrl;
+    }
 
     for (let r = 2; r <= sheet.rowCount; r++) {
       const row = sheet.getRow(r);
@@ -210,8 +310,14 @@ export const confirmExcel = async (req, res) => {
       try {
         const created = await mdl.create(obj, { transaction: t });
         successes.push({ row: r, id: created?.id || null, data: obj });
+        processedRows++;
       } catch (e) {
         failures.push({ row: r, reason: e.message, data: obj });
+      }
+
+      // update progress after each row
+      if (UPLOAD_PROGRESS[tempFileId]) {
+        UPLOAD_PROGRESS[tempFileId].processed = processedRows + failures.length;
       }
     }
 
@@ -235,17 +341,64 @@ export const confirmExcel = async (req, res) => {
     try { fs.unlinkSync(tmpPath); } catch (_) {}
 
     const logUrl = `/media/logs/${encodeURIComponent(logFile)}`;
+
+    // mark progress done
+    if (UPLOAD_PROGRESS[tempFileId]) {
+      UPLOAD_PROGRESS[tempFileId].done = true;
+      UPLOAD_PROGRESS[tempFileId].logUrl = logUrl;
+      UPLOAD_PROGRESS[tempFileId].inserted = successes.length;
+      UPLOAD_PROGRESS[tempFileId].failed = failures.length;
+    }
+
     return res.json({
       table,
       inserted: successes.length,
       failed: failures.length,
       total: successes.length + failures.length,
       logUrl,
+      sheetName: sheet?.name,
+      sampleFailures: failures.slice(0, 15),
+      durationMs: Date.now() - startedAt,
+      processedRows,
     });
   } catch (err) {
     try { await t.rollback(); } catch (_) {}
     console.error('❌ confirmExcel error:', err);
+    // mark error on progress if exists
+    const { tempFileId } = req.body || {};
+    if (tempFileId && UPLOAD_PROGRESS[tempFileId]) {
+      UPLOAD_PROGRESS[tempFileId].done = true;
+      UPLOAD_PROGRESS[tempFileId].error = 'Failed to import Excel';
+    }
     return res.status(500).json({ error: 'Failed to import Excel' });
+  }
+};
+
+// Simple polling endpoint for front-end to show live progress
+export const getUploadProgress = async (req, res) => {
+  try {
+    const { id } = req.params; // tempFileId
+    const p = id ? UPLOAD_PROGRESS[id] : null;
+    if (!p) return res.json({ found: false });
+    const total = Math.max(0, p.total || 0);
+    const processed = Math.max(0, p.processed || 0);
+    const percent = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : (p.done ? 100 : 0);
+    return res.json({
+      found: true,
+      table: p.table || null,
+      sheetName: p.sheetName || null,
+      total,
+      processed,
+      percent,
+      startedAt: p.startedAt || null,
+      done: !!p.done,
+      error: p.error || null,
+      logUrl: p.logUrl || null,
+      inserted: p.inserted ?? null,
+      failed: p.failed ?? null,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to get progress' });
   }
 };
 
@@ -302,6 +455,33 @@ export const viewVerificationPdf = async (req, res) => {
   } catch (err) {
     console.error('❌ viewVerificationPdf error:', err);
     return res.status(500).json({ error: 'Failed to stream PDF' });
+  }
+};
+
+export const sampleExcel = async (req, res) => {
+  try {
+    const { table, sheet = 'Sheet1' } = req.query || {};
+    const mdl = pickModel(table);
+    if (!mdl) return res.status(400).json({ error: `Unknown table/model: ${table}` });
+    const columns = getModelColumns(mdl);
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet(String(sheet || 'Sheet1'));
+    const headers = columns.map((c) => c.name);
+    ws.addRow(headers);
+    // Style header row lightly
+    const headerRow = ws.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.setHeader('Content-Disposition', `attachment; filename="${table}-sample.xlsx"`);
+    await wb.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('❌ sampleExcel error:', err);
+    return res.status(500).json({ error: 'Failed to generate sample Excel' });
   }
 };
 
