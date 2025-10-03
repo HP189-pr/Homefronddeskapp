@@ -28,12 +28,39 @@ const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
 
 const router = express.Router();
 
+// --- In-memory presence map (process-local). Consider Redis for multi-instance.
+const PRESENCE_TTL_MS = 30 * 1000; // 30s considered online
+const presence = new Map(); // userId -> lastSeen epoch ms
+
+function nowMs() { return Date.now(); }
+function markOnline(userId) { if (userId) presence.set(userId, nowMs()); }
+function isOnline(userId) { const ts = presence.get(userId); return !!(ts && nowMs() - ts < PRESENCE_TTL_MS); }
+function getPresenceList() {
+  const out = [];
+  for (const [uid, ts] of presence.entries()) {
+    out.push({ userid: uid, last_seen: ts, online: nowMs() - ts < PRESENCE_TTL_MS });
+  }
+  return out;
+}
+
+// Heartbeat from clients to mark themselves online
+router.post('/ping', requireAuth, async (req, res) => {
+  try { markOnline(req.user?.id); return res.json({ ok: true, now: nowMs() }); } catch { return res.json({ ok: true }); }
+});
+
+// Presence list (lightweight)
+router.get('/presence', requireAuth, async (req, res) => {
+  try { return res.json({ presence: getPresenceList() }); } catch (e) { return res.json({ presence: [] }); }
+});
+
 // Send a message (with optional file)
 router.post('/send', requireAuth, upload.single('file'), async (req, res, next) => {
   try {
     const from = req.user?.id;
     const to = parseInt(req.body?.to_userid, 10);
     if (!from || !to) return res.status(400).json({ error: 'Missing to_userid' });
+    // mark sender online on activity
+    markOnline(from);
   const text = (req.body?.text || '').toString();
     let fileRec = { file_name: null, file_path: null, file_mime: null, file_size: null };
     if (req.file) {
@@ -45,12 +72,14 @@ router.post('/send', requireAuth, upload.single('file'), async (req, res, next) 
         file_size: req.file.size || null,
       };
     }
-  const row = await ChatMessage.create({ from_userid: from, to_userid: to, text: text ? encryptText(text) : null, ...fileRec });
+    const row = await ChatMessage.create({ from_userid: from, to_userid: to, text: text ? encryptText(text) : null, ...fileRec });
     try { await logAction(req, 'chat.send', { to_userid: to, hasFile: !!req.file, file: fileRec.file_name }); } catch {}
-  // Return with decrypted text for the sender's immediate view
+    // Return with decrypted text for the sender's immediate view
   const payload = row.toJSON();
   if (payload && typeof payload.text === 'string') payload.text = decryptText(payload.text);
-  res.json(payload);
+    // Add recipient online hint (not persisted)
+    payload.recipientOnline = isOnline(to);
+    res.json(payload);
   } catch (e) { next(e); }
 });
 
