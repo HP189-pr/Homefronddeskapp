@@ -10,6 +10,9 @@ export default function DataAnalysis() {
   const [result, setResult] = useState(null); // { duplicates, groups, details }
   const [pruneResult, setPruneResult] = useState(null); // { ok, groups, toDelete, deleted, kept, logUrl }
   const [triplePruneResult, setTriplePruneResult] = useState(null); // result for triple prune
+  // Enrollment analysis state
+  const [enrDupResult, setEnrDupResult] = useState(null);
+  const [enrMismatchResult, setEnrMismatchResult] = useState(null);
 
   const authHeaders = useMemo(() => {
     const token = localStorage.getItem('token');
@@ -65,6 +68,41 @@ export default function DataAnalysis() {
     } catch (e) {
       setError(e?.response?.data?.error || e.message || 'Failed to prune exact duplicates');
     } finally { setBusy(false); }
+  };
+
+  // Enrollment: duplicates
+  const runEnrollmentDupCheck = async () => {
+    setBusy(true); setError(''); setEnrDupResult(null);
+    try {
+      const res = await axios.get(`/api/misc/enrollment/duplicates?normalized=${normalized ? 'true' : 'false'}&format=json`, { headers: authHeaders });
+      setEnrDupResult(res.data || null);
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message || 'Failed to run enrollment duplicate check');
+    } finally { setBusy(false); }
+  };
+  const downloadEnrollmentDup = async () => {
+    try {
+      const res = await axios.get(`/api/misc/enrollment/duplicates?normalized=${normalized ? 'true' : 'false'}&format=xlsx`, { responseType: 'blob', headers: authHeaders });
+      const type = res.headers['content-type'] || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      saveAs(new Blob([res.data], { type }), `Enrollment-duplicate${normalized ? '-normalized' : ''}.xlsx`);
+    } catch (e) { setError(e?.response?.data?.error || e.message || 'Failed to download enrollment duplicates'); }
+  };
+
+  // Enrollment: mismatches
+  const runEnrollmentMismatch = async () => {
+    setBusy(true); setError(''); setEnrMismatchResult(null);
+    try {
+      const res = await axios.get(`/api/misc/enrollment/mismatch?format=json`, { headers: authHeaders });
+      setEnrMismatchResult(res.data || null);
+    } catch (e) { setError(e?.response?.data?.error || e.message || 'Failed to run enrollment mismatch'); }
+    finally { setBusy(false); }
+  };
+  const downloadEnrollmentMismatch = async () => {
+    try {
+      const res = await axios.get(`/api/misc/enrollment/mismatch?format=xlsx`, { responseType: 'blob', headers: authHeaders });
+      const type = res.headers['content-type'] || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      saveAs(new Blob([res.data], { type }), `Enrollment-mismatch.xlsx`);
+    } catch (e) { setError(e?.response?.data?.error || e.message || 'Failed to download enrollment mismatch'); }
   };
 
   return (
@@ -179,6 +217,114 @@ export default function DataAnalysis() {
           )}
         </div>
       )}
+
+      {/* Enrollment Duplicates */}
+      <div className="border rounded p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="font-semibold text-sm">Enrollment Duplicates</div>
+          <button onClick={runEnrollmentDupCheck} disabled={busy} className="bg-blue-600 text-white rounded px-2 py-0.5 text-xs disabled:opacity-50">{busy ? 'Checking…' : 'Check'}</button>
+          <button onClick={downloadEnrollmentDup} className="bg-gray-800 text-white rounded px-2 py-0.5 text-xs">Download Excel</button>
+        </div>
+        {enrDupResult && (
+          <div className="space-y-2">
+            <div className="text-sm">Duplicate keys: <b>{enrDupResult.duplicates || 0}</b> {enrDupResult.normalized ? '(normalized)' : ''}</div>
+            <div className="max-h-64 overflow-auto border rounded">
+              <table className="min-w-full text-xs">
+                <thead className="bg-gray-50"><tr><th className="px-2 py-1 text-left">dup_key</th><th className="px-2 py-1 text-left">count</th></tr></thead>
+                <tbody>
+                  {(enrDupResult.groups || []).map((g, i) => (
+                    <tr key={i} className="border-t"><td className="px-2 py-1">{String(g.dup_key)}</td><td className="px-2 py-1">{Number(g.cnt)}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {!!(enrDupResult.details && enrDupResult.details.length) && (
+              <div className="max-h-80 overflow-auto border rounded">
+                <table className="min-w-full text-xs">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-2 py-1 text-left">dup_key</th>
+                      <th className="px-2 py-1 text-left">id</th>
+                      <th className="px-2 py-1 text-left">enrollment_no</th>
+                      <th className="px-2 py-1 text-left">student_name</th>
+                      <th className="px-2 py-1 text-left">institute_id</th>
+                      <th className="px-2 py-1 text-left">maincourse_id</th>
+                      <th className="px-2 py-1 text-left">subcourse_id</th>
+                      <th className="px-2 py-1 text-left">batch</th>
+                      <th className="px-2 py-1 text-left">createdat</th>
+                      <th className="px-2 py-1 text-left">updatedat</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {enrDupResult.details.map((d, i) => {
+                      const dupKey = normalized ? (d.enrollment_no || '').toString().trim().toLowerCase().replace(/\s+/g, '') : (d.enrollment_no || '').toString();
+                      return (
+                        <tr key={i} className="border-t">
+                          <td className="px-2 py-1">{dupKey}</td>
+                          <td className="px-2 py-1">{d.id}</td>
+                          <td className="px-2 py-1">{d.enrollment_no || ''}</td>
+                          <td className="px-2 py-1">{d.student_name || ''}</td>
+                          <td className="px-2 py-1">{d.institute_id || ''}</td>
+                          <td className="px-2 py-1">{d.maincourse_id || ''}</td>
+                          <td className="px-2 py-1">{d.subcourse_id || ''}</td>
+                          <td className="px-2 py-1">{d.batch || ''}</td>
+                          <td className="px-2 py-1">{d.createdat || ''}</td>
+                          <td className="px-2 py-1">{d.updatedat || ''}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Enrollment Mismatches */}
+      <div className="border rounded p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="font-semibold text-sm">Enrollment Mismatch (Institute/Main/Sub)</div>
+          <button onClick={runEnrollmentMismatch} disabled={busy} className="bg-blue-600 text-white rounded px-2 py-0.5 text-xs disabled:opacity-50">{busy ? 'Checking…' : 'Check'}</button>
+          <button onClick={downloadEnrollmentMismatch} className="bg-gray-800 text-white rounded px-2 py-0.5 text-xs">Download Excel</button>
+        </div>
+        {enrMismatchResult && (
+          <div className="max-h-96 overflow-auto border rounded">
+            <table className="min-w-full text-xs">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-2 py-1 text-left">id</th>
+                  <th className="px-2 py-1 text-left">enrollment_no</th>
+                  <th className="px-2 py-1 text-left">student_name</th>
+                  <th className="px-2 py-1 text-left">institute_id</th>
+                  <th className="px-2 py-1 text-left">maincourse_id</th>
+                  <th className="px-2 py-1 text-left">subcourse_id</th>
+                  <th className="px-2 py-1 text-left">issues</th>
+                  <th className="px-2 py-1 text-left">batch</th>
+                  <th className="px-2 py-1 text-left">createdat</th>
+                  <th className="px-2 py-1 text-left">updatedat</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(enrMismatchResult.details || []).map((d, i) => (
+                  <tr key={i} className="border-t">
+                    <td className="px-2 py-1">{d.id}</td>
+                    <td className="px-2 py-1">{d.enrollment_no || ''}</td>
+                    <td className="px-2 py-1">{d.student_name || ''}</td>
+                    <td className="px-2 py-1">{d.institute_id || ''}</td>
+                    <td className="px-2 py-1">{d.maincourse_id || ''}</td>
+                    <td className="px-2 py-1">{d.subcourse_id || ''}</td>
+                    <td className="px-2 py-1">{d.issues || ''}</td>
+                    <td className="px-2 py-1">{d.batch || ''}</td>
+                    <td className="px-2 py-1">{d.createdat || ''}</td>
+                    <td className="px-2 py-1">{d.updatedat || ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

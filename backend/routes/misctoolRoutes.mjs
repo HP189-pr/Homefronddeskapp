@@ -21,6 +21,8 @@ import {
   checkDegreeEnrollmentDuplicates,
   pruneDegreeEnrollmentDuplicates,
   pruneDegreeExactDuplicates,
+  checkEnrollmentDuplicates,
+  checkEnrollmentMismatch,
 } from '../controllers/misctoolcontroller.mjs';
 
 const router = express.Router();
@@ -78,5 +80,11 @@ router.get('/misc/degree/duplicates/enrollment', checkDegreeEnrollmentDuplicates
 router.post('/misc/degree/duplicates/enrollment/prune', pruneDegreeEnrollmentDuplicates);
 // Prune duplicates where name+enrollment+convocation all match (query: ?normalized=true|false&dryRun=false&keepOne=true)
 router.post('/misc/degree/duplicates/triple/prune', pruneDegreeExactDuplicates);
+
+// Enrollment analysis
+// Duplicate enrollment_no (query: ?normalized=true|false&format=xlsx|json)
+router.get('/misc/enrollment/duplicates', checkEnrollmentDuplicates);
+// Mismatch of institute/maincourse/subcourse vs masters (query: ?format=xlsx|json)
+router.get('/misc/enrollment/mismatch', checkEnrollmentMismatch);
 
 export default router;

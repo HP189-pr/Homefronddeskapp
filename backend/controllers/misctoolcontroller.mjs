@@ -9,6 +9,9 @@ import PDFDocument from 'pdfkit';
 import mime from 'mime-types';
 import models, { sequelize } from '../models/index.mjs';
 import Verification from '../models/verification.mjs';
+import Institute from '../models/institute.mjs';
+import Module from '../models/module.mjs';
+import PathModel from '../models/path.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -918,6 +921,102 @@ export const sampleExcel = async (req, res) => {
   }
 };
 
+// Enrollment duplicate by enrollment_no and mismatch with masters
+export const checkEnrollmentDuplicates = async (req, res) => {
+  try {
+    const EnrollmentModel = pickModel('Enrollment');
+    if (!EnrollmentModel) return res.status(400).json({ error: 'Enrollment model not found' });
+    const normalized = String(req.query.normalized ?? 'true').toLowerCase() !== 'false';
+    const format = String(req.query.format || 'xlsx').toLowerCase();
+
+    const normExpr = normalized
+      ? sequelize.fn('LOWER', sequelize.fn('REPLACE', sequelize.fn('TRIM', sequelize.col('enrollment_no')), ' ', ''))
+      : sequelize.col('enrollment_no');
+
+    const dupGroups = await EnrollmentModel.findAll({
+      where: { enrollment_no: { [Op.ne]: null } },
+      attributes: [[normExpr, 'dup_key'], [sequelize.fn('COUNT', sequelize.col('id')), 'cnt']],
+      group: [normExpr],
+      having: sequelize.literal('COUNT(id) > 1'),
+      raw: true,
+    });
+
+    const keys = dupGroups.map((g) => g.dup_key).filter(Boolean);
+    const details = keys.length
+      ? await EnrollmentModel.findAll({
+          where: sequelize.where(normExpr, { [Op.in]: keys }),
+          attributes: ['id', 'enrollment_no', 'student_name', 'institute_id', 'maincourse_id', 'subcourse_id', 'batch', 'createdat', 'updatedat'],
+          order: [['enrollment_no', 'ASC']],
+          raw: true,
+        })
+      : [];
+
+    if (format === 'json') return res.json({ duplicates: dupGroups.length, groups: dupGroups, details, normalized });
+
+    const wb = new ExcelJS.Workbook();
+    const summary = wb.addWorksheet('Summary');
+    const groupsWs = wb.addWorksheet('Duplicate Keys');
+    const detailsWs = wb.addWorksheet('Details');
+    summary.addRow(['Normalized compare', normalized ? 'Yes' : 'No']);
+    summary.addRow(['Duplicate keys', dupGroups.length]);
+    groupsWs.addRow(['dup_key', 'count']);
+    dupGroups.forEach((g) => groupsWs.addRow([g.dup_key, Number(g.cnt)]));
+    detailsWs.addRow(['dup_key', 'id', 'enrollment_no', 'student_name', 'institute_id', 'maincourse_id', 'subcourse_id', 'batch', 'createdat', 'updatedat']);
+    const dupKeyOf = (enr) => (normalized ? (enr || '').toString().trim().toLowerCase().replace(/\s+/g, '') : (enr || '').toString());
+    details.forEach((d) => detailsWs.addRow([dupKeyOf(d.enrollment_no), d.id, d.enrollment_no, d.student_name, d.institute_id, d.maincourse_id, d.subcourse_id, d.batch || '', d.createdat || '', d.updatedat || '']));
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.setHeader('Content-Disposition', 'attachment; filename="Enrollment-duplicate.xlsx"');
+    await wb.xlsx.write(res);
+    return res.end();
+  } catch (err) {
+    console.error('❌ checkEnrollmentDuplicates error:', err);
+    return res.status(500).json({ error: 'Failed to compute enrollment duplicates' });
+  }
+};
+
+export const checkEnrollmentMismatch = async (req, res) => {
+  try {
+    const EnrollmentModel = pickModel('Enrollment');
+    if (!EnrollmentModel) return res.status(400).json({ error: 'Enrollment model not found' });
+    const format = String(req.query.format || 'xlsx').toLowerCase();
+
+    // Build sets of valid IDs from masters
+    const instIds = new Set((await pickModel('Institute')?.findAll({ attributes: ['id'], raw: true }) || []).map((r) => r.id));
+    const mainIds = new Set((await pickModel('Module')?.findAll({ attributes: ['id'], raw: true }) || []).map((r) => r.id));
+    const subIds = new Set((await pickModel('Path')?.findAll({ attributes: ['id'], raw: true }) || []).map((r) => r.id));
+
+    const rows = await EnrollmentModel.findAll({
+      attributes: ['id', 'enrollment_no', 'student_name', 'institute_id', 'maincourse_id', 'subcourse_id', 'batch', 'createdat', 'updatedat'],
+      raw: true,
+    });
+    const mismatches = [];
+    for (const r of rows) {
+      const probs = [];
+      if (r.institute_id == null || !instIds.has(Number(r.institute_id))) probs.push('institute_id invalid');
+      if (r.maincourse_id == null || !mainIds.has(Number(r.maincourse_id))) probs.push('maincourse_id invalid');
+      if (r.subcourse_id == null || !subIds.has(Number(r.subcourse_id))) probs.push('subcourse_id invalid');
+      if (probs.length) mismatches.push({ ...r, issues: probs.join('; ') });
+    }
+
+    if (format === 'json') return res.json({ count: mismatches.length, details: mismatches });
+
+    const wb = new ExcelJS.Workbook();
+    const summary = wb.addWorksheet('Summary');
+    const detailsWs = wb.addWorksheet('Mismatches');
+    summary.addRow(['Mismatched rows', mismatches.length]);
+    detailsWs.addRow(['id', 'enrollment_no', 'student_name', 'institute_id', 'maincourse_id', 'subcourse_id', 'issues', 'batch', 'createdat', 'updatedat']);
+    mismatches.forEach((d) => detailsWs.addRow([d.id, d.enrollment_no, d.student_name, d.institute_id, d.maincourse_id, d.subcourse_id, d.issues, d.batch || '', d.createdat || '', d.updatedat || '']));
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    res.setHeader('Content-Disposition', 'attachment; filename="Enrollment-mismatch.xlsx"');
+    await wb.xlsx.write(res);
+    return res.end();
+  } catch (err) {
+    console.error('❌ checkEnrollmentMismatch error:', err);
+    return res.status(500).json({ error: 'Failed to compute enrollment mismatches' });
+  }
+};
 // Check duplicate enrollment_no in Degree and return Excel (default) or JSON
 export const checkDegreeEnrollmentDuplicates = async (req, res) => {
   try {
