@@ -7,11 +7,14 @@ import { RoleAssignment } from '../models/roleAssignment.mjs';
 import { Permission } from '../models/permission.mjs';
 import bcrypt from 'bcrypt';
 import { UserLog } from '../models/userLog.mjs';
+import { logAction } from '../utils/logAction.mjs';
 import { CourseMain } from '../models/course_main.mjs';
 import { CourseSub } from '../models/course_sub.mjs';
 import rightsController from '../controllers/rightsController.mjs';
 import { UserProfile } from '../models/userProfile.mjs';
 import { Setting } from '../models/path.mjs';
+import bcrypt from 'bcrypt';
+import { logAction } from '../utils/logAction.mjs';
 
 const router = express.Router();
 
@@ -101,9 +104,7 @@ router.post('/users', async (req, res, next) => {
     });
     const safe = { ...user.get() }; delete safe.usrpassword;
     // log creation
-    try {
-      await UserLog.create({ userid: user.id, action: 'create', meta: { by: req.user ? req.user.id : null }, ip: req.ip, user_agent: req.get('user-agent'), session_id: req.session?.id || null, level: 'info' });
-    } catch (e) { /* ignore log errors to avoid blocking create */ }
+    try { await logAction(req, 'admin.user.create', { targetUserId: user.id }); } catch {}
     res.json(safe);
   } catch (e) { console.error('adminRoutes POST /users error:', e && e.errors ? e.errors : e); next(e); }
 });
@@ -119,7 +120,7 @@ router.patch('/users/:id', async (req, res, next) => {
     const user = await User.findByPk(id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    // password change
+    // password change (inline)
     if (req.body.usrpassword) {
       const hashed = await bcrypt.hash(req.body.usrpassword, 10);
       payload.usrpassword = hashed;
@@ -127,10 +128,26 @@ router.patch('/users/:id', async (req, res, next) => {
 
     await user.update(payload);
     const safe = { ...user.get() }; delete safe.usrpassword;
-    try {
-      await UserLog.create({ userid: user.id, action: 'update', meta: { by: req.user ? req.user.id : null }, ip: req.ip, user_agent: req.get('user-agent'), session_id: req.session?.id || null, level: 'info' });
-  } catch (e) { /* ignore log errors to avoid blocking update */ }
+    try { await logAction(req, 'admin.user.update', { targetUserId: user.id, fields: Object.keys(payload) }); } catch {}
     res.json(safe);
+  } catch (e) { next(e); }
+});
+
+// Change user password explicitly
+router.patch('/users/:id/password', async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { newPassword } = req.body || {};
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.trim().length < 4) {
+      return res.status(400).json({ error: 'Password too short' });
+    }
+    const user = await User.findByPk(id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await user.update({ usrpassword: hashed });
+    const safe = { ...user.get() }; delete safe.usrpassword;
+    try { await logAction(req, 'admin.user.password.change', { targetUserId: user.id }); } catch {}
+    return res.json(safe);
   } catch (e) { next(e); }
 });
 

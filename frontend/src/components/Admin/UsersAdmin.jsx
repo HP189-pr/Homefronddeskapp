@@ -10,6 +10,7 @@ const UsersAdmin = () => {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ userid: '', usrpassword: '', first_name: '', last_name: '', usertype: 'user', instituteid: '', email: ''});
+  const [newPassword, setNewPassword] = useState('');
   const [logs, setLogs] = useState([]);
   const [logsUser, setLogsUser] = useState(null);
   const [roles, setRoles] = useState([]);
@@ -69,6 +70,7 @@ const UsersAdmin = () => {
   const openEdit = (u) => {
     setEditing(u);
     setForm({ userid: u.userid, usrpassword: '', first_name: u.first_name || '', last_name: u.last_name || '', usertype: u.usertype || 'user', instituteid: u.instituteid || '', email: u.email || '' });
+    setNewPassword('');
     setShowForm(true);
   };
 
@@ -188,7 +190,9 @@ const UsersAdmin = () => {
             <h3 className="text-lg font-semibold mb-2">{editing ? 'Edit user' : 'Create user'}</h3>
             <div className="space-y-2">
               <input value={form.userid} onChange={e=>setForm({...form, userid:e.target.value})} placeholder="User ID" className="w-full p-2 border" disabled={!!editing} />
-              <input value={form.usrpassword} onChange={e=>setForm({...form, usrpassword:e.target.value})} placeholder="Password (leave blank to keep)" className="w-full p-2 border" />
+              {!editing && (
+                <input value={form.usrpassword} onChange={e=>setForm({...form, usrpassword:e.target.value})} placeholder="Password (required for create)" className="w-full p-2 border" />
+              )}
               <input value={form.first_name} onChange={e=>setForm({...form, first_name:e.target.value})} placeholder="First name" className="w-full p-2 border" />
               <input value={form.last_name} onChange={e=>setForm({...form, last_name:e.target.value})} placeholder="Last name" className="w-full p-2 border" />
               <input value={form.email} onChange={e=>setForm({...form, email:e.target.value})} placeholder="Email" className="w-full p-2 border" />
@@ -198,6 +202,21 @@ const UsersAdmin = () => {
                 <option value="superuser">Superuser</option>
                 <option value="admin">Admin</option>
               </select>
+              {editing && (
+                <div className="mt-2 p-2 border rounded">
+                  <div className="text-sm font-medium mb-1">Reset password</div>
+                  <div className="flex gap-2">
+                    <input value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="New password" className="flex-1 p-2 border" />
+                    <button onClick={async ()=>{
+                      if (!newPassword || newPassword.trim().length < 4) { alert('Password too short'); return; }
+                      const res = await authFetch('/api/admin/users/'+editing.id+'/password', { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ newPassword }) });
+                      if (!res.ok) { alert('Failed to change password'); return; }
+                      setNewPassword('');
+                      alert('Password updated');
+                    }} className="px-3 py-2 bg-indigo-600 text-white rounded">Update</button>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="mt-4 flex justify-end">
               <button onClick={()=>setShowForm(false)} className="px-3 py-2 mr-2">Cancel</button>

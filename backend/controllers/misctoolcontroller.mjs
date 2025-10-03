@@ -8,6 +8,7 @@ import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
 import mime from 'mime-types';
 import models, { sequelize } from '../models/index.mjs';
+import { logAction } from '../utils/logAction.mjs';
 import Verification from '../models/verification.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -299,7 +300,7 @@ export const previewExcel = async (req, res) => {
       beforeCount,
     };
 
-    return res.json({
+    const response = {
       tempFileId,
       table,
       headers,
@@ -315,7 +316,9 @@ export const previewExcel = async (req, res) => {
       sheetName: sheet?.name,
       sheetNames,
       beforeCount,
-    });
+    };
+    try { await logAction(req, 'excel.preview', { table, sheet: sheet?.name, totalRows, mapped }); } catch {}
+    return res.json(response);
   } catch (err) {
     console.error('❌ previewExcel error:', err);
     return res.status(500).json({ error: 'Failed to parse Excel' });
@@ -758,7 +761,7 @@ export const confirmExcel = async (req, res) => {
       UPLOAD_PROGRESS[tempFileId].deltaCount = deltaCount;
     }
 
-    return res.json({
+    const payload = {
       table,
       inserted: insertCount,
       updated: updateCount,
@@ -773,7 +776,9 @@ export const confirmExcel = async (req, res) => {
       beforeCount,
       afterCount,
       deltaCount,
-    });
+    };
+    try { await logAction(req, 'excel.confirm', { table, sheet: sheet?.name, inserted: insertCount, updated: updateCount, failed: failures.length, logUrl }); } catch {}
+    return res.json(payload);
   } catch (err) {
     console.error('❌ confirmExcel error:', err);
     // mark error on progress if exists
@@ -858,6 +863,7 @@ export const exportPdf = async (req, res) => {
     }
 
     doc.end();
+    try { await logAction(req, 'pdf.export', { filename, page: { widthMm, heightMm }, elementsCount: Array.isArray(elements) ? elements.length : 0 }); } catch {}
   } catch (err) {
     console.error('❌ exportPdf error:', err);
     return res.status(500).json({ error: 'PDF generation failed' });
@@ -885,6 +891,7 @@ export const viewVerificationPdf = async (req, res) => {
     res.setHeader('Content-Disposition', 'inline; filename="document.pdf"');
     const stream = fs.createReadStream(abs);
     stream.pipe(res);
+    try { await logAction(req, 'pdf.view', { verificationId: id, path: safeRel }); } catch {}
   } catch (err) {
     console.error('❌ viewVerificationPdf error:', err);
     return res.status(500).json({ error: 'Failed to stream PDF' });
@@ -912,6 +919,7 @@ export const sampleExcel = async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${table}-sample.xlsx"`);
     await wb.xlsx.write(res);
     res.end();
+    try { await logAction(req, 'excel.sample', { table, sheet }); } catch {}
   } catch (err) {
     console.error('❌ sampleExcel error:', err);
     return res.status(500).json({ error: 'Failed to generate sample Excel' });
@@ -966,6 +974,7 @@ export const checkEnrollmentDuplicates = async (req, res) => {
     res.setHeader('Content-Disposition', 'attachment; filename="Enrollment-duplicate.xlsx"');
     await wb.xlsx.write(res);
     return res.end();
+    try { await logAction(req, 'analysis.enrollment.duplicates', { normalized, keys: dupGroups.length }); } catch {}
   } catch (err) {
     console.error('❌ checkEnrollmentDuplicates error:', err);
     return res.status(500).json({ error: 'Failed to compute enrollment duplicates' });
@@ -1009,6 +1018,7 @@ export const checkEnrollmentMismatch = async (req, res) => {
     res.setHeader('Content-Disposition', 'attachment; filename="Enrollment-mismatch.xlsx"');
     await wb.xlsx.write(res);
     return res.end();
+    try { await logAction(req, 'analysis.enrollment.mismatch', { count: mismatches.length }); } catch {}
   } catch (err) {
     console.error('❌ checkEnrollmentMismatch error:', err);
     return res.status(500).json({ error: 'Failed to compute enrollment mismatches' });
@@ -1111,6 +1121,7 @@ export const checkDegreeEnrollmentDuplicates = async (req, res) => {
     res.setHeader('Content-Disposition', 'attachment; filename="Degree-duplicate-enrollment.xlsx"');
     await wb.xlsx.write(res);
     return res.end();
+    try { await logAction(req, 'analysis.degree.duplicates', { normalized, groups: dupGroups.length }); } catch {}
   } catch (err) {
     console.error('❌ checkDegreeEnrollmentDuplicates error:', err);
     return res.status(500).json({ error: 'Failed to compute duplicates' });
@@ -1216,7 +1227,7 @@ export const pruneDegreeEnrollmentDuplicates = async (req, res) => {
     await wb.xlsx.writeFile(logPath);
     const logUrl = `/media/logs/${encodeURIComponent(logFile)}`;
 
-    return res.json({
+    const result = {
       ok: true,
       normalized,
       dryRun,
@@ -1226,7 +1237,9 @@ export const pruneDegreeEnrollmentDuplicates = async (req, res) => {
       deleted: dryRun ? 0 : deletedCount,
       kept: toKeep.length,
       logUrl,
-    });
+    };
+    try { await logAction(req, 'analysis.degree.prune.enrollment', { normalized, dryRun, keepOne, toDelete: toDelete.length, deleted: deletedCount }); } catch {}
+    return res.json(result);
   } catch (err) {
     console.error('❌ pruneDegreeEnrollmentDuplicates error:', err);
     return res.status(500).json({ error: 'Failed to prune duplicates' });
@@ -1378,7 +1391,7 @@ export const pruneDegreeExactDuplicates = async (req, res) => {
     await wb.xlsx.writeFile(logPath);
     const logUrl = `/media/logs/${encodeURIComponent(logFile)}`;
 
-    return res.json({
+    const result = {
       ok: true,
       normalized,
       dryRun,
@@ -1388,7 +1401,9 @@ export const pruneDegreeExactDuplicates = async (req, res) => {
       deleted: dryRun ? 0 : deletedCount,
       kept: toKeep.length,
       logUrl,
-    });
+    };
+    try { await logAction(req, 'analysis.degree.prune.triple', { normalized, dryRun, keepOne, toDelete: toDelete.length, deleted: deletedCount }); } catch {}
+    return res.json(result);
   } catch (err) {
     console.error('❌ pruneDegreeExactDuplicates error:', err);
     return res.status(500).json({ error: 'Failed to prune exact duplicates' });
