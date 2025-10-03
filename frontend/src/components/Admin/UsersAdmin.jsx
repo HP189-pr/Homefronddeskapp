@@ -18,6 +18,8 @@ const UsersAdmin = () => {
   const [modules, setModules] = useState([]);
   const [menus, setMenus] = useState([]);
   const [activeUser, setActiveUser] = useState(null);
+  const [permForm, setPermForm] = useState({ roleid:'', moduleid:'', menuid:'', action:'view', instituteid:'' });
+  const [permsByRole, setPermsByRole] = useState({});
 
   const load = async () => {
     setLoading(true);
@@ -109,6 +111,17 @@ const UsersAdmin = () => {
     if (res.ok) {
       const d = await res.json();
       setAssignments(d.assignments || []);
+      // Initialize add-permission form default role
+      const firstRole = (d.assignments || [])[0]?.roleid || '';
+      setPermForm(p => ({ ...p, roleid: firstRole ? String(firstRole) : '' }));
+      // Preload permissions for these roles
+      const map = {};
+      for (const a of d.assignments || []) {
+        const r = await authFetch(`/api/admin/rights/permissions?roleid=${a.roleid}`);
+        const pd = r.ok ? await r.json() : { permissions: [] };
+        map[a.roleid] = pd.permissions || [];
+      }
+      setPermsByRole(map);
     } else {
       setAssignments([]);
     }
@@ -132,7 +145,44 @@ const UsersAdmin = () => {
         if (!res.ok) throw new Error('Failed to assign');
         const created = await res.json();
         setAssignments(prev => [...prev, created]);
+        // also prefetch permissions for this role
+        const r = await authFetch(`/api/admin/rights/permissions?roleid=${roleid}`);
+        const pd = r.ok ? await r.json() : { permissions: [] };
+        setPermsByRole(prev => ({ ...prev, [roleid]: pd.permissions || [] }));
       }
+    } catch (e) { console.error(e); }
+  };
+
+  const addPermission = async () => {
+    try {
+      if (!permForm.roleid) return alert('Select a role');
+      const payload = {
+        roleid: parseInt(permForm.roleid, 10),
+        moduleid: permForm.moduleid ? parseInt(permForm.moduleid, 10) : null,
+        menuid: permForm.menuid ? parseInt(permForm.menuid, 10) : null,
+        action: permForm.action || null,
+        instituteid: permForm.instituteid ? parseInt(permForm.instituteid, 10) : null,
+      };
+      const res = await authFetch('/api/admin/rights/permissions', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+      if (!res.ok) return alert('Failed to add permission');
+      const created = await res.json();
+      setPermsByRole(prev => {
+        const roleId = payload.roleid;
+        const arr = prev[roleId] ? [...prev[roleId]] : [];
+        arr.push(created);
+        return { ...prev, [roleId]: arr };
+      });
+      // Reset action only
+      setPermForm(p => ({ ...p, action: 'view' }));
+    } catch (e) { console.error(e); alert('Add permission error'); }
+  };
+
+  const removePermission = async (roleid, permissionid) => {
+    try {
+      if (!confirm('Remove permission?')) return;
+      const res = await authFetch(`/api/admin/rights/permissions/${permissionid}`, { method:'DELETE' });
+      if (!res.ok) return alert('Failed to remove');
+      setPermsByRole(prev => ({ ...prev, [roleid]: (prev[roleid] || []).filter(p => p.permissionid !== permissionid) }));
     } catch (e) { console.error(e); }
   };
 
@@ -274,10 +324,88 @@ const UsersAdmin = () => {
             </section>
 
             <section className="border rounded p-3">
+              <h4 className="font-semibold mb-2">Add permission for this user</h4>
+              <div className="grid grid-cols-1 gap-2">
+                <select value={permForm.roleid} onChange={e=>setPermForm({...permForm, roleid: e.target.value})} className="p-2 border">
+                  <option value="">Select role</option>
+                  {assignments.map(a => (
+                    <option key={a.id} value={a.roleid}>{roles.find(r=>r.roleid===a.roleid)?.name || a.roleid}</option>
+                  ))}
+                </select>
+                <select value={permForm.moduleid} onChange={e=>setPermForm({...permForm, moduleid: e.target.value, menuid: ''})} className="p-2 border">
+                  <option value="">Module (optional)</option>
+                  {modules.map(m => <option key={m.moduleid} value={m.moduleid}>{m.moduleid} — {m.name}</option>)}
+                </select>
+                <select value={permForm.menuid} onChange={e=>setPermForm({...permForm, menuid: e.target.value})} className="p-2 border">
+                  <option value="">Menu (optional)</option>
+                  {menus.filter(m => !permForm.moduleid || String(m.moduleid)===String(permForm.moduleid)).map(m => (
+                    <option key={m.menuid} value={m.menuid}>{m.menuid} — {m.name}</option>
+                  ))}
+                </select>
+                <div className="flex gap-2 items-center">
+                  <select value={permForm.action} onChange={e=>setPermForm({...permForm, action: e.target.value})} className="p-2 border">
+                    <option value="">any</option>
+                    <option value="view">view</option>
+                    <option value="add">add</option>
+                    <option value="edit">edit</option>
+                    <option value="delete">delete</option>
+                  </select>
+                  <input value={permForm.instituteid} onChange={e=>setPermForm({...permForm, instituteid: e.target.value})} placeholder="instituteid (optional)" className="p-2 border flex-1"/>
+                  <button onClick={addPermission} className="px-3 py-2 bg-green-600 text-white rounded">Add</button>
+                </div>
+              </div>
+            </section>
+
+            <section className="border rounded p-3">
               <h4 className="font-semibold mb-2">Effective permissions</h4>
               <p className="text-sm text-gray-500 mb-2">Permissions are granted via roles above. To add more, go to User Rights page.</p>
-              {/* Optional: we could fetch /api/admin/rights/permissions?roleid= for each assigned role and merge */}
               <EffectivePermissions assignments={assignments} modules={modules} menus={menus} authFetch={authFetch} />
+            </section>
+
+            <section className="border rounded p-3">
+              <h4 className="font-semibold mb-2">Role permissions</h4>
+              {assignments.length === 0 ? (
+                <div className="text-sm text-gray-600">Assign a role to manage permissions.</div>
+              ) : (
+                <div className="space-y-3">
+                  {assignments.map(a => {
+                    const list = permsByRole[a.roleid] || [];
+                    return (
+                      <div key={a.id} className="border rounded">
+                        <div className="px-3 py-2 bg-gray-50 font-medium">{roles.find(r=>r.roleid===a.roleid)?.name || `Role ${a.roleid}`}</div>
+                        <div className="p-2">
+                          {list.length === 0 ? (
+                            <div className="text-sm text-gray-500">No permissions</div>
+                          ) : (
+                            <table className="min-w-full text-sm">
+                              <thead>
+                                <tr>
+                                  <th className="text-left px-2 py-1">Module</th>
+                                  <th className="text-left px-2 py-1">Menu</th>
+                                  <th className="text-left px-2 py-1">Action</th>
+                                  <th className="text-left px-2 py-1">Institute</th>
+                                  <th className="px-2 py-1">Remove</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {list.map(p => (
+                                  <tr key={p.permissionid} className="border-t">
+                                    <td className="px-2 py-1">{p.moduleid ? (modules.find(m=>m.moduleid===p.moduleid)?.name || p.moduleid) : 'any'}</td>
+                                    <td className="px-2 py-1">{p.menuid ? (menus.find(m=>m.menuid===p.menuid)?.name || p.menuid) : 'any'}</td>
+                                    <td className="px-2 py-1">{p.action || 'any'}</td>
+                                    <td className="px-2 py-1">{p.instituteid || 'any'}</td>
+                                    <td className="px-2 py-1 text-right"><button onClick={()=>removePermission(a.roleid, p.permissionid)} className="px-2 py-1 bg-red-600 text-white rounded">Delete</button></td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           </div>
         </div>
