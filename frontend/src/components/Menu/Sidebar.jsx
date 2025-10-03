@@ -222,7 +222,7 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
       <hr className="border-gray-600 my-4" />
 
       {/* Admin Panel Button */}
-      {canAccessAdminPanel && (
+      {(canAccessAdminPanel || user?.usertype === 'admin' || user?.usertype === 'superuser') && (
         <button
           onClick={() => handleMenuClick('Admin Panel')}
           className="w-full text-left px-4 py-2 rounded hover:bg-gray-700"
