@@ -2,8 +2,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
-import { saveAs } from 'file-saver';
-import { useAuth } from '../../hooks/useAuth';
 
 const ChatBox = () => {
   const { fetchUsers, isAuthenticated, authFetch, user } = useAuth();
@@ -15,7 +13,6 @@ const ChatBox = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [unreadCounts, setUnreadCounts] = useState({}); // { usercode: number }
   const usersIntervalRef = useRef(null);
-  const simulatedMessagesIntervalRef = useRef(null);
   const fileUrlRef = useRef(null);
   const [filesTab, setFilesTab] = useState([]);
 
