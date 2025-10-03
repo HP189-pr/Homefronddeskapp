@@ -35,6 +35,7 @@ import institutionalVerificationRoutes from './routes/institutionalVerificationR
 import documentReceiptRoutes from './routes/documentReceiptRoutes.mjs';
 import verificationPublicRoutes from './routes/verificationPublicRoutes.mjs';
 import { normalizeDMYDates } from './utils/dateFormat.mjs';
+import chatRoutes from './routes/chatRoutes.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -88,6 +89,7 @@ app.use('/api/admin/provisionals', requireAdmin, provisionalRoutes);
 app.use('/api/admin/institutionals', requireAdmin, institutionalVerificationRoutes);
 app.use('/api/admin/doc-receipts', requireAdmin, documentReceiptRoutes);
 app.use('/api', misctoolRoutes);
+app.use('/api/chat', chatRoutes);
 // Logs
 app.use('/api/logs', logRoutes);
 

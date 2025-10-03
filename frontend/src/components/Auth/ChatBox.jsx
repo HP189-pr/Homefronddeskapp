@@ -2,11 +2,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
+import { saveAs } from 'file-saver';
+import { useAuth } from '../../hooks/useAuth';
 
 const ChatBox = () => {
-  const { fetchUsers, isAuthenticated } = useAuth();
+  const { fetchUsers, isAuthenticated, authFetch, user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState({}); // { usercode: [ { text, fileUrl, fileName, sender, time } ] }
+  const [messages, setMessages] = useState({}); // { usercode: [ { id, text, fileUrl, fileName, sender, time, file_mime } ] }
   const [input, setInput] = useState('');
   const [file, setFile] = useState(null);
   const [users, setUsers] = useState([]);
@@ -15,6 +17,7 @@ const ChatBox = () => {
   const usersIntervalRef = useRef(null);
   const simulatedMessagesIntervalRef = useRef(null);
   const fileUrlRef = useRef(null);
+  const [filesTab, setFilesTab] = useState([]);
 
   // Load users (prefers fetchUsers from useAuth)
   const loadUsers = async () => {
@@ -55,36 +58,33 @@ const ChatBox = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
-  // Simulate incoming messages for demo (only when authenticated)
+  // Load history when selecting a user
   useEffect(() => {
-    if (!isAuthenticated) return;
-
-    simulatedMessagesIntervalRef.current = setInterval(() => {
-      // choose a random user (if any)
-      if (users.length === 0) return;
-      const randomUser = users[Math.floor(Math.random() * users.length)];
-      const ucode = randomUser.usercode || randomUser.userid || 'User1';
-
-      setMessages((prev) => {
-        const userMsgs = prev[ucode] ? [...prev[ucode]] : [];
-        userMsgs.push({
-          text: 'New message from ' + ucode,
-          fileUrl: null,
-          fileName: null,
-          sender: ucode,
-          time: new Date().toLocaleTimeString(),
-        });
-        return { ...prev, [ucode]: userMsgs };
-      });
-
-      setUnreadCounts((prev) => ({ ...prev, [ucode]: (prev[ucode] || 0) + 1 }));
-    }, 15000);
-
-    return () => {
-      clearInterval(simulatedMessagesIntervalRef.current);
-      simulatedMessagesIntervalRef.current = null;
-    };
-  }, [isAuthenticated, users]);
+    if (!isAuthenticated || !selectedUser) return;
+    (async () => {
+      const otherId = selectedUser.id;
+      const res = await authFetch(`/api/chat/history/${otherId}?limit=200`);
+      if (res.ok) {
+        const d = await res.json();
+        const ucode = selectedUser.usercode || selectedUser.userid;
+        const list = (d.messages || []).map(m => ({
+          id: m.id,
+          text: m.text,
+          fileUrl: m.file_path ? `/media/${m.file_path}` : null,
+          fileName: m.file_name || null,
+          file_mime: m.file_mime || null,
+          sender: m.from_userid === user?.id ? 'Me' : (selectedUser.usercode || selectedUser.userid),
+          time: new Date(m.createdat).toLocaleTimeString(),
+        }));
+        setMessages(prev => ({ ...prev, [ucode]: list }));
+      }
+      const rf = await authFetch(`/api/chat/files/${otherId}`);
+      if (rf.ok) {
+        const fd = await rf.json();
+        setFilesTab(fd.files || []);
+      }
+    })();
+  }, [isAuthenticated, selectedUser, authFetch, user]);
 
   // Selecting a user clears unread count for that user
   useEffect(() => {
@@ -118,34 +118,58 @@ const ChatBox = () => {
     setFile({ file: f, url, name: f.name });
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!input.trim() && !file) return;
     if (!selectedUser) return;
 
-    const key = selectedUser.usercode;
-    const msg = {
-      text: input.trim(),
-      fileUrl: file ? file.url : null,
-      fileName: file ? file.name : null,
-      sender: 'Me',
-      time: new Date().toLocaleTimeString(),
-    };
-
-    setMessages((prev) => {
-      const existing = Array.isArray(prev[key]) ? [...prev[key]] : [];
-      return { ...prev, [key]: [...existing, msg] };
-    });
-
-    // If you want to POST to backend, do it here (omitted for demo)
-    // Example:
-    // fetch(`/api/chats/${encodeURIComponent(key)}`, { method: 'POST', body: formData })
+    const form = new FormData();
+    form.append('to_userid', selectedUser.id);
+    if (input.trim()) form.append('text', input.trim());
+    if (file?.file) form.append('file', file.file);
+    const res = await authFetch('/api/chat/send', { method: 'POST', body: form });
+    if (res.ok) {
+      const m = await res.json();
+      const ucode = selectedUser.usercode || selectedUser.userid;
+      const msg = {
+        id: m.id,
+        text: m.text,
+        fileUrl: m.file_path ? `/media/${m.file_path}` : null,
+        fileName: m.file_name || null,
+        file_mime: m.file_mime || null,
+        sender: 'Me',
+        time: new Date(m.createdat).toLocaleTimeString(),
+      };
+      setMessages(prev => {
+        const list = prev[ucode] ? [...prev[ucode]] : [];
+        return { ...prev, [ucode]: [...list, msg] };
+      });
+      if (m.file_path) setFilesTab(prev => [{ ...m }, ...prev]);
+    }
 
     setInput('');
     setFile(null);
-    if (fileUrlRef.current) {
-      // keep the URL for download in message; will be revoked on unmount
-      fileUrlRef.current = null;
+    if (fileUrlRef.current) fileUrlRef.current = null;
+  };
+
+  const clearHistory = async (type = 'all') => {
+    if (!selectedUser) return;
+    const otherId = selectedUser.id;
+    const res = await authFetch(`/api/chat/clear/${otherId}`, { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ type }) });
+    if (res.ok) {
+      const ucode = selectedUser.usercode || selectedUser.userid;
+      if (type === 'all' || type === 'messages') setMessages(prev => ({ ...prev, [ucode]: [] }));
+      if (type === 'all' || type === 'files') setFilesTab([]);
     }
+  };
+
+  const fileIcon = (mimeOrName) => {
+    const s = (mimeOrName || '').toString().toLowerCase();
+    if (s.includes('pdf') || s.endsWith('.pdf')) return '📄';
+    if (s.includes('excel') || s.endsWith('.xlsx') || s.endsWith('.xls')) return '📊';
+    if (s.includes('word') || s.endsWith('.doc') || s.endsWith('.docx')) return '📝';
+    if (s.includes('image') || s.endsWith('.png') || s.endsWith('.jpg') || s.endsWith('.jpeg')) return '🖼️';
+    if (s.includes('text') || s.endsWith('.txt') || s.endsWith('.csv')) return '📃';
+    return '📦';
   };
 
   const toggleOpen = () => setIsOpen((s) => !s);
@@ -272,11 +296,19 @@ const ChatBox = () => {
                 >
                   Close
                 </button>
+                <div className="relative group">
+                  <button className="text-sm px-2 py-1 rounded bg-gray-800 hover:bg-gray-700">History ▾</button>
+                  <div className="absolute right-0 mt-1 hidden group-hover:block bg-white text-black rounded shadow z-10">
+                    <button onClick={()=>clearHistory('messages')} className="block px-3 py-1 hover:bg-gray-100 w-full text-left">Clear chat messages</button>
+                    <button onClick={()=>clearHistory('files')} className="block px-3 py-1 hover:bg-gray-100 w-full text-left">Clear file history</button>
+                    <button onClick={()=>clearHistory('all')} className="block px-3 py-1 hover:bg-gray-100 w-full text-left">Clear all</button>
+                  </div>
+                </div>
               </div>
             </div>
 
             <div className="flex-1 overflow-auto p-3 space-y-3 bg-gray-100 text-black custom-scrollbar">
-              {(messages[selectedUser.usercode] || []).map((msg, idx) => (
+              {(messages[selectedUser.usercode || selectedUser.userid] || []).map((msg, idx) => (
                 <div
                   key={idx}
                   className={`p-2 rounded ${msg.sender === 'Me' ? 'bg-blue-200 ml-auto' : 'bg-white'}`}
@@ -285,12 +317,9 @@ const ChatBox = () => {
                   <div className="text-sm font-medium">{msg.sender}</div>
                   {msg.text && <div className="mt-1">{msg.text}</div>}
                   {msg.fileUrl && (
-                    <a
-                      href={msg.fileUrl}
-                      download={msg.fileName}
-                      className="text-blue-500 underline block mt-1"
-                    >
-                      {msg.fileName || 'Download file'}
+                    <a href={msg.fileUrl} download={msg.fileName} className="text-blue-600 underline mt-1 flex items-center gap-1">
+                      <span>{fileIcon(msg.file_mime || msg.fileName)}</span>
+                      <span>{msg.fileName || 'Download file'}</span>
                     </a>
                   )}
                   <small className="block text-xs text-gray-500 mt-1">{msg.time}</small>
@@ -325,6 +354,24 @@ const ChatBox = () => {
                 Send
               </button>
             </div>
+
+            {/* Files history panel */}
+            {filesTab.length > 0 && (
+              <div className="p-2 bg-white border-t">
+                <div className="text-sm font-semibold mb-1">Files</div>
+                <ul className="max-h-40 overflow-auto space-y-1">
+                  {filesTab.map(f => (
+                    <li key={f.id} className="flex items-center gap-2 text-sm">
+                      <span>{fileIcon(f.file_mime || f.file_name)}</span>
+                      <a href={`/media/${f.file_path}`} download={f.file_name} className="text-blue-600 underline">
+                        {f.file_name}
+                      </a>
+                      <span className="text-gray-500">· {new Date(f.createdat).toLocaleString()}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
         {/* toggle button */}

@@ -13,8 +13,6 @@ import { CourseSub } from '../models/course_sub.mjs';
 import rightsController from '../controllers/rightsController.mjs';
 import { UserProfile } from '../models/userProfile.mjs';
 import { Setting } from '../models/path.mjs';
-import bcrypt from 'bcrypt';
-import { logAction } from '../utils/logAction.mjs';
 
 const router = express.Router();
 

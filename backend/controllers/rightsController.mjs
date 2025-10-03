@@ -1,5 +1,6 @@
 // backend/controllers/rightsController.mjs
 import { rightsService } from '../services/rightsService.mjs';
+import { logAction } from '../utils/logAction.mjs';
 
 export const rightsController = {
   // Roles
@@ -7,13 +8,30 @@ export const rightsController = {
     try { const roles = await rightsService.listRoles(); res.json({ roles }); } catch (e) { next(e); }
   },
   async createRole(req, res, next) {
-    try { const { name, description } = req.body || {}; const role = await rightsService.createRole({ name, description }); res.json(role); } catch (e) { next(e); }
+    try {
+      const { name, description } = req.body || {};
+      const role = await rightsService.createRole({ name, description });
+      try { await logAction(req, 'rights.role.create', { roleid: role?.roleid, name, description }); } catch {}
+      res.json(role);
+    } catch (e) { next(e); }
   },
   async updateRole(req, res, next) {
-    try { const id = parseInt(req.params.roleid, 10); const role = await rightsService.updateRole(id, req.body || {}); if (!role) return res.status(404).json({ error: 'Role not found' }); res.json(role); } catch (e) { next(e); }
+    try {
+      const id = parseInt(req.params.roleid, 10);
+      const updates = req.body || {};
+      const role = await rightsService.updateRole(id, updates);
+      if (!role) return res.status(404).json({ error: 'Role not found' });
+      try { await logAction(req, 'rights.role.update', { roleid: id, fields: Object.keys(updates) }); } catch {}
+      res.json(role);
+    } catch (e) { next(e); }
   },
   async deleteRole(req, res, next) {
-    try { const id = parseInt(req.params.roleid, 10); const rows = await rightsService.deleteRole(id); res.json({ ok: rows > 0 }); } catch (e) { next(e); }
+    try {
+      const id = parseInt(req.params.roleid, 10);
+      const rows = await rightsService.deleteRole(id);
+      try { await logAction(req, 'rights.role.delete', { roleid: id, deleted: rows > 0 }); } catch {}
+      res.json({ ok: rows > 0 });
+    } catch (e) { next(e); }
   },
 
   // Permissions
@@ -32,11 +50,17 @@ export const rightsController = {
     try {
       const { roleid, moduleid = null, menuid = null, action = null, instituteid = null } = req.body || {};
       const p = await rightsService.createPermission({ roleid, moduleid, menuid, action, instituteid });
+      try { await logAction(req, 'rights.permission.create', { permissionid: p?.permissionid, roleid, moduleid, menuid, action, instituteid }); } catch {}
       res.json(p);
     } catch (e) { next(e); }
   },
   async deletePermission(req, res, next) {
-    try { const id = parseInt(req.params.id, 10); const rows = await rightsService.deletePermission(id); res.json({ ok: rows > 0 }); } catch (e) { next(e); }
+    try {
+      const id = parseInt(req.params.id, 10);
+      const rows = await rightsService.deletePermission(id);
+      try { await logAction(req, 'rights.permission.delete', { permissionid: id, deleted: rows > 0 }); } catch {}
+      res.json({ ok: rows > 0 });
+    } catch (e) { next(e); }
   },
 
   // Assignments
@@ -49,10 +73,20 @@ export const rightsController = {
     } catch (e) { next(e); }
   },
   async createAssignment(req, res, next) {
-    try { const { userid, roleid } = req.body || {}; const rec = await rightsService.createAssignment({ userid, roleid }); res.json(rec); } catch (e) { next(e); }
+    try {
+      const { userid, roleid } = req.body || {};
+      const rec = await rightsService.createAssignment({ userid, roleid });
+      try { await logAction(req, 'rights.assignment.create', { id: rec?.id, userid, roleid }); } catch {}
+      res.json(rec);
+    } catch (e) { next(e); }
   },
   async deleteAssignment(req, res, next) {
-    try { const id = parseInt(req.params.id, 10); const rows = await rightsService.deleteAssignment(id); res.json({ ok: rows > 0 }); } catch (e) { next(e); }
+    try {
+      const id = parseInt(req.params.id, 10);
+      const rows = await rightsService.deleteAssignment(id);
+      try { await logAction(req, 'rights.assignment.delete', { id, deleted: rows > 0 }); } catch {}
+      res.json({ ok: rows > 0 });
+    } catch (e) { next(e); }
   },
 
   // Masters

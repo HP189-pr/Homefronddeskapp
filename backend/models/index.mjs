@@ -22,6 +22,7 @@ import { ProvisionalRequest } from '../models/provisional_request.mjs';
 import { InstitutionalVerification } from '../models/institutional_verification.mjs';
 import { DocumentReceipt } from '../models/document_receipt.mjs';
 import { Setting } from './path.mjs';
+import { ChatMessage } from './chat_message.mjs';
 
 // Optionally define associations (if you want)
 const models = {
@@ -41,6 +42,7 @@ const models = {
   InstitutionalVerification,
   DocumentReceipt,
   Setting,
+  ChatMessage,
 };
 
 export { sequelize };
