@@ -264,6 +264,7 @@ router.delete('/rights/assignments/:id', rightsController.deleteAssignment);
 
 router.get('/rights/modules', rightsController.listModules);
 router.get('/rights/menus', rightsController.listMenus);
+router.get('/rights/my', rightsController.listMyRights);
 // --- Course masters ---
 router.get('/course_main', async (req, res, next) => {
   try {

@@ -5,7 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 
 const BACKEND_MEDIA_URL = 'http://localhost:5000/media/Profpic/';
 
-const modules = [
+const staticModules = [
   {
     id: 'student',
     name: 'Student Module',
@@ -37,7 +37,10 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
   const { navigate } = useNav();
   const [selectedModule, setSelectedModule] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
-  const { user, logout, verifyPassword } = useAuth();
+  const { user, logout, verifyPassword, authFetch } = useAuth();
+  const [allowedModules, setAllowedModules] = useState([]); // from backend
+  const [allowedMenusByModule, setAllowedMenusByModule] = useState({});
+  const [canAccessAdminPanel, setCanAccessAdminPanel] = useState(false);
   const [profilePic, setProfilePic] = useState(
     '/profilepic/default-profile.jpg',
   );
@@ -48,6 +51,43 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
     } else {
       setProfilePic('/profilepic/default-profile.jpg');
     }
+  }, [user]);
+
+  // Fetch rights and build allowed menu tree
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const res = await authFetch('/api/admin/rights/my');
+        if (!res.ok) {
+          // Fallback for non-admin users: minimal rights info
+          const res2 = await authFetch('/api/rights/my');
+          if (res2.ok) {
+            const d2 = await res2.json();
+            if (!cancelled) setCanAccessAdminPanel(!!(d2.admin || (d2.permissions && d2.permissions.length)));
+          }
+          return;
+        }
+        const data = await res.json();
+        if (cancelled) return;
+        const moduleMap = new Map((data.modules || []).map(m => [m.moduleid, m]));
+        const menus = data.menus || [];
+        const byModule = {};
+        for (const m of menus) {
+          const key = String(m.moduleid);
+          if (!byModule[key]) byModule[key] = [];
+          byModule[key].push(m);
+        }
+        const mods = Array.from(moduleMap.values());
+        setAllowedModules(mods);
+        setAllowedMenusByModule(byModule);
+        setCanAccessAdminPanel(!!(mods.length || (data.permissions && data.permissions.length)));
+      } catch (e) {
+        // ignore
+      }
+    };
+    run();
+    return () => { cancelled = true; };
   }, [user]);
 
   const handleModuleSelect = (moduleId) => {
@@ -131,20 +171,26 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
           className="w-full text-left px-4 py-2 rounded bg-gray-700 hover:bg-gray-600"
         >
           {isOpen
-            ? selectedModule
-              ? modules.find((m) => m.id === selectedModule).name
-              : '🗃️ Select Module'
+            ? (selectedModule
+                ? (() => {
+                    // Prefer dynamic module name if available
+                    const dyn = allowedModules.find((m) => String(m.moduleid) === String(selectedModule));
+                    if (dyn) return dyn.name;
+                    const stat = staticModules.find((m) => m.id === selectedModule);
+                    return stat ? stat.name : '🗃️ Select Module';
+                  })()
+                : '🗃️ Select Module')
             : '🗃️'}
         </button>
         {showDropdown && (
           <div className="absolute left-0 w-full bg-gray-700 rounded shadow-lg z-10">
-            {modules.map((mod) => (
+            {(allowedModules.length ? allowedModules : staticModules).map((mod) => (
               <button
-                key={mod.id}
-                onClick={() => handleModuleSelect(mod.id)}
+                key={mod.id || mod.moduleid}
+                onClick={() => handleModuleSelect(mod.id || String(mod.moduleid))}
                 className="w-full text-left px-4 py-2 hover:bg-gray-600 flex items-center"
               >
-                <span className="mr-2">{mod.icon}</span> {mod.name}
+                <span className="mr-2">{mod.icon || '📦'}</span> {mod.name}
               </button>
             ))}
           </div>
@@ -156,9 +202,11 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
       {/* Module Menus */}
       {selectedModule && (
         <div className={`${isOpen ? 'block' : 'hidden'}`}>
-          {modules
-            .find((mod) => mod.id === selectedModule)
-            ?.menu.map((item) => (
+          {(() => {
+            const staticMenus = staticModules.find((m) => m.id === selectedModule)?.menu || [];
+            const dynamicMenus = allowedMenusByModule[selectedModule] ? allowedMenusByModule[selectedModule].map(m => m.name) : [];
+            const items = dynamicMenus.length ? dynamicMenus : staticMenus;
+            return items.map((item) => (
               <button
                 key={item}
                 onClick={() => handleMenuClick(item)}
@@ -166,19 +214,22 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
               >
                 {isOpen ? item : '•'}
               </button>
-            ))}
+            ));
+          })()}
         </div>
       )}
 
       <hr className="border-gray-600 my-4" />
 
       {/* Admin Panel Button */}
-      <button
-        onClick={() => handleMenuClick('Admin Panel')}
-        className="w-full text-left px-4 py-2 rounded hover:bg-gray-700"
-      >
-        {isOpen ? '🛠️ Admin Panel' : '🛠️'}
-      </button>
+      {allowedModules.length > 0 && (
+        <button
+          onClick={() => handleMenuClick('Admin Panel')}
+          className="w-full text-left px-4 py-2 rounded hover:bg-gray-700"
+        >
+          {isOpen ? '🛠️ Admin Panel' : '🛠️'}
+        </button>
+      )}
 
       {/* Logout Button */}
       <div className="mt-auto">

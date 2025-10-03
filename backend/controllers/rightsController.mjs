@@ -62,6 +62,38 @@ export const rightsController = {
   async listMenus(req, res, next) {
     try { const menus = await rightsService.listMenus(); res.json({ menus }); } catch (e) { next(e); }
   },
+
+  // Current user's rights: modules and menus they can see
+  async listMyRights(req, res, next) {
+    try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+      // Find roles assigned to user
+      const assignments = await rightsService.listAssignments({ userid: user.id });
+      const roleIds = Array.from(new Set(assignments.map((a) => a.roleid)));
+      if (!roleIds.length) return res.json({ modules: [], menus: [], permissions: [] });
+
+      // Fetch all permissions for these roles
+      const permissions = await rightsService.listPermissions({});
+      const myPerms = permissions.filter((p) => roleIds.includes(p.roleid));
+
+      // Collect module and menu ids
+      const moduleIds = new Set(myPerms.filter(p => p.moduleid != null).map(p => p.moduleid));
+      const menuIds = new Set(myPerms.filter(p => p.menuid != null).map(p => p.menuid));
+
+      // Load menus to infer modules from menu perms
+      const allMenus = await rightsService.listMenus();
+      const myMenus = allMenus.filter(m => menuIds.has(m.menuid));
+      myMenus.forEach(m => { if (m.moduleid != null) moduleIds.add(m.moduleid); });
+
+      // Load modules
+      const allModules = await rightsService.listModules();
+      const myModules = allModules.filter(m => moduleIds.has(m.moduleid));
+
+      return res.json({ modules: myModules, menus: myMenus, permissions: myPerms });
+    } catch (e) { next(e); }
+  },
 };
 
 export default rightsController;

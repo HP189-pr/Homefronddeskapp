@@ -85,9 +85,11 @@ const PermissionsAdmin = () => {
         </select>
         <select value={form.menuid} onChange={e=>setForm({...form,menuid:e.target.value})} className="p-2 border">
           <option value="">Menu (optional)</option>
-          {menus
-            .filter(m => !form.moduleid || String(m.moduleid) === String(form.moduleid))
-            .map(m => <option key={m.menuid} value={m.menuid}>{m.menuid} — {m.name}</option>)}
+          {(() => {
+            const filtered = menus.filter(m => !form.moduleid || String(m.moduleid) === String(form.moduleid));
+            if (!filtered.length) return [<option key="__nomenu__" value="" disabled>No menus found for selected module</option>];
+            return filtered.map(m => <option key={m.menuid} value={m.menuid}>{m.menuid} — {m.name}</option>);
+          })()}
         </select>
         <input placeholder="action (optional e.g. view)" value={form.action} onChange={e=>setForm({...form,action:e.target.value})} className="p-2 border"/>
         <input placeholder="instituteid (optional)" value={form.instituteid} onChange={e=>setForm({...form,instituteid:e.target.value})} className="p-2 border"/>
