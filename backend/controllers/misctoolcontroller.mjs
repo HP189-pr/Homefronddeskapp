@@ -9,9 +9,6 @@ import PDFDocument from 'pdfkit';
 import mime from 'mime-types';
 import models, { sequelize } from '../models/index.mjs';
 import Verification from '../models/verification.mjs';
-import Institute from '../models/institute.mjs';
-import Module from '../models/module.mjs';
-import PathModel from '../models/path.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
