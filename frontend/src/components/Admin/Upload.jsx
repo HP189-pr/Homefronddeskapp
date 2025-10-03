@@ -22,6 +22,9 @@ export default function Upload() {
   const [progress, setProgress] = useState(null); // { percent, processed, total, done, error, logUrl }
   const [previewLimit, setPreviewLimit] = useState(200);
   const [previewOffset, setPreviewOffset] = useState(0);
+  const [showPicker, setShowPicker] = useState(false);
+  const [selectedColumns, setSelectedColumns] = useState([]);
+  const [selectedSheet, setSelectedSheet] = useState('');
   const pollTimer = useRef(null);
   const virtRef = useRef(null);
 
@@ -63,6 +66,9 @@ export default function Upload() {
         headers: { ...authHeaders(), 'Content-Type': 'multipart/form-data' },
       });
       setPreview(res.data);
+      // initialize picker defaults
+      setSelectedSheet(res.data.sheetName || sheetName || 'Sheet1');
+      setSelectedColumns(res.data.mappedColumns || []);
       setProgress(null);
     } catch (e) {
   const msg = e?.response?.data?.error || e.message || 'Preview failed';
@@ -86,7 +92,10 @@ export default function Upload() {
     startPolling(preview.tempFileId);
     try {
       const body = { tempFileId: preview.tempFileId, table: service };
-      if (sheetName) body.sheetName = sheetName;
+      // Use user-selected sheet if specified
+      const effectiveSheet = selectedSheet || sheetName;
+      if (effectiveSheet) body.sheetName = effectiveSheet;
+      if (selectedColumns && selectedColumns.length) body.selectedColumns = selectedColumns;
       const res = await axios.post('/api/misc/upload-excel/confirm', body, { headers: { ...authHeaders(), 'Content-Type': 'application/json' } });
       setResult(res.data);
       await fetchProgress(preview.tempFileId, true);
@@ -199,6 +208,7 @@ export default function Upload() {
             {preview.hasMore && (
               <button onClick={loadMorePreview} className="bg-gray-200 border rounded px-2 py-0.5 text-xs">Load next {previewLimit}</button>
             )}
+            <button onClick={()=> setShowPicker(true)} className="bg-amber-600 text-white rounded px-2 py-0.5 text-xs">Select Sheet & Columns</button>
           </div>
           <div className="text-sm">Missing: {preview.missingColumns?.join(', ') || 'none'} | Extra: {preview.extraColumns?.join(', ') || 'none'}</div>
           <div className="mt-3">
@@ -219,6 +229,26 @@ export default function Upload() {
           </div>
         </div>
       )}
+
+      {/* Sheet & Column Picker Modal */}
+      <PickerModal
+        open={showPicker}
+        onClose={() => setShowPicker(false)}
+        sheetNames={preview?.sheetNames || []}
+        currentSheet={selectedSheet || preview?.sheetName || sheetName}
+        mappedColumns={preview?.mappedColumns || []}
+        selectedColumns={selectedColumns}
+        setSelectedColumns={setSelectedColumns}
+        onChangeSheet={(sn) => {
+          setSelectedSheet(sn);
+          setSheetName(sn);
+        }}
+        onRefetch={async () => {
+          // re-run preview for the newly selected sheet
+          setPreviewOffset(0);
+          await doPreview();
+        }}
+      />
 
       {result && (
         <div className="border rounded p-3 space-y-2">
@@ -255,6 +285,50 @@ export default function Upload() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Modal popup for sheet and column selection
+function PickerModal({ open, onClose, sheetNames, currentSheet, mappedColumns, selectedColumns, setSelectedColumns, onChangeSheet, onRefetch }) {
+  if (!open) return null;
+  const toggleCol = (c) => {
+    if (!selectedColumns) return;
+    if (selectedColumns.includes(c)) setSelectedColumns(selectedColumns.filter((x) => x !== c));
+    else setSelectedColumns([...selectedColumns, c]);
+  };
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white rounded shadow-lg p-4 w-[640px] max-w-[95vw]">
+        <div className="flex items-center justify-between mb-3">
+          <div className="font-semibold">Select Sheet & Columns</div>
+          <button onClick={onClose} className="text-gray-500">✕</button>
+        </div>
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="text-sm">Sheet</div>
+            <select value={currentSheet} onChange={(e)=> onChangeSheet(e.target.value)} className="border rounded px-2 py-1">
+              {(sheetNames || []).map((sn) => <option key={sn} value={sn}>{sn}</option>)}
+            </select>
+            <button onClick={onRefetch} className="bg-blue-600 text-white rounded px-2 py-1 text-sm">Fetch</button>
+          </div>
+          <div>
+            <div className="text-sm mb-1">Columns to import/update</div>
+            <div className="grid grid-cols-2 gap-1 max-h-56 overflow-auto border rounded p-2">
+              {(mappedColumns || []).map((c) => (
+                <label key={c} className="text-xs flex items-center gap-2">
+                  <input type="checkbox" checked={(selectedColumns || []).includes(c)} onChange={()=> toggleCol(c)} />
+                  {c}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="text-xs text-gray-600">Note: On update, unselected columns will not be touched. On insert, unselected fields will be omitted and DB defaults will apply. Required columns are still needed for insert.</div>
+        </div>
+        <div className="mt-3 flex justify-end gap-2">
+          <button onClick={onClose} className="border rounded px-3 py-1">Close</button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -247,14 +247,15 @@ export const previewExcel = async (req, res) => {
 
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(req.file.path);
-    let sheet = null;
+  let sheet = null;
     if (sheetName) {
       sheet = workbook.getWorksheet(String(sheetName));
       if (!sheet) return res.status(400).json({ error: `Sheet '${sheetName}' not found` });
     } else {
       sheet = workbook.worksheets[0];
     }
-    if (!sheet) return res.status(400).json({ error: 'No sheets found in Excel' });
+  if (!sheet) return res.status(400).json({ error: 'No sheets found in Excel' });
+  const sheetNames = workbook.worksheets.map((ws) => ws?.name).filter(Boolean);
 
     const headerRow = sheet.getRow(1);
     const headers = headerRow.values.filter((v) => v !== null && v !== undefined && v !== '' && v !== 0).map((v) => (typeof v === 'object' && v.text ? v.text : v));
@@ -312,6 +313,7 @@ export const previewExcel = async (req, res) => {
       hasMore: offset + preview.length < totalRows,
       nextOffset: Math.min(totalRows, offset + preview.length),
       sheetName: sheet?.name,
+      sheetNames,
       beforeCount,
     });
   } catch (err) {
@@ -323,7 +325,7 @@ export const previewExcel = async (req, res) => {
 export const confirmExcel = async (req, res) => {
   try {
     const startedAt = Date.now();
-  const { tempFileId, table, sheetName, strictDegreeMatch = true } = req.body;
+  const { tempFileId, table, sheetName, strictDegreeMatch = true, selectedColumns } = req.body;
     if (!tempFileId || !table) {
       return res.status(400).json({ error: 'tempFileId and table are required' });
     }
@@ -333,6 +335,11 @@ export const confirmExcel = async (req, res) => {
     }
     const columns = getModelColumns(mdl);
     const headerNames = columns.map((c) => c.name);
+    // Optional selected columns set to restrict updates/inserts
+    let selectedColsSet = null;
+    if (Array.isArray(selectedColumns) && selectedColumns.length) {
+      selectedColsSet = new Set(selectedColumns.filter((s) => typeof s === 'string'));
+    }
 
     // Find the uploaded temp file by known pattern
     const candidates = fs.readdirSync(TMP_DIR).filter((f) => f.startsWith(tempFileId + '.'));
@@ -479,6 +486,7 @@ export const confirmExcel = async (req, res) => {
         const name = c.name;
         if (auditFields.has(name)) continue; // do not import audit fields from Excel
         if (pkNames.has(name)) continue; // skip primary key fields in payload
+        if (selectedColsSet && !selectedColsSet.has(name)) continue; // respect user-selected columns
         if (Object.prototype.hasOwnProperty.call(source, name)) {
           dest[name] = source[name];
         }
@@ -721,10 +729,11 @@ export const confirmExcel = async (req, res) => {
   summaryWs.addRow(['Distinct Inserted IDs', insertedIds.size]);
   summaryWs.addRow(['After Count', afterCount != null ? afterCount : 'N/A']);
   summaryWs.addRow(['Delta (After - Before)', deltaCount != null ? deltaCount : 'N/A']);
-    okWs.addRow(['Row', 'ID', 'Op', ...headerNames]);
-    successes.forEach((s) => okWs.addRow([s.row, s.id, s.op || 'insert', ...headerNames.map((h) => s.data[h] ?? '')]));
-    failWs.addRow(['Row', 'Reason', ...headerNames]);
-    failures.forEach((f) => failWs.addRow([f.row, f.reason, ...headerNames.map((h) => f.data[h] ?? '')]));
+  const logCols = selectedColsSet ? Array.from(selectedColsSet) : headerNames;
+  okWs.addRow(['Row', 'ID', 'Op', ...logCols]);
+  successes.forEach((s) => okWs.addRow([s.row, s.id, s.op || 'insert', ...logCols.map((h) => s.data[h] ?? '')]));
+  failWs.addRow(['Row', 'Reason', ...logCols]);
+  failures.forEach((f) => failWs.addRow([f.row, f.reason, ...logCols.map((h) => f.data[h] ?? '')]));
 
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const logFile = `${table}-${stamp}-${tempFileId}.xlsx`;
