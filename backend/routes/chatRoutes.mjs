@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import mime from 'mime-types';
 import { requireAuth } from '../middleware/auth.mjs';
 import { ChatMessage } from '../models/chat_message.mjs';
+import { encryptText, decryptText } from '../utils/chatCrypto.mjs';
 import { logAction } from '../utils/logAction.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,7 +34,7 @@ router.post('/send', requireAuth, upload.single('file'), async (req, res, next) 
     const from = req.user?.id;
     const to = parseInt(req.body?.to_userid, 10);
     if (!from || !to) return res.status(400).json({ error: 'Missing to_userid' });
-    const text = (req.body?.text || '').toString();
+  const text = (req.body?.text || '').toString();
     let fileRec = { file_name: null, file_path: null, file_mime: null, file_size: null };
     if (req.file) {
       const relPath = path.relative(MEDIA_ROOT, req.file.path).replace(/\\/g, '/');
@@ -44,9 +45,12 @@ router.post('/send', requireAuth, upload.single('file'), async (req, res, next) 
         file_size: req.file.size || null,
       };
     }
-    const row = await ChatMessage.create({ from_userid: from, to_userid: to, text: text || null, ...fileRec });
+  const row = await ChatMessage.create({ from_userid: from, to_userid: to, text: text ? encryptText(text) : null, ...fileRec });
     try { await logAction(req, 'chat.send', { to_userid: to, hasFile: !!req.file, file: fileRec.file_name }); } catch {}
-    res.json(row);
+  // Return with decrypted text for the sender's immediate view
+  const payload = row.toJSON();
+  if (payload && typeof payload.text === 'string') payload.text = decryptText(payload.text);
+  res.json(payload);
   } catch (e) { next(e); }
 });
 
@@ -68,7 +72,12 @@ router.get('/history/:userid', requireAuth, async (req, res, next) => {
       order: [['createdat','ASC']],
       limit, offset,
     });
-    res.json({ messages: rows });
+    const out = rows.map(r => {
+      const o = r.toJSON();
+      if (o && typeof o.text === 'string') o.text = decryptText(o.text);
+      return o;
+    });
+    res.json({ messages: out });
   } catch (e) { next(e); }
 });
 
@@ -88,6 +97,7 @@ router.get('/files/:userid', requireAuth, async (req, res, next) => {
       },
       order: [['createdat','DESC']],
     });
+    // No need to decrypt files; only filenames may be present
     res.json({ files: rows });
   } catch (e) { next(e); }
 });
