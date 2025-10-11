@@ -7,7 +7,6 @@ function twoDigitYear(d = new Date()) { return String(d.getFullYear()).slice(-2)
 
 async function generateNextMigrationNumber() {
   const yy = twoDigitYear();
-  const prefix = `--${yy}`; // No special two-digit prefix provided; keep year + sequence
   const last = await MigrationRequest.findOne({
     where: sqlWhere(fn('LOWER', col('migration_number')), { [Op.like]: `%${yy}%` }),
     order: [[col('migration_number'), 'DESC']],

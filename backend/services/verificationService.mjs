@@ -31,14 +31,6 @@ async function getSetting(key) {
   return row ? row.value : null;
 }
 
-function joinPath(base, file) {
-  if (!base) return file;
-  // Normalize simple join without importing path (keeps it platform-agnostic for URLs too)
-  const b = String(base).replace(/[\\/]+$/,'');
-  const f = String(file).replace(/^[\\/]+/,'');
-  return `${b}/${f}`;
-}
-
 async function applyDocPathIfMissing(payload) {
   if (!payload.doc_scan_copy && payload.verification_no) {
     // If admin configured a base folder for verification, try to FIND the file across year-wise subfolders.

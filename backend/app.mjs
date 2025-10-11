@@ -20,6 +20,7 @@ import logRoutes from './routes/logRoutes.mjs';
 import mastersRoutes from './routes/mastersRoutes.mjs';
 import enrollmentRoutes from './routes/enrollmentRoutes.mjs';
 import degreeRoutes from './routes/degreeRoutes.mjs';
+import leaveRoutes from './routes/leaveRoutes.mjs';
 
 // Register models so Sequelize sees them (ensure these files exist)
 import './models/index.mjs'; // registers models: user, module, menu, institute, role, permission, etc.
@@ -78,6 +79,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/degrees', degreeRoutes);
 app.use('/api', mastersRoutes);
+app.use('/api', leaveRoutes);
 app.use('/api/profile', profileRoutes);
 
 // --- Admin routes ---

@@ -4,7 +4,7 @@
  * Express error handling middleware.
  * Catches thrown errors and sends JSON response with status + message.
  */
-export default function errorHandler(err, req, res, next) {
+export default function errorHandler(err, req, res, _next) {
   console.error('❌ Error:', err);
 
   // If the error has an explicit status, use it

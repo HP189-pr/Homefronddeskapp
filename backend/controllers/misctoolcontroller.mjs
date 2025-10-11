@@ -509,7 +509,6 @@ export const confirmExcel = async (req, res) => {
         if (Object.prototype.hasOwnProperty.call(obj, col.name)) {
           obj[col.name] = coerceValue(obj[col.name], col.type);
           // Trim strings and convert empty strings to null
-          const t = String(col.type || '').toUpperCase();
           if (typeof obj[col.name] === 'string') {
             const trimmed = obj[col.name].trim();
             const lower = trimmed.toLowerCase();
@@ -956,7 +955,10 @@ export const checkEnrollmentDuplicates = async (req, res) => {
         })
       : [];
 
-    if (format === 'json') return res.json({ duplicates: dupGroups.length, groups: dupGroups, details, normalized });
+    if (format === 'json') {
+      try { await logAction(req, 'analysis.enrollment.duplicates', { normalized, keys: dupGroups.length }); } catch {}
+      return res.json({ duplicates: dupGroups.length, groups: dupGroups, details, normalized });
+    }
 
     const wb = new ExcelJS.Workbook();
     const summary = wb.addWorksheet('Summary');
@@ -972,9 +974,10 @@ export const checkEnrollmentDuplicates = async (req, res) => {
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
     res.setHeader('Content-Disposition', 'attachment; filename="Enrollment-duplicate.xlsx"');
-    await wb.xlsx.write(res);
-    return res.end();
-    try { await logAction(req, 'analysis.enrollment.duplicates', { normalized, keys: dupGroups.length }); } catch {}
+  try { await logAction(req, 'analysis.enrollment.duplicates', { normalized, keys: dupGroups.length }); } catch {}
+  await wb.xlsx.write(res);
+  res.end();
+  return undefined;
   } catch (err) {
     console.error('❌ checkEnrollmentDuplicates error:', err);
     return res.status(500).json({ error: 'Failed to compute enrollment duplicates' });
@@ -1005,7 +1008,10 @@ export const checkEnrollmentMismatch = async (req, res) => {
       if (probs.length) mismatches.push({ ...r, issues: probs.join('; ') });
     }
 
-    if (format === 'json') return res.json({ count: mismatches.length, details: mismatches });
+    if (format === 'json') {
+      try { await logAction(req, 'analysis.enrollment.mismatch', { count: mismatches.length }); } catch {}
+      return res.json({ count: mismatches.length, details: mismatches });
+    }
 
     const wb = new ExcelJS.Workbook();
     const summary = wb.addWorksheet('Summary');
@@ -1016,9 +1022,10 @@ export const checkEnrollmentMismatch = async (req, res) => {
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
     res.setHeader('Content-Disposition', 'attachment; filename="Enrollment-mismatch.xlsx"');
-    await wb.xlsx.write(res);
-    return res.end();
-    try { await logAction(req, 'analysis.enrollment.mismatch', { count: mismatches.length }); } catch {}
+  try { await logAction(req, 'analysis.enrollment.mismatch', { count: mismatches.length }); } catch {}
+  await wb.xlsx.write(res);
+  res.end();
+  return undefined;
   } catch (err) {
     console.error('❌ checkEnrollmentMismatch error:', err);
     return res.status(500).json({ error: 'Failed to compute enrollment mismatches' });
@@ -1081,6 +1088,7 @@ export const checkDegreeEnrollmentDuplicates = async (req, res) => {
     });
 
     if (format === 'json') {
+      try { await logAction(req, 'analysis.degree.duplicates', { normalized, groups: dupGroups.length }); } catch {}
       return res.json({
         duplicates: dupGroups.length,
         groups: dupGroups,
@@ -1090,10 +1098,10 @@ export const checkDegreeEnrollmentDuplicates = async (req, res) => {
     }
 
     // Build Excel
-  const wb = new ExcelJS.Workbook();
-  const summary = wb.addWorksheet('Summary');
-  const groupsWs = wb.addWorksheet('Duplicate Keys');
-  const detailsWs = wb.addWorksheet('Details');
+    const wb = new ExcelJS.Workbook();
+    const summary = wb.addWorksheet('Summary');
+    const groupsWs = wb.addWorksheet('Duplicate Keys');
+    const detailsWs = wb.addWorksheet('Details');
 
     const dupRowTotal = details.length;
     summary.addRow(['Normalized compare', normalized ? 'Yes' : 'No']);
@@ -1119,9 +1127,10 @@ export const checkDegreeEnrollmentDuplicates = async (req, res) => {
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
     res.setHeader('Content-Disposition', 'attachment; filename="Degree-duplicate-enrollment.xlsx"');
-    await wb.xlsx.write(res);
-    return res.end();
-    try { await logAction(req, 'analysis.degree.duplicates', { normalized, groups: dupGroups.length }); } catch {}
+  try { await logAction(req, 'analysis.degree.duplicates', { normalized, groups: dupGroups.length }); } catch {}
+  await wb.xlsx.write(res);
+  res.end();
+  return undefined;
   } catch (err) {
     console.error('❌ checkDegreeEnrollmentDuplicates error:', err);
     return res.status(500).json({ error: 'Failed to compute duplicates' });
@@ -1176,7 +1185,7 @@ export const pruneDegreeEnrollmentDuplicates = async (req, res) => {
 
     const toDelete = [];
     const toKeep = [];
-    for (const [k, list] of byKey.entries()) {
+  for (const [_key, list] of byKey.entries()) {
       // Candidates to delete: dg_sr_no null or empty
       const del = list.filter((r) => r.dg_sr_no == null || String(r.dg_sr_no).trim() === '');
       const keep = list.filter((r) => !(r.dg_sr_no == null || String(r.dg_sr_no).trim() === ''));
@@ -1335,7 +1344,7 @@ export const pruneDegreeExactDuplicates = async (req, res) => {
 
     const toDelete = [];
     const toKeep = [];
-    for (const [k, list] of byKey.entries()) {
+  for (const [_key, list] of byKey.entries()) {
       // Prefer keeping rows with non-empty dg_sr_no; among them, keep the one with smallest id
       const nonEmpty = list.filter((r) => !(r.dg_sr_no == null || String(r.dg_sr_no).trim() === ''));
       let keepRecord = null;

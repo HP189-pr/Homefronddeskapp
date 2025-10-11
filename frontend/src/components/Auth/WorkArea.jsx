@@ -7,6 +7,7 @@ import Provisional from '../pages/provisional';
 import Degree from '../pages/Degree';
 import InstitutionalVerification from '../pages/InstVerification';
 import DocumentReceive from '../pages/DocumentReceive';
+import EmpLeavePage from '../pages/emp-leave.jsx';
 import Enrollment from '../pages/Enrollment';
 import AdminDashboard from '../Admin/AdminDashboard';
 import AdminPanelAccess from '../Admin/AdminPanelAccess';
@@ -52,6 +53,9 @@ const WorkArea = ({ selectedMenuItem }) => {
         return <InstitutionalVerification />;
       case '📥 Document Receive':
         return <DocumentReceive />;
+      case 'Leave Management':
+      case '🏖️ Leave Management':
+        return <EmpLeavePage />;
       case 'Enrollment':
         // Let the Enrollment component enforce its own permissions.
         return (
@@ -59,18 +63,22 @@ const WorkArea = ({ selectedMenuItem }) => {
             <Enrollment />
           </SimpleBoundary>
         );
-      case 'Admin Panel':
+      case 'Admin Panel': {
         // backend uses `usertype`; some older records may use `role` — accept either
-        const isAdmin = (user && (user.usertype === 'admin' || user.role === 'admin'));
+        const isAdmin = Boolean(
+          user && (user.usertype === 'admin' || user.role === 'admin')
+        );
         if (!isAdmin) {
-          console.debug('Admin access denied for user:', user);
-          return <h2 style={{ padding: '20px', color: 'red' }}>Access Denied 🚫</h2>;
+          return (
+            <h2 style={{ padding: '20px', color: 'red' }}>Access Denied 🚫</h2>
+          );
         }
         return adminUnlocked ? (
           <AdminDashboard />
         ) : (
           <AdminPanelAccess onSuccess={() => setAdminUnlocked(true)} />
         );
+      }
       case 'Profile Settings':
         return <ProfileUpdate />;
       default:
@@ -82,11 +90,7 @@ const WorkArea = ({ selectedMenuItem }) => {
     }
   };
 
-  return (
-    <div className="w-full h-full">
-      {renderPage()}
-    </div>
-  );
+  return <div className="w-full h-full">{renderPage()}</div>;
 };
 
 WorkArea.propTypes = {

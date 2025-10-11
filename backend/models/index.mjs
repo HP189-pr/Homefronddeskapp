@@ -23,6 +23,11 @@ import { InstitutionalVerification } from '../models/institutional_verification.
 import { DocumentReceipt } from '../models/document_receipt.mjs';
 import { Setting } from './path.mjs';
 import { ChatMessage } from './chat_message.mjs';
+import { EmpProfile } from './emp_profile.mjs';
+import { LeaveType } from './leave_type.mjs';
+import { LeavePeriod } from './leave_period.mjs';
+import { LeaveAllocation } from './leave_allocation.mjs';
+import { LeaveEntry } from './leave_entry.mjs';
 
 // Optionally define associations (if you want)
 const models = {
@@ -43,6 +48,11 @@ const models = {
   DocumentReceipt,
   Setting,
   ChatMessage,
+  EmpProfile,
+  LeaveType,
+  LeavePeriod,
+  LeaveAllocation,
+  LeaveEntry,
 };
 
 export { sequelize };

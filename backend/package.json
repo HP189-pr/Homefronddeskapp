@@ -12,8 +12,8 @@
   "scripts": {
     "start": "node server.mjs",
     "dev": "nodemon server.mjs",
-    "lint": "eslint . --ext .js",
-    "lint:fix": "eslint . --ext .js --fix",
+  "lint": "eslint .",
+  "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "test": "node --test",
     "migrate": "sequelize db:migrate",
@@ -44,11 +44,13 @@
     "sequelize-cli": "^6.6.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.14.0",
     "eslint": "^8.39.0",
     "husky": "^8.0.0",
     "lint-staged": "^14.0.0",
     "nodemon": "^3.0.2",
-    "prettier": "^2.8.8"
+    "prettier": "^2.8.8",
+    "globals": "^15.12.0"
   },
   "lint-staged": {
     "*.{js,mjs}": [

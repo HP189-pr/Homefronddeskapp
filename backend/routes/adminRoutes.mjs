@@ -370,7 +370,7 @@ router.put('/settings/:key', async (req, res, next) => {
   try {
     const key = req.params.key;
     const value = req.body?.value ?? null;
-    const [row, created] = await Setting.upsert({ key, value, updatedat: new Date() }, { returning: true });
+  const [row] = await Setting.upsert({ key, value, updatedat: new Date() }, { returning: true });
     // Sequelize upsert returns [instance, created] for postgres
     res.json(row);
   } catch (e) { next(e); }

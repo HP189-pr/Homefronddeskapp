@@ -18,7 +18,7 @@ export const Menu = sequelize.define('Menu', {
 });
 
 // Optional association helper (not required)
-Menu.associate = (models) => {
+Menu.associate = (_models) => {
   // if using associations:
   // Menu.belongsTo(models.Module, { foreignKey: 'moduleid' });
 };
