@@ -24,8 +24,11 @@ const WorkArea = ({ selectedMenuItem }) => {
   useEffect(() => {
     try {
       const v = sessionStorage.getItem('admin_verified');
-      const ts = parseInt(sessionStorage.getItem('admin_verified_ts') || '0', 10);
-      if (v === 'true' && ts && (Date.now() - ts) < 30 * 60 * 1000) {
+      const ts = parseInt(
+        sessionStorage.getItem('admin_verified_ts') || '0',
+        10,
+      );
+      if (v === 'true' && ts && Date.now() - ts < 30 * 60 * 1000) {
         setAdminUnlocked(true);
       }
     } catch (e) {
@@ -66,7 +69,7 @@ const WorkArea = ({ selectedMenuItem }) => {
       case 'Admin Panel': {
         // backend uses `usertype`; some older records may use `role` — accept either
         const isAdmin = Boolean(
-          user && (user.usertype === 'admin' || user.role === 'admin')
+          user && (user.usertype === 'admin' || user.role === 'admin'),
         );
         if (!isAdmin) {
           return (
