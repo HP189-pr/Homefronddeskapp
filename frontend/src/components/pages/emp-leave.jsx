@@ -22,7 +22,7 @@ const EmpLeavePage = () => {
   const [error, setError] = useState('');
   const [filterEmp, setFilterEmp] = useState('');
   const [myBalances, setMyBalances] = useState([]);
-  const [allocations, setAllocations] = useState([]);
+  const [report, setReport] = useState({ period: null, rows: [] });
   const PANELS = ['Entry Leave', 'Leave Report', 'Balance Certificate'];
   const [selectedPanel, setSelectedPanel] = useState(PANELS[0]);
   const [panelOpen, setPanelOpen] = useState(true);
@@ -55,9 +55,9 @@ const EmpLeavePage = () => {
     // load allocations only when report panel is active
     if (selectedPanel === 'Leave Report') {
       axios
-        .get('/api/leave-allocations/')
-        .then((r) => setAllocations(r.data || []))
-        .catch(() => setAllocations([]));
+        .get('/api/admin/leave-report')
+        .then((r) => setReport(r.data || { period: null, rows: [] }))
+        .catch(() => setReport({ period: null, rows: [] }));
     }
   }, [selectedPanel]);
 
@@ -296,7 +296,7 @@ const EmpLeavePage = () => {
                     className="w-full border rounded-lg p-2 text-sm"
                     placeholder="00001"
                     maxLength={5}
-                    pattern="\d{1,5}"
+                    pattern="\\d{1,5}"
                   />
                 </div>
 
@@ -368,40 +368,242 @@ const EmpLeavePage = () => {
                   </select>
                 </div>
 
-                <div className="overflow-auto">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-gray-50">
+                {/* Grouped report table */}
+                <div className="overflow-auto border rounded-lg">
+                  <table className="min-w-full text-xs">
+                    <thead>
+                      <tr className="text-left">
+                        <th
+                          rowSpan={2}
+                          className="px-3 py-3 border-r border-gray-200 bg-gray-50 sticky left-0 z-20"
+                        >
+                          Emp ID
+                        </th>
+                        <th
+                          rowSpan={2}
+                          className="px-3 py-3 border-r border-gray-200 bg-gray-50"
+                        >
+                          Emp Name
+                        </th>
+                        <th
+                          rowSpan={2}
+                          className="px-3 py-3 border-r border-gray-200 bg-gray-50"
+                        >
+                          Position
+                        </th>
+                        <th
+                          rowSpan={2}
+                          className="px-3 py-3 border-r border-gray-200 bg-gray-50"
+                        >
+                          Leave Group
+                        </th>
+                        <th
+                          rowSpan={2}
+                          className="px-3 py-3 border-r border-gray-200 bg-gray-50"
+                        >
+                          Joining Date
+                        </th>
+                        <th
+                          rowSpan={2}
+                          className="px-3 py-3 border-r border-gray-200 bg-gray-50"
+                        >
+                          Leaving Date
+                        </th>
+
+                        <th
+                          colSpan={3}
+                          className="px-3 py-2 border-r border-gray-200 bg-orange-200 text-center"
+                        >
+                          Balance as on {report.period?.start_date || '-'}
+                        </th>
+                        <th
+                          colSpan={4}
+                          className="px-3 py-2 border-r border-gray-200 bg-emerald-100 text-center"
+                        >
+                          Leave Allocation ({report.period?.start_date || '-'} –{' '}
+                          {report.period?.end_date || '-'})
+                        </th>
+                        <th
+                          colSpan={9}
+                          className="px-3 py-2 border-r border-gray-200 bg-sky-100 text-center"
+                        >
+                          Used Leave ({report.period?.start_date || '-'} –{' '}
+                          {report.period?.end_date || '-'})
+                        </th>
+                        <th
+                          colSpan={3}
+                          className="px-3 py-2 bg-amber-200 text-center"
+                        >
+                          Balance as on {report.period?.end_date || '-'}
+                        </th>
+                      </tr>
                       <tr>
-                        <th className="text-left py-2 px-3">Employee</th>
-                        <th className="text-left py-2 px-3">Leave Type</th>
-                        <th className="text-left py-2 px-3">Allocated</th>
-                        <th className="text-left py-2 px-3">Used</th>
-                        <th className="text-left py-2 px-3">Balance</th>
+                        {/* Opening */}
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          SL
+                        </th>
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          EL
+                        </th>
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          CL
+                        </th>
+                        {/* Allocation */}
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          SL
+                        </th>
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          EL
+                        </th>
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          VAC
+                        </th>
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          CL
+                        </th>
+                        {/* Used */}
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          CL
+                        </th>
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          SL
+                        </th>
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          EL
+                        </th>
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          Vacation
+                        </th>
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          DL
+                        </th>
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          LWP
+                        </th>
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          ML
+                        </th>
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          PL
+                        </th>
+                        <th className="px-2 py-2 border-gray-200 text-center">
+                          CL
+                        </th>
+                        {/* Closing */}
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          CL
+                        </th>
+                        <th className="px-2 py-2 border-r border-gray-200 text-center">
+                          SL
+                        </th>
+                        <th className="px-2 py-2 text-center">EL</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {allocations.length === 0 ? (
+                      {report.rows.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={5}
-                            className="py-6 text-center text-gray-500"
+                            colSpan={6 + 3 + 4 + 9 + 3}
+                            className="px-3 py-6 text-center text-gray-500"
                           >
-                            No allocations / insufficient privileges
+                            No data for the selected period.
                           </td>
                         </tr>
                       ) : (
-                        allocations.map((a) => (
-                          <tr
-                            key={`${a.profile}-${a.leave_type}`}
-                            className="border-b hover:bg-gray-50"
-                          >
-                            <td className="py-2 px-3">{a.profile}</td>
-                            <td className="py-2 px-3">{a.leave_type_name}</td>
-                            <td className="py-2 px-3">{a.allocated}</td>
-                            <td className="py-2 px-3">{a.used}</td>
-                            <td className="py-2 px-3">{a.balance}</td>
-                          </tr>
-                        ))
+                        report.rows
+                          .filter(
+                            (r) =>
+                              !filterEmp ||
+                              String(r.emp_id) === String(filterEmp),
+                          )
+                          .map((r) => (
+                            <tr
+                              key={`${r.emp_id}`}
+                              className="border-t hover:bg-gray-50"
+                            >
+                              <td className="px-3 py-2 sticky left-0 bg-white">
+                                {r.emp_id}
+                              </td>
+                              <td className="px-3 py-2">{r.emp_name}</td>
+                              <td className="px-3 py-2">
+                                {r.emp_designation || '—'}
+                              </td>
+                              <td className="px-3 py-2">
+                                {r.leave_group || '—'}
+                              </td>
+                              <td className="px-3 py-2">
+                                {r.joining_date || '—'}
+                              </td>
+                              <td className="px-3 py-2">
+                                {r.leaving_date || '—'}
+                              </td>
+
+                              {/* Opening */}
+                              <td className="px-2 py-2 text-center">
+                                {r.opening.SL}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {r.opening.EL}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {r.opening.CL}
+                              </td>
+
+                              {/* Allocation */}
+                              <td className="px-2 py-2 text-center">
+                                {r.allocation.SL}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {r.allocation.EL}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {r.allocation.VAC}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {r.allocation.CL}
+                              </td>
+
+                              {/* Used */}
+                              <td className="px-2 py-2 text-center">
+                                {r.used.CL}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {r.used.SL}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {r.used.EL}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {r.used.Vacation}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {r.used.DL}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {r.used.LWP}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {r.used.ML}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {r.used.PL}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {r.used.CL}
+                              </td>
+
+                              {/* Closing */}
+                              <td className="px-2 py-2 text-center">
+                                {r.closing.CL}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {r.closing.SL}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                {r.closing.EL}
+                              </td>
+                            </tr>
+                          ))
                       )}
                     </tbody>
                   </table>

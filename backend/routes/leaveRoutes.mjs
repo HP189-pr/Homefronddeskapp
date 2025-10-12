@@ -23,4 +23,7 @@ router.put(['/empprofile/:id', '/empprofile/:id/'], requireAdmin, leaveCtrl.upse
 router.post(['/leave-allocations', '/leave-allocations/'], requireAdmin, leaveCtrl.saveAllocation);
 router.put(['/leave-allocations/:id', '/leave-allocations/:id/'], requireAdmin, leaveCtrl.saveAllocation);
 
+// Aggregated report
+router.get(['/admin/leave-report', '/admin/leave-report/'], requireAdmin, leaveCtrl.leaveReport);
+
 export default router;
