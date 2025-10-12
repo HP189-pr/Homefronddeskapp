@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { FaChevronDown, FaChevronUp, FaUserTie } from 'react-icons/fa';
+import { useAuth } from '../../hooks/useAuth';
+import PageLayout from './PageLayout';
 import axios from '../api/axiosInstance';
-import { useAuth } from '../hooks/AuthContext';
-import { FaUserTie, FaChevronUp, FaChevronDown } from 'react-icons/fa';
 
 const EmpLeavePage = () => {
   const { user } = useAuth();
@@ -22,6 +23,9 @@ const EmpLeavePage = () => {
   const [filterEmp, setFilterEmp] = useState('');
   const [myBalances, setMyBalances] = useState([]);
   const [allocations, setAllocations] = useState([]);
+  const PANELS = ['Entry Leave', 'Leave Report', 'Balance Certificate'];
+  const [selectedPanel, setSelectedPanel] = useState(PANELS[0]);
+  const [panelOpen, setPanelOpen] = useState(true);
 
   useEffect(() => {
     axios
@@ -56,10 +60,6 @@ const EmpLeavePage = () => {
         .catch(() => setAllocations([]));
     }
   }, [selectedPanel]);
-
-  const PANELS = ['Entry Leave', 'Leave Report', 'Balance Certificate'];
-  const [selectedPanel, setSelectedPanel] = useState(PANELS[0]);
-  const [panelOpen, setPanelOpen] = useState(true);
 
   const handleTopbarSelect = (panel) => {
     if (selectedPanel === panel) setPanelOpen((p) => !p);
@@ -175,22 +175,21 @@ const EmpLeavePage = () => {
     : leaveEntries;
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
-      <div className="sticky top-0 z-30 flex items-center justify-between bg-white border-b px-3 py-2">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl text-indigo-700">
-            <FaUserTie />
-          </span>
-          <span className="text-lg font-bold">Leave Management</span>
+    <PageLayout
+      icon={<FaUserTie />}
+      title="Leave Management"
+      headerContent={
+        <div className="flex flex-wrap items-center gap-2">
           {PANELS.map((panel) => (
             <button
               key={panel}
-              className={`px-3 py-1.5 rounded border text-sm ${
+              className={`rounded border px-3 py-1.5 text-sm ${
                 selectedPanel === panel
-                  ? 'bg-indigo-600 text-white border-indigo-600'
-                  : 'bg-white hover:bg-gray-50 border-gray-300'
+                  ? 'border-indigo-600 bg-indigo-600 text-white'
+                  : 'border-gray-300 bg-white hover:bg-gray-50'
               }`}
               onClick={() => handleTopbarSelect(panel)}
+              type="button"
             >
               {panel === 'Entry Leave'
                 ? 'Add'
@@ -200,21 +199,21 @@ const EmpLeavePage = () => {
             </button>
           ))}
         </div>
-        <a href="/" className="px-4 py-2 rounded bg-gray-800 text-white">
-          🏠 Home
-        </a>
-      </div>
-
-      <div className="mt-4 border rounded-2xl overflow-hidden shadow-sm">
-        <div className="flex items-center justify-between p-3 bg-gray-50 border-b">
+      }
+      card={false}
+      contentClassName="space-y-4"
+    >
+      <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b bg-gray-50 p-3">
           <div className="font-semibold">
             {selectedPanel ? `${selectedPanel} Panel` : 'Action Panel'}
           </div>
           <button
             onClick={() => setPanelOpen((o) => !o)}
-            className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border bg-white hover:bg-gray-50"
+            className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 py-1.5 text-sm hover:bg-gray-50"
+            type="button"
           >
-            {panelOpen ? <FaChevronUp /> : <FaChevronDown />}{' '}
+            {panelOpen ? <FaChevronUp /> : <FaChevronDown />}
             {panelOpen ? 'Collapse' : 'Expand'}
           </button>
         </div>
@@ -224,7 +223,7 @@ const EmpLeavePage = () => {
             {selectedPanel === 'Entry Leave' && (
               <form
                 onSubmit={handleApply}
-                className="flex items-end gap-4 flex-wrap md:flex-nowrap"
+                className="flex flex-wrap items-end gap-4 md:flex-nowrap"
               >
                 <div className="flex flex-col">
                   <label htmlFor="emp-id" className="text-xs mb-1">
@@ -437,24 +436,24 @@ const EmpLeavePage = () => {
       </div>
 
       {selectedPanel !== 'Entry Leave' && (
-        <div className="border rounded-2xl overflow-hidden flex flex-col mt-4">
-          <div className="flex items-center justify-between p-3 bg-gray-50 border-b">
+        <div className="flex flex-col overflow-hidden rounded-2xl border bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b bg-gray-50 p-3">
             <div className="font-semibold">Last Leave Records</div>
             <div className="text-sm text-gray-500">
               {filteredEntries.length} record(s)
             </div>
           </div>
 
-          <div className="overflow-auto flex-1">
+          <div className="flex-1 overflow-auto">
             <table className="min-w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="text-left py-2 px-3">Report No</th>
-                  <th className="text-left py-2 px-3">Employee</th>
-                  <th className="text-left py-2 px-3">Type</th>
-                  <th className="text-left py-2 px-3">Dates</th>
-                  <th className="text-left py-2 px-3">Days</th>
-                  <th className="text-left py-2 px-3">Status</th>
+                  <th className="px-3 py-2 text-left">Report No</th>
+                  <th className="px-3 py-2 text-left">Employee</th>
+                  <th className="px-3 py-2 text-left">Type</th>
+                  <th className="px-3 py-2 text-left">Dates</th>
+                  <th className="px-3 py-2 text-left">Days</th>
+                  <th className="px-3 py-2 text-left">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -468,7 +467,7 @@ const EmpLeavePage = () => {
                   filteredEntries.map((le) => (
                     <tr
                       key={le.id}
-                      className="border-b hover:bg-gray-50 cursor-pointer"
+                      className="cursor-pointer border-b hover:bg-gray-50"
                       onClick={() => {
                         setForm({
                           leave_type: le.leave_type,
@@ -483,14 +482,14 @@ const EmpLeavePage = () => {
                         setPanelOpen(true);
                       }}
                     >
-                      <td className="py-2 px-3">{le.leave_report_no}</td>
-                      <td className="py-2 px-3">{le.emp_name}</td>
-                      <td className="py-2 px-3">{le.leave_type_name}</td>
-                      <td className="py-2 px-3">
+                      <td className="px-3 py-2">{le.leave_report_no}</td>
+                      <td className="px-3 py-2">{le.emp_name}</td>
+                      <td className="px-3 py-2">{le.leave_type_name}</td>
+                      <td className="px-3 py-2">
                         {le.start_date} - {le.end_date}
                       </td>
-                      <td className="py-2 px-3">{le.total_days}</td>
-                      <td className="py-2 px-3">{le.status}</td>
+                      <td className="px-3 py-2">{le.total_days}</td>
+                      <td className="px-3 py-2">{le.status}</td>
                     </tr>
                   ))
                 )}
@@ -498,7 +497,7 @@ const EmpLeavePage = () => {
             </table>
           </div>
 
-          <div className="p-3 bg-gray-50 flex items-center justify-between">
+          <div className="flex items-center justify-between bg-gray-50 p-3">
             <div className="text-xs text-gray-500">
               Tip: use the Report panel to filter quickly.
             </div>
@@ -508,7 +507,7 @@ const EmpLeavePage = () => {
           </div>
         </div>
       )}
-    </div>
+    </PageLayout>
   );
 };
 

@@ -26,8 +26,12 @@ const AdminDashboard = () => {
       <div className="flex items-center justify-center h-full p-6">
         <div className="w-full max-w-2xl bg-white rounded-lg shadow p-8 text-center">
           <h3 className="text-xl font-semibold mb-3">Access Denied</h3>
-          <p className="text-gray-600 mb-4">You don’t have permission to view the Admin Dashboard.</p>
-          <div className="text-sm text-gray-500">Required role: <span className="font-medium">admin</span></div>
+          <p className="text-gray-600 mb-4">
+            You don’t have permission to view the Admin Dashboard.
+          </p>
+          <div className="text-sm text-gray-500">
+            Required role: <span className="font-medium">admin</span>
+          </div>
         </div>
       </div>
     );
@@ -64,11 +68,23 @@ const AdminDashboard = () => {
         </div>
         {/* Section Tabs */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {['Institute Management','Course Management','User Management','User Rights','System Settings','Upload','Data Analysis'].map((name) => (
+          {[
+            'Institute Management',
+            'Course Management',
+            'User Management',
+            'User Rights',
+            'System Settings',
+            'Upload',
+            'Data Analysis',
+          ].map((name) => (
             <button
               key={name}
               onClick={() => setSection(name)}
-              className={`px-3 py-1.5 rounded-full border text-sm ${section === name ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}
+              className={`px-3 py-1.5 rounded-full border text-sm ${
+                section === name
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-700 border-gray-300'
+              }`}
             >
               {name}
             </button>

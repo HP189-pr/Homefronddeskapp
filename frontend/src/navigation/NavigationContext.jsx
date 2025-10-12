@@ -9,10 +9,14 @@ const NavigationContext = createContext({
 
 export const NavigationProvider = ({ children, value }) => {
   return (
-    <NavigationContext.Provider value={value ?? {
-      navigate: (p, m) => pushPage(p, m),
-      replace: (p, m) => replacePage(p, m),
-    }}>
+    <NavigationContext.Provider
+      value={
+        value ?? {
+          navigate: (p, m) => pushPage(p, m),
+          replace: (p, m) => replacePage(p, m),
+        }
+      }
+    >
       {children}
     </NavigationContext.Provider>
   );

@@ -66,7 +66,9 @@ export default function ExcelUploadPreview({ defaultTable = 'Verification' }) {
     if (!result?.logUrl) return;
     try {
       const res = await axios.get(result.logUrl, { responseType: 'blob' });
-      const contentType = res.headers['content-type'] || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      const contentType =
+        res.headers['content-type'] ||
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
       const blob = new Blob([res.data], { type: contentType });
       saveAs(blob, 'import-log.xlsx');
     } catch (e) {
@@ -84,8 +86,20 @@ export default function ExcelUploadPreview({ defaultTable = 'Verification' }) {
         inline: true,
         filename: 'sample.pdf',
         elements: [
-          { type: 'text', xMm: 20, yMm: 20, text: 'Hello PDF at 20mm,20mm', fontSize: 12 },
-          { type: 'text', xMm: 20, yMm: 30, text: 'Exactly positioned for pre-printed stationary', fontSize: 10 },
+          {
+            type: 'text',
+            xMm: 20,
+            yMm: 20,
+            text: 'Hello PDF at 20mm,20mm',
+            fontSize: 12,
+          },
+          {
+            type: 'text',
+            xMm: 20,
+            yMm: 30,
+            text: 'Exactly positioned for pre-printed stationary',
+            fontSize: 10,
+          },
         ],
       };
       const res = await axios.post('/api/misc/export/pdf', payload, {
@@ -116,7 +130,11 @@ export default function ExcelUploadPreview({ defaultTable = 'Verification' }) {
           placeholder="Sequelize model, e.g., Verification"
         />
         <input type="file" accept=".xlsx,.xls" onChange={onSelectFile} />
-        <button disabled={!file || busy} onClick={doPreview} className="bg-blue-600 text-white rounded px-3 py-1 disabled:opacity-50">
+        <button
+          disabled={!file || busy}
+          onClick={doPreview}
+          className="bg-blue-600 text-white rounded px-3 py-1 disabled:opacity-50"
+        >
           {busy ? 'Please wait…' : 'Preview'}
         </button>
       </div>
@@ -125,13 +143,22 @@ export default function ExcelUploadPreview({ defaultTable = 'Verification' }) {
 
       {preview && (
         <div className="border rounded p-3">
-          <div className="text-sm">Rows: {preview.totalRows}, Missing columns: {preview.missingColumns?.join(', ') || 'none'}, Extras: {preview.extraColumns?.join(', ') || 'none'}</div>
+          <div className="text-sm">
+            Rows: {preview.totalRows}, Missing columns:{' '}
+            {preview.missingColumns?.join(', ') || 'none'}, Extras:{' '}
+            {preview.extraColumns?.join(', ') || 'none'}
+          </div>
           <div className="overflow-auto">
             <table className="min-w-full text-sm border mt-2">
               <thead>
                 <tr>
                   {preview.mappedColumns?.map((h) => (
-                    <th key={h} className="border px-2 py-1 text-left bg-gray-50">{h}</th>
+                    <th
+                      key={h}
+                      className="border px-2 py-1 text-left bg-gray-50"
+                    >
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
@@ -139,7 +166,9 @@ export default function ExcelUploadPreview({ defaultTable = 'Verification' }) {
                 {preview.previewRows?.map((row, idx) => (
                   <tr key={idx}>
                     {preview.mappedColumns?.map((h) => (
-                      <td key={h} className="border px-2 py-1">{String(row[h] ?? '')}</td>
+                      <td key={h} className="border px-2 py-1">
+                        {String(row[h] ?? '')}
+                      </td>
                     ))}
                   </tr>
                 ))}
@@ -147,23 +176,42 @@ export default function ExcelUploadPreview({ defaultTable = 'Verification' }) {
             </table>
           </div>
           <div className="mt-3 flex gap-2">
-            <button onClick={doConfirm} disabled={busy} className="bg-green-600 text-white rounded px-3 py-1 disabled:opacity-50">Confirm Upload</button>
+            <button
+              onClick={doConfirm}
+              disabled={busy}
+              className="bg-green-600 text-white rounded px-3 py-1 disabled:opacity-50"
+            >
+              Confirm Upload
+            </button>
           </div>
         </div>
       )}
 
       {result && (
         <div className="border rounded p-3 space-y-2">
-          <div className="text-sm">Inserted: {result.inserted}, Failed: {result.failed}, Total: {result.total}</div>
+          <div className="text-sm">
+            Inserted: {result.inserted}, Failed: {result.failed}, Total:{' '}
+            {result.total}
+          </div>
           <div className="flex gap-2">
-            <button onClick={downloadLog} className="bg-indigo-600 text-white rounded px-3 py-1">Download Log</button>
+            <button
+              onClick={downloadLog}
+              className="bg-indigo-600 text-white rounded px-3 py-1"
+            >
+              Download Log
+            </button>
           </div>
         </div>
       )}
 
       <div className="pt-4">
         <h3 className="font-medium">PDF: exact positioning demo</h3>
-        <button onClick={generateSamplePdf} className="mt-2 bg-gray-800 text-white rounded px-3 py-1">Open sample PDF</button>
+        <button
+          onClick={generateSamplePdf}
+          className="mt-2 bg-gray-800 text-white rounded px-3 py-1"
+        >
+          Open sample PDF
+        </button>
       </div>
     </div>
   );

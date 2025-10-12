@@ -12,7 +12,8 @@ import PropTypes from 'prop-types';
 const HomeDashboard = ({ setSelectedMenuItem, navigate }) => {
   const openModule = (menuItem) => {
     // update parent selection so WorkArea can render immediately
-    if (typeof setSelectedMenuItem === 'function') setSelectedMenuItem(menuItem);
+    if (typeof setSelectedMenuItem === 'function')
+      setSelectedMenuItem(menuItem);
 
     // prefer in-app navigate if provided (matches AppRouter style)
     if (typeof navigate === 'function') {
@@ -23,8 +24,19 @@ const HomeDashboard = ({ setSelectedMenuItem, navigate }) => {
     // Fallback: if no in-app navigator, try a simple location change (still works)
     // Note: fallback keeps compatibility if somewhere else uses react-router
     try {
-      window.history.pushState({ page: 'dashboard', meta: { from: 'home', module: menuItem } }, '', window.location.pathname);
-      window.dispatchEvent(new CustomEvent('app:navigate', { detail: { page: 'dashboard', meta: { from: 'home', module: menuItem } } }));
+      window.history.pushState(
+        { page: 'dashboard', meta: { from: 'home', module: menuItem } },
+        '',
+        window.location.pathname,
+      );
+      window.dispatchEvent(
+        new CustomEvent('app:navigate', {
+          detail: {
+            page: 'dashboard',
+            meta: { from: 'home', module: menuItem },
+          },
+        }),
+      );
     } catch (e) {
       // last resort: full navigation (shouldn't be necessary in SPA)
       window.location.href = '/';

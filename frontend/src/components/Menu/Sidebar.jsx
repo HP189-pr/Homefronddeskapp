@@ -11,7 +11,7 @@ const staticModules = [
     name: 'Student Module',
     icon: '🎓',
     menu: [
-      'Enrollment',   
+      'Enrollment',
       '📜 Verification',
       '🚀 Migration',
       '📄 Provisional',
@@ -23,7 +23,13 @@ const staticModules = [
     id: 'office_management',
     name: 'Office Management',
     icon: '🏢',
-    menu: ['📥 Document Receive', '📥 Inward', '📤 Outward', '🏖️ Leave Management', '📦 Inventory'],
+    menu: [
+      '📥 Document Receive',
+      '📥 Inward',
+      '📤 Outward',
+      '🏖️ Leave Management',
+      '📦 Inventory',
+    ],
   },
   {
     id: 'finance',
@@ -37,7 +43,7 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
   const { navigate } = useNav();
   const [selectedModule, setSelectedModule] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
-  const { user, logout, verifyPassword, authFetch } = useAuth();
+  const { user, logout, authFetch } = useAuth();
   const [allowedModules, setAllowedModules] = useState([]); // from backend
   const [allowedMenusByModule, setAllowedMenusByModule] = useState({});
   const [canAccessAdminPanel, setCanAccessAdminPanel] = useState(false);
@@ -51,7 +57,7 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
     } else {
       setProfilePic('/profilepic/default-profile.jpg');
     }
-  }, [user]);
+  }, [user, authFetch]);
 
   // Fetch rights and build allowed menu tree
   useEffect(() => {
@@ -64,13 +70,18 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
           const res2 = await authFetch('/api/rights/my');
           if (res2.ok) {
             const d2 = await res2.json();
-            if (!cancelled) setCanAccessAdminPanel(!!(d2.admin || (d2.permissions && d2.permissions.length)));
+            if (!cancelled)
+              setCanAccessAdminPanel(
+                !!(d2.admin || (d2.permissions && d2.permissions.length)),
+              );
           }
           return;
         }
         const data = await res.json();
         if (cancelled) return;
-        const moduleMap = new Map((data.modules || []).map(m => [m.moduleid, m]));
+        const moduleMap = new Map(
+          (data.modules || []).map((m) => [m.moduleid, m]),
+        );
         const menus = data.menus || [];
         const byModule = {};
         for (const m of menus) {
@@ -81,14 +92,21 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
         const mods = Array.from(moduleMap.values());
         setAllowedModules(mods);
         setAllowedMenusByModule(byModule);
-        setCanAccessAdminPanel(!!(mods.length || (data.permissions && data.permissions.length)));
-      } catch (e) {
-        // ignore
+        setCanAccessAdminPanel(
+          !!(mods.length || (data.permissions && data.permissions.length)),
+        );
+      } catch (error) {
+        console.error('Failed to load user rights', error);
+        setAllowedModules([]);
+        setAllowedMenusByModule({});
+        setCanAccessAdminPanel(false);
       }
     };
     run();
-    return () => { cancelled = true; };
-  }, [user]);
+    return () => {
+      cancelled = true;
+    };
+  }, [user, authFetch]);
 
   const handleModuleSelect = (moduleId) => {
     setSelectedModule(moduleId);
@@ -171,28 +189,36 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
           className="w-full text-left px-4 py-2 rounded bg-gray-700 hover:bg-gray-600"
         >
           {isOpen
-            ? (selectedModule
-                ? (() => {
-                    // Prefer dynamic module name if available
-                    const dyn = allowedModules.find((m) => String(m.moduleid) === String(selectedModule));
-                    if (dyn) return dyn.name;
-                    const stat = staticModules.find((m) => m.id === selectedModule);
-                    return stat ? stat.name : '🗃️ Select Module';
-                  })()
-                : '🗃️ Select Module')
+            ? selectedModule
+              ? (() => {
+                  // Prefer dynamic module name if available
+                  const dyn = allowedModules.find(
+                    (m) => String(m.moduleid) === String(selectedModule),
+                  );
+                  if (dyn) return dyn.name;
+                  const stat = staticModules.find(
+                    (m) => m.id === selectedModule,
+                  );
+                  return stat ? stat.name : '🗃️ Select Module';
+                })()
+              : '🗃️ Select Module'
             : '🗃️'}
         </button>
         {showDropdown && (
           <div className="absolute left-0 w-full bg-gray-700 rounded shadow-lg z-10">
-            {(allowedModules.length ? allowedModules : staticModules).map((mod) => (
-              <button
-                key={mod.id || mod.moduleid}
-                onClick={() => handleModuleSelect(mod.id || String(mod.moduleid))}
-                className="w-full text-left px-4 py-2 hover:bg-gray-600 flex items-center"
-              >
-                <span className="mr-2">{mod.icon || '📦'}</span> {mod.name}
-              </button>
-            ))}
+            {(allowedModules.length ? allowedModules : staticModules).map(
+              (mod) => (
+                <button
+                  key={mod.id || mod.moduleid}
+                  onClick={() =>
+                    handleModuleSelect(mod.id || String(mod.moduleid))
+                  }
+                  className="w-full text-left px-4 py-2 hover:bg-gray-600 flex items-center"
+                >
+                  <span className="mr-2">{mod.icon || '📦'}</span> {mod.name}
+                </button>
+              ),
+            )}
           </div>
         )}
       </div>
@@ -203,8 +229,11 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
       {selectedModule && (
         <div className={`${isOpen ? 'block' : 'hidden'}`}>
           {(() => {
-            const staticMenus = staticModules.find((m) => m.id === selectedModule)?.menu || [];
-            const dynamicMenus = allowedMenusByModule[selectedModule] ? allowedMenusByModule[selectedModule].map(m => m.name) : [];
+            const staticMenus =
+              staticModules.find((m) => m.id === selectedModule)?.menu || [];
+            const dynamicMenus = allowedMenusByModule[selectedModule]
+              ? allowedMenusByModule[selectedModule].map((m) => m.name)
+              : [];
             const items = dynamicMenus.length ? dynamicMenus : staticMenus;
             return items.map((item) => (
               <button
@@ -222,7 +251,9 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
       <hr className="border-gray-600 my-4" />
 
       {/* Admin Panel Button */}
-      {(canAccessAdminPanel || user?.usertype === 'admin' || user?.usertype === 'superuser') && (
+      {(canAccessAdminPanel ||
+        user?.usertype === 'admin' ||
+        user?.usertype === 'superuser') && (
         <button
           onClick={() => handleMenuClick('Admin Panel')}
           className="w-full text-left px-4 py-2 rounded hover:bg-gray-700"

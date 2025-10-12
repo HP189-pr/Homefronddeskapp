@@ -51,13 +51,20 @@ const Login = ({ navigate }) => {
     try {
       // adjust this URL if your backend path differs
       const url = `/api/holidays?type=${encodeURIComponent(type)}`;
-      const res = await fetch(url, { signal: controller.signal, credentials: 'same-origin' });
+      const res = await fetch(url, {
+        signal: controller.signal,
+        credentials: 'same-origin',
+      });
       if (!res.ok) {
         throw new Error(`Failed to load holidays (${res.status})`);
       }
       const payload = await res.json();
       // support both top-level `holidays` or type-specific keys
-      const list = payload.holidays || payload.upcomingHolidays || payload.recentHolidays || [];
+      const list =
+        payload.holidays ||
+        payload.upcomingHolidays ||
+        payload.recentHolidays ||
+        [];
       setHolidays(Array.isArray(list) ? list : []);
     } catch (err) {
       if (err.name !== 'AbortError') {
@@ -98,11 +105,15 @@ const Login = ({ navigate }) => {
         // navigate must be the function from AppRouter: navigate('dashboard', meta)
         navigate('dashboard', { from: 'login' });
       } else {
-        setLoginError('Invalid user ID or password. Make sure your User ID/User Code is correct.');
+        setLoginError(
+          'Invalid user ID or password. Make sure your User ID/User Code is correct.',
+        );
       }
     } catch (error) {
       console.error('Login error:', error);
-      setLoginError('Login failed. Please check your credentials or contact admin.');
+      setLoginError(
+        'Login failed. Please check your credentials or contact admin.',
+      );
     } finally {
       setLoading(false);
     }
@@ -140,7 +151,9 @@ const Login = ({ navigate }) => {
             <div className="flex justify-center gap-2">
               <button
                 className={`px-3 py-1 rounded-md font-medium ${
-                  holidayType === 'recent' ? 'bg-teal-500 text-white' : 'bg-gray-200 text-gray-700'
+                  holidayType === 'recent'
+                    ? 'bg-teal-500 text-white'
+                    : 'bg-gray-200 text-gray-700'
                 }`}
                 onClick={() => fetchHolidays('recent')}
                 type="button"
@@ -150,7 +163,9 @@ const Login = ({ navigate }) => {
               </button>
               <button
                 className={`px-3 py-1 rounded-md font-medium ${
-                  holidayType === 'upcoming' ? 'bg-teal-500 text-white' : 'bg-gray-200 text-gray-700'
+                  holidayType === 'upcoming'
+                    ? 'bg-teal-500 text-white'
+                    : 'bg-gray-200 text-gray-700'
                 }`}
                 onClick={() => fetchHolidays('upcoming')}
                 type="button"
@@ -168,16 +183,22 @@ const Login = ({ navigate }) => {
                 {Array.isArray(holidays) && holidays.length > 0 ? (
                   holidays.map((holiday) => (
                     <div
-                      key={holiday.hdid || `${holiday.holiday_date}-${holiday.holiday_name}`}
+                      key={
+                        holiday.hdid ||
+                        `${holiday.holiday_date}-${holiday.holiday_name}`
+                      }
                       className="bg-gradient-to-r from-teal-500 to-green-500 
                         text-white p-2 rounded-md text-center shadow-md"
                     >
                       {formatDate(holiday.holiday_date)},{' '}
-                      {holiday.holiday_day?.slice(0, 3)} - {holiday.holiday_name}
+                      {holiday.holiday_day?.slice(0, 3)} -{' '}
+                      {holiday.holiday_name}
                     </div>
                   ))
                 ) : (
-                  <p className="text-center text-gray-500">No holidays found.</p>
+                  <p className="text-center text-gray-500">
+                    No holidays found.
+                  </p>
                 )}
               </div>
             )}
@@ -188,11 +209,19 @@ const Login = ({ navigate }) => {
       {/* Login Form */}
       <div className="flex flex-col md:flex-row bg-white rounded-xl opacity-90 shadow-lg w-full max-w-3xl border-4 border-indigo-800">
         <div className="w-full md:w-1/2 p-8 flex flex-col justify-center">
-          <h2 className="text-3xl font-bold text-gray-800 text-center mb-4">Welcome</h2>
-          <p className="text-gray-600 text-center mb-6">Please log in to continue.</p>
+          <h2 className="text-3xl font-bold text-gray-800 text-center mb-4">
+            Welcome
+          </h2>
+          <p className="text-gray-600 text-center mb-6">
+            Please log in to continue.
+          </p>
 
           {/* Form handles Enter key automatically */}
-          <form onSubmit={handleLogin} className="space-y-3" aria-label="Login form">
+          <form
+            onSubmit={handleLogin}
+            className="space-y-3"
+            aria-label="Login form"
+          >
             <label htmlFor="identifier" className="sr-only">
               User ID or User Code
             </label>
@@ -226,9 +255,13 @@ const Login = ({ navigate }) => {
               disabled={loading}
             />
 
-            {loginError && <p className="text-red-500 text-sm text-center">{loginError}</p>}
+            {loginError && (
+              <p className="text-red-500 text-sm text-center">{loginError}</p>
+            )}
 
-            <p className="text-xs text-center text-gray-500">Tip: User ID / User Code are not case-sensitive.</p>
+            <p className="text-xs text-center text-gray-500">
+              Tip: User ID / User Code are not case-sensitive.
+            </p>
 
             <button
               type="submit"
@@ -257,7 +290,9 @@ const Login = ({ navigate }) => {
         <div className="hidden md:flex md:w-1/2 bg-gradient-to-b from-indigo-900 to-indigo-600 text-white rounded-r-xl p-8 flex-col justify-center items-center">
           <div className="text-center">
             <h3 className="text-2xl font-bold mb-2">FrontDesk</h3>
-            <p className="text-sm mb-4">Admin Portal — manage modules & user access</p>
+            <p className="text-sm mb-4">
+              Admin Portal — manage modules & user access
+            </p>
             <div className="w-32 h-32 rounded-full bg-white/20 flex items-center justify-center text-2xl font-semibold">
               FD
             </div>

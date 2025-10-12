@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   FaChevronDown,
   FaChevronUp,
@@ -7,36 +7,31 @@ import {
   FaFileCsv,
   FaFileExcel,
   FaEdit,
-  FaSave,
-  FaEye,
 } from 'react-icons/fa';
 import PageLayout from './PageLayout';
 
-// Dummy data for demonstration
 const demoRecords = [
   {
     id: 1,
     date: '12-10-2025',
-    fileNo: 'VR2025001',
-    enrollment: 'ENR123456',
-    name: 'John Doe',
-    status: 'pending',
-    remark: 'Awaiting docs',
-    scan: true,
+    refNo: 'IN-0001',
+    from: 'ABC Ltd',
+    subject: 'Quotation',
+    status: 'open',
+    remark: '—',
   },
   {
     id: 2,
     date: '11-10-2025',
-    fileNo: 'VR2025002',
-    enrollment: 'ENR654321',
-    name: 'Jane Smith',
-    status: 'done',
-    remark: 'Verified',
-    scan: false,
+    refNo: 'IN-0002',
+    from: 'XYZ Pvt',
+    subject: 'Letter',
+    status: 'closed',
+    remark: 'Filed',
   },
 ];
 
-export default function Verification() {
+export default function Inward() {
   const [panelOpen, setPanelOpen] = useState(true);
   const [activePanel, setActivePanel] = useState('addEdit');
   const [records] = useState(demoRecords);
@@ -60,7 +55,8 @@ export default function Verification() {
         }}
         className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium bg-emerald-600 text-white shadow-sm hover:bg-emerald-500"
       >
-        <FaPlus className="text-sm" /> Transcript Add
+        <FaPlus className="text-sm" />
+        Add Inward
       </button>
       <button
         type="button"
@@ -70,7 +66,8 @@ export default function Verification() {
         }}
         className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium bg-blue-600 text-white shadow-sm hover:bg-blue-500"
       >
-        <FaSearch className="text-sm" /> Mix Search
+        <FaSearch className="text-sm" />
+        Search
       </button>
       <button
         type="button"
@@ -80,7 +77,8 @@ export default function Verification() {
         }}
         className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium bg-cyan-600 text-white shadow-sm hover:bg-cyan-500"
       >
-        <FaFileCsv className="text-sm" /> Report
+        <FaFileCsv className="text-sm" />
+        Report
       </button>
       <button
         type="button"
@@ -90,7 +88,8 @@ export default function Verification() {
         }}
         className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium bg-lime-600 text-white shadow-sm hover:bg-lime-500"
       >
-        <FaFileExcel className="text-sm" /> Import Excel
+        <FaFileExcel className="text-sm" />
+        Import Excel
       </button>
     </div>
   );
@@ -99,10 +98,10 @@ export default function Verification() {
     <PageLayout
       icon={
         <span aria-hidden className="text-2xl">
-          📜
+          📥
         </span>
       }
-      title="Verification"
+      title="Inward"
       actions={actions}
       card={false}
       contentClassName="space-y-4"
@@ -122,43 +121,28 @@ export default function Verification() {
           </button>
         </div>
         {panelOpen && (
-          <div className="p-4">
-            {/* Panel content based on activePanel */}
+          <div className="p-4 text-sm text-gray-600">
             {activePanel === 'addEdit' && (
-              <div className="text-sm text-gray-600">
-                Transcript entry form goes here.
-              </div>
+              <div>Inward entry form goes here.</div>
             )}
-            {activePanel === 'search' && (
-              <div className="text-sm text-gray-600">
-                Search form goes here.
-              </div>
-            )}
-            {activePanel === 'report' && (
-              <div className="text-sm text-gray-600">
-                Report options go here.
-              </div>
-            )}
-            {activePanel === 'excel' && (
-              <div className="text-sm text-gray-600">
-                Excel import UI goes here.
-              </div>
-            )}
+            {activePanel === 'search' && <div>Search filters go here.</div>}
+            {activePanel === 'report' && <div>Report options go here.</div>}
+            {activePanel === 'excel' && <div>Excel import UI goes here.</div>}
           </div>
         )}
       </div>
-      <div className="overflow-hidden rounded-2xl border bg-white shadow-sm mt-4">
+
+      <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
         <div className="overflow-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-100">
               <tr>
                 <th className="px-3 py-2 text-left font-mono">Date</th>
-                <th className="px-3 py-2 text-left font-mono">FileNo</th>
-                <th className="px-3 py-2 text-left">Enrollment</th>
-                <th className="px-3 py-2 text-left">Name</th>
+                <th className="px-3 py-2 text-left font-mono">Ref No</th>
+                <th className="px-3 py-2 text-left">From</th>
+                <th className="px-3 py-2 text-left">Subject</th>
                 <th className="px-3 py-2 text-left">Status</th>
                 <th className="px-3 py-2 text-left">Remark</th>
-                <th className="px-3 py-2 text-left">Scan</th>
                 <th className="px-3 py-2 text-left">Action</th>
               </tr>
             </thead>
@@ -169,31 +153,19 @@ export default function Verification() {
                     {row.date}
                   </td>
                   <td className="px-3 py-2 font-mono text-xs text-gray-600">
-                    {row.fileNo}
+                    {row.refNo}
                   </td>
-                  <td className="px-3 py-2 font-mono text-xs text-blue-700">
-                    {row.enrollment}
+                  <td className="px-3 py-2 text-sm text-gray-700">
+                    {row.from}
                   </td>
-                  <td className="px-3 py-2 text-sm font-medium text-gray-700">
-                    {row.name}
+                  <td className="px-3 py-2 text-sm text-gray-700">
+                    {row.subject}
                   </td>
                   <td className="px-3 py-2 text-sm capitalize text-gray-700">
                     {row.status}
                   </td>
                   <td className="px-3 py-2 text-xs text-gray-500">
                     {row.remark}
-                  </td>
-                  <td className="px-3 py-2 text-xs text-gray-500">
-                    {row.scan ? (
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-xs text-gray-700 hover:bg-gray-100"
-                      >
-                        <FaEye /> View
-                      </button>
-                    ) : (
-                      <span className="text-gray-300">-</span>
-                    )}
                   </td>
                   <td className="px-3 py-2">
                     <button
@@ -209,7 +181,7 @@ export default function Verification() {
                 <tr>
                   <td
                     className="px-3 py-6 text-center text-sm text-gray-500"
-                    colSpan={8}
+                    colSpan={7}
                   >
                     No records yet
                   </td>

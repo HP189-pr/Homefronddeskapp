@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+.vitest/
+.eslintcache
+.public/
+*.min.js
+**/*.min.js
+**/*.bundle.js
+
+# Monorepo sibling dirs
+../backend/
+../media/
+../**/*.log

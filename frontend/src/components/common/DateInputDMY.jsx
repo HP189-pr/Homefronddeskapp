@@ -4,7 +4,14 @@ import { formatDateDMY } from '../../utils/date';
 // A controlled DD-MM-YYYY date input.
 // Props: name, value (ISO string like YYYY-MM-DD or Date), onChange(eventLike), className
 // Emits onChange with an event-like object: { target: { name, value: isoStringOrEmpty } }
-export default function DateInputDMY({ name, value, onChange, className, placeholder = 'DD-MM-YYYY', disabled = false }) {
+export default function DateInputDMY({
+  name,
+  value,
+  onChange,
+  className,
+  placeholder = 'DD-MM-YYYY',
+  disabled = false,
+}) {
   const [text, setText] = useState('');
 
   useEffect(() => {
@@ -32,8 +39,17 @@ export default function DateInputDMY({ name, value, onChange, className, placeho
       const mm = parseInt(m[2], 10);
       const yyyy = parseInt(m[3], 10);
       // rudimentary validity check
-      if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31 && yyyy >= 1900 && yyyy <= 9999) {
-        const iso = `${yyyy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+      if (
+        mm >= 1 &&
+        mm <= 12 &&
+        dd >= 1 &&
+        dd <= 31 &&
+        yyyy >= 1900 &&
+        yyyy <= 9999
+      ) {
+        const iso = `${yyyy}-${String(mm).padStart(2, '0')}-${String(
+          dd,
+        ).padStart(2, '0')}`;
         emit(iso);
         return;
       }
@@ -49,7 +65,16 @@ export default function DateInputDMY({ name, value, onChange, className, placeho
     const dd = parseInt(m[1], 10);
     const mm = parseInt(m[2], 10);
     const yyyy = parseInt(m[3], 10);
-    if (!(mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31 && yyyy >= 1900 && yyyy <= 9999)) {
+    if (
+      !(
+        mm >= 1 &&
+        mm <= 12 &&
+        dd >= 1 &&
+        dd <= 31 &&
+        yyyy >= 1900 &&
+        yyyy <= 9999
+      )
+    ) {
       setText('');
       emit('');
     }

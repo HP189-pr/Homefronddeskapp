@@ -16,7 +16,8 @@ export default class SimpleBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div style={{ padding: '20px', color: 'crimson' }}>
-          Something went wrong loading this page: {String(this.state.error?.message || this.state.error)}
+          Something went wrong loading this page:{' '}
+          {String(this.state.error?.message || this.state.error)}
         </div>
       );
     }

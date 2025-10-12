@@ -15,7 +15,10 @@ const MODULES = [
     openMenuLabel: '📜 Transcript',
     endpoint: '/api/admin/verifications',
     statuses: ['pending', 'done', 'cancel'],
-    fields: (row) => `${row.studentname || '-'} · ${row.verification_no || '—'} · ${row.status}`,
+    fields: (row) =>
+      `${row.studentname || '-'} · ${row.verification_no || '—'} · ${
+        row.status
+      }`,
   },
   {
     key: 'migration',
@@ -23,7 +26,10 @@ const MODULES = [
     openMenuLabel: '🚀 Migration',
     endpoint: '/api/admin/migrations',
     statuses: ['pending', 'done', 'cancel', 'correction'],
-    fields: (row) => `${row.studentname || '-'} · ${row.migration_number || '—'} · ${row.status}`,
+    fields: (row) =>
+      `${row.studentname || '-'} · ${row.migration_number || '—'} · ${
+        row.status
+      }`,
   },
   {
     key: 'provisional',
@@ -31,7 +37,10 @@ const MODULES = [
     openMenuLabel: '📄 Provisional',
     endpoint: '/api/admin/provisionals',
     statuses: ['pending', 'done', 'cancel', 'correction'],
-    fields: (row) => `${row.studentname || '-'} · ${row.provisional_number || '—'} · ${row.status}`,
+    fields: (row) =>
+      `${row.studentname || '-'} · ${row.provisional_number || '—'} · ${
+        row.status
+      }`,
   },
   {
     key: 'institutional',
@@ -39,7 +48,10 @@ const MODULES = [
     openMenuLabel: '🏛️ Institutional Verification',
     endpoint: '/api/admin/institutionals',
     statuses: ['pending', 'done', 'cancel', 'correction', 'fake'],
-    fields: (row) => `${row.studentname || '-'} · ${row.institutional_verification_number || '—'} · ${row.status}`,
+    fields: (row) =>
+      `${row.studentname || '-'} · ${
+        row.institutional_verification_number || '—'
+      } · ${row.status}`,
   },
 ];
 
@@ -50,7 +62,8 @@ function ModuleCard({ mod, authFetch, onOpen }) {
   const [error, setError] = useState('');
 
   const load = async () => {
-    setLoading(true); setError('');
+    setLoading(true);
+    setError('');
     try {
       const params = new URLSearchParams();
       if (statusFilter) params.set('status', statusFilter);
@@ -68,17 +81,32 @@ function ModuleCard({ mod, authFetch, onOpen }) {
     }
   };
 
-  useEffect(() => { load(); }, [statusFilter]);
+  useEffect(() => {
+    load();
+  }, [statusFilter]);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-semibold">{mod.label}</h3>
         <div className="flex items-center gap-2">
-          <select value={statusFilter} onChange={(e)=>setStatusFilter(e.target.value)} className="border rounded px-2 py-1 text-sm">
-            {mod.statuses.map((s)=> <option key={s} value={s}>{s}</option>)}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="border rounded px-2 py-1 text-sm"
+          >
+            {mod.statuses.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
           </select>
-          <button onClick={onOpen} className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm">Open</button>
+          <button
+            onClick={onOpen}
+            className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm"
+          >
+            Open
+          </button>
         </div>
       </div>
       <div className="text-sm text-gray-600 mb-2">Recent ({statusFilter})</div>
@@ -88,10 +116,15 @@ function ModuleCard({ mod, authFetch, onOpen }) {
         <div className="text-red-500 text-sm">{error}</div>
       ) : (
         <ul className="space-y-2">
-          {items.map((row)=> (
-            <li key={row.id} className="flex items-center justify-between border rounded px-2 py-1">
+          {items.map((row) => (
+            <li
+              key={row.id}
+              className="flex items-center justify-between border rounded px-2 py-1"
+            >
               <span className="truncate mr-2">{mod.fields(row)}</span>
-              <span className="text-xs px-2 py-0.5 rounded bg-gray-100 border capitalize">{row.status}</span>
+              <span className="text-xs px-2 py-0.5 rounded bg-gray-100 border capitalize">
+                {row.status}
+              </span>
             </li>
           ))}
           {!items.length && <li className="text-gray-500 text-sm">No items</li>}
@@ -115,7 +148,15 @@ function ModuleSelector({ selected, setSelected }) {
       {MODULES.map((m) => {
         const isOn = selected.includes(m.key);
         return (
-          <button key={m.key} onClick={()=>toggle(m.key)} className={`px-3 py-1 rounded-full border ${isOn ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'} text-sm`}>
+          <button
+            key={m.key}
+            onClick={() => toggle(m.key)}
+            className={`px-3 py-1 rounded-full border ${
+              isOn
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white text-gray-700 border-gray-300'
+            } text-sm`}
+          >
             {m.label}
           </button>
         );
@@ -124,9 +165,19 @@ function ModuleSelector({ selected, setSelected }) {
   );
 }
 
-const Dashboard = ({ selectedMenuItem, setSelectedMenuItem, isSidebarOpen, setSidebarOpen }) => {
+const Dashboard = ({
+  selectedMenuItem,
+  setSelectedMenuItem,
+  isSidebarOpen,
+  setSidebarOpen,
+}) => {
   const { user, authFetch } = useAuth();
-  const [selectedModuleKeys, setSelectedModuleKeys] = useState(['verification','migration','provisional','institutional']);
+  const [selectedModuleKeys, setSelectedModuleKeys] = useState([
+    'verification',
+    'migration',
+    'provisional',
+    'institutional',
+  ]);
 
   const handleSecureNavigation = async (menuItem) => {
     // Centralize admin access prompting in AdminPanelAccess/WorkArea.
@@ -155,7 +206,7 @@ const Dashboard = ({ selectedMenuItem, setSelectedMenuItem, isSidebarOpen, setSi
         <div className="h-[10px] bg-gray-100" />
         {/* Inner content area */}
         <div className="flex-1 p-4 overflow-hidden">
-          {(!selectedMenuItem || selectedMenuItem === 'Dashboard') ? (
+          {!selectedMenuItem || selectedMenuItem === 'Dashboard' ? (
             <div className="h-full overflow-auto">
               {/* Header */}
               <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white mb-6">
@@ -163,17 +214,32 @@ const Dashboard = ({ selectedMenuItem, setSelectedMenuItem, isSidebarOpen, setSi
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold">
                       {/* Logo placeholder */}
-                      <img src={LOGO_URL} alt="Logo" className="w-12 h-12 object-contain hidden" onError={(e)=>{ e.currentTarget.style.display='none'; e.currentTarget.parentElement.textContent='🎓'; }} />
+                      <img
+                        src={LOGO_URL}
+                        alt="Logo"
+                        className="w-12 h-12 object-contain hidden"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement.textContent = '🎓';
+                        }}
+                      />
                       {/* Fallback emoji/initial */}
                     </div>
                     <div>
-                      <h1 className="text-2xl font-bold tracking-wide">{INSTITUTION_NAME}</h1>
-                      <p className="text-white/80 text-sm">Welcome back{user?.first_name ? `, ${user.first_name}` : ''}</p>
+                      <h1 className="text-2xl font-bold tracking-wide">
+                        {INSTITUTION_NAME}
+                      </h1>
+                      <p className="text-white/80 text-sm">
+                        Welcome back
+                        {user?.first_name ? `, ${user.first_name}` : ''}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-sm text-white/80">Current User</div>
-                    <div className="text-lg font-semibold">{user?.first_name || user?.username || 'Guest'}</div>
+                    <div className="text-lg font-semibold">
+                      {user?.first_name || user?.username || 'Guest'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -181,17 +247,31 @@ const Dashboard = ({ selectedMenuItem, setSelectedMenuItem, isSidebarOpen, setSi
               {/* Module selector */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-lg font-semibold text-gray-800">Quick Status</h2>
-                  <div className="text-sm text-gray-500">Select up to 4 modules</div>
+                  <h2 className="text-lg font-semibold text-gray-800">
+                    Quick Status
+                  </h2>
+                  <div className="text-sm text-gray-500">
+                    Select up to 4 modules
+                  </div>
                 </div>
-                <ModuleSelector selected={selectedModuleKeys} setSelected={setSelectedModuleKeys} />
+                <ModuleSelector
+                  selected={selectedModuleKeys}
+                  setSelected={setSelectedModuleKeys}
+                />
               </div>
 
               {/* Modules grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 pb-2">
-                {MODULES.filter(m => selectedModuleKeys.includes(m.key)).map((mod) => (
-                  <ModuleCard key={mod.key} mod={mod} authFetch={authFetch} onOpen={() => setSelectedMenuItem(mod.openMenuLabel)} />
-                ))}
+                {MODULES.filter((m) => selectedModuleKeys.includes(m.key)).map(
+                  (mod) => (
+                    <ModuleCard
+                      key={mod.key}
+                      mod={mod}
+                      authFetch={authFetch}
+                      onOpen={() => setSelectedMenuItem(mod.openMenuLabel)}
+                    />
+                  ),
+                )}
               </div>
             </div>
           ) : (

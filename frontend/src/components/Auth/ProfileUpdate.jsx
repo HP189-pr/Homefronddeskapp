@@ -29,7 +29,9 @@ const ProfileUpdate = ({ setWorkArea }) => {
         phone: user.phone || '',
         address: user.address || '',
         city: user.city || '',
-        usrpic: user.usrpic ? `/media/Profpic/${user.usrpic}` : '/default-profile.png',
+        usrpic: user.usrpic
+          ? `/media/Profpic/${user.usrpic}`
+          : '/default-profile.png',
         profile_picture_file: null,
       });
     }
@@ -78,7 +80,9 @@ const ProfileUpdate = ({ setWorkArea }) => {
         body: formData,
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Failed to update' }));
+        const err = await res
+          .json()
+          .catch(() => ({ error: 'Failed to update' }));
         throw new Error(err.error || 'Failed to update');
       }
       const payload = await res.json().catch(() => ({}));

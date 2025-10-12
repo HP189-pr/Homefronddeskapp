@@ -22,87 +22,189 @@ export default function DataAnalysis() {
   }, []);
 
   const runCheck = async () => {
-    setBusy(true); setError(''); setResult(null);
+    setBusy(true);
+    setError('');
+    setResult(null);
     try {
-      const res = await axios.get(`/api/misc/degree/duplicates/enrollment?normalized=${normalized ? 'true' : 'false'}&format=json`, {
-        headers: authHeaders,
-      });
+      const res = await axios.get(
+        `/api/misc/degree/duplicates/enrollment?normalized=${
+          normalized ? 'true' : 'false'
+        }&format=json`,
+        {
+          headers: authHeaders,
+        },
+      );
       setResult(res.data || null);
     } catch (e) {
-      setError(e?.response?.data?.error || e.message || 'Failed to run duplicate check');
-    } finally { setBusy(false); }
+      setError(
+        e?.response?.data?.error ||
+          e.message ||
+          'Failed to run duplicate check',
+      );
+    } finally {
+      setBusy(false);
+    }
   };
 
   const downloadExcel = async () => {
     try {
-      const res = await axios.get(`/api/misc/degree/duplicates/enrollment?normalized=${normalized ? 'true' : 'false'}&format=xlsx`, {
-        responseType: 'blob',
-        headers: authHeaders,
-      });
-      const type = res.headers['content-type'] || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      saveAs(new Blob([res.data], { type }), `Degree-duplicate-enrollment${normalized ? '-normalized' : ''}.xlsx`);
+      const res = await axios.get(
+        `/api/misc/degree/duplicates/enrollment?normalized=${
+          normalized ? 'true' : 'false'
+        }&format=xlsx`,
+        {
+          responseType: 'blob',
+          headers: authHeaders,
+        },
+      );
+      const type =
+        res.headers['content-type'] ||
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      saveAs(
+        new Blob([res.data], { type }),
+        `Degree-duplicate-enrollment${normalized ? '-normalized' : ''}.xlsx`,
+      );
     } catch (e) {
-      setError(e?.response?.data?.error || e.message || 'Failed to download report');
+      setError(
+        e?.response?.data?.error || e.message || 'Failed to download report',
+      );
     }
   };
 
   const pruneDuplicates = async () => {
-    setBusy(true); setError(''); setPruneResult(null);
+    setBusy(true);
+    setError('');
+    setPruneResult(null);
     try {
-      const res = await axios.post(`/api/misc/degree/duplicates/enrollment/prune?normalized=${normalized ? 'true' : 'false'}&dryRun=${dryRun ? 'true' : 'false'}&keepOne=true`, {}, {
-        headers: { ...authHeaders },
-      });
+      const res = await axios.post(
+        `/api/misc/degree/duplicates/enrollment/prune?normalized=${
+          normalized ? 'true' : 'false'
+        }&dryRun=${dryRun ? 'true' : 'false'}&keepOne=true`,
+        {},
+        {
+          headers: { ...authHeaders },
+        },
+      );
       setPruneResult(res.data || null);
     } catch (e) {
-      setError(e?.response?.data?.error || e.message || 'Failed to prune duplicates');
-    } finally { setBusy(false); }
+      setError(
+        e?.response?.data?.error || e.message || 'Failed to prune duplicates',
+      );
+    } finally {
+      setBusy(false);
+    }
   };
 
   const pruneTripleDuplicates = async () => {
-    setBusy(true); setError(''); setTriplePruneResult(null);
+    setBusy(true);
+    setError('');
+    setTriplePruneResult(null);
     try {
-      const res = await axios.post(`/api/misc/degree/duplicates/triple/prune?normalized=${normalized ? 'true' : 'false'}&dryRun=${dryRun ? 'true' : 'false'}&keepOne=true`, {}, {
-        headers: { ...authHeaders },
-      });
+      const res = await axios.post(
+        `/api/misc/degree/duplicates/triple/prune?normalized=${
+          normalized ? 'true' : 'false'
+        }&dryRun=${dryRun ? 'true' : 'false'}&keepOne=true`,
+        {},
+        {
+          headers: { ...authHeaders },
+        },
+      );
       setTriplePruneResult(res.data || null);
     } catch (e) {
-      setError(e?.response?.data?.error || e.message || 'Failed to prune exact duplicates');
-    } finally { setBusy(false); }
+      setError(
+        e?.response?.data?.error ||
+          e.message ||
+          'Failed to prune exact duplicates',
+      );
+    } finally {
+      setBusy(false);
+    }
   };
 
   // Enrollment: duplicates
   const runEnrollmentDupCheck = async () => {
-    setBusy(true); setError(''); setEnrDupResult(null);
+    setBusy(true);
+    setError('');
+    setEnrDupResult(null);
     try {
-      const res = await axios.get(`/api/misc/enrollment/duplicates?normalized=${normalized ? 'true' : 'false'}&format=json`, { headers: authHeaders });
+      const res = await axios.get(
+        `/api/misc/enrollment/duplicates?normalized=${
+          normalized ? 'true' : 'false'
+        }&format=json`,
+        { headers: authHeaders },
+      );
       setEnrDupResult(res.data || null);
     } catch (e) {
-      setError(e?.response?.data?.error || e.message || 'Failed to run enrollment duplicate check');
-    } finally { setBusy(false); }
+      setError(
+        e?.response?.data?.error ||
+          e.message ||
+          'Failed to run enrollment duplicate check',
+      );
+    } finally {
+      setBusy(false);
+    }
   };
   const downloadEnrollmentDup = async () => {
     try {
-      const res = await axios.get(`/api/misc/enrollment/duplicates?normalized=${normalized ? 'true' : 'false'}&format=xlsx`, { responseType: 'blob', headers: authHeaders });
-      const type = res.headers['content-type'] || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      saveAs(new Blob([res.data], { type }), `Enrollment-duplicate${normalized ? '-normalized' : ''}.xlsx`);
-    } catch (e) { setError(e?.response?.data?.error || e.message || 'Failed to download enrollment duplicates'); }
+      const res = await axios.get(
+        `/api/misc/enrollment/duplicates?normalized=${
+          normalized ? 'true' : 'false'
+        }&format=xlsx`,
+        { responseType: 'blob', headers: authHeaders },
+      );
+      const type =
+        res.headers['content-type'] ||
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      saveAs(
+        new Blob([res.data], { type }),
+        `Enrollment-duplicate${normalized ? '-normalized' : ''}.xlsx`,
+      );
+    } catch (e) {
+      setError(
+        e?.response?.data?.error ||
+          e.message ||
+          'Failed to download enrollment duplicates',
+      );
+    }
   };
 
   // Enrollment: mismatches
   const runEnrollmentMismatch = async () => {
-    setBusy(true); setError(''); setEnrMismatchResult(null);
+    setBusy(true);
+    setError('');
+    setEnrMismatchResult(null);
     try {
-      const res = await axios.get(`/api/misc/enrollment/mismatch?format=json`, { headers: authHeaders });
+      const res = await axios.get(`/api/misc/enrollment/mismatch?format=json`, {
+        headers: authHeaders,
+      });
       setEnrMismatchResult(res.data || null);
-    } catch (e) { setError(e?.response?.data?.error || e.message || 'Failed to run enrollment mismatch'); }
-    finally { setBusy(false); }
+    } catch (e) {
+      setError(
+        e?.response?.data?.error ||
+          e.message ||
+          'Failed to run enrollment mismatch',
+      );
+    } finally {
+      setBusy(false);
+    }
   };
   const downloadEnrollmentMismatch = async () => {
     try {
-      const res = await axios.get(`/api/misc/enrollment/mismatch?format=xlsx`, { responseType: 'blob', headers: authHeaders });
-      const type = res.headers['content-type'] || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      const res = await axios.get(`/api/misc/enrollment/mismatch?format=xlsx`, {
+        responseType: 'blob',
+        headers: authHeaders,
+      });
+      const type =
+        res.headers['content-type'] ||
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
       saveAs(new Blob([res.data], { type }), `Enrollment-mismatch.xlsx`);
-    } catch (e) { setError(e?.response?.data?.error || e.message || 'Failed to download enrollment mismatch'); }
+    } catch (e) {
+      setError(
+        e?.response?.data?.error ||
+          e.message ||
+          'Failed to download enrollment mismatch',
+      );
+    }
   };
 
   return (
@@ -110,26 +212,58 @@ export default function DataAnalysis() {
       <h2 className="text-lg font-semibold">Data Analysis</h2>
       <div className="flex items-center gap-3">
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={normalized} onChange={(e) => setNormalized(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={normalized}
+            onChange={(e) => setNormalized(e.target.checked)}
+          />
           Compare enrollment_no ignoring case and spaces
         </label>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={dryRun}
+            onChange={(e) => setDryRun(e.target.checked)}
+          />
           Dry run (don’t delete)
         </label>
-        <button onClick={runCheck} disabled={busy} className="bg-blue-600 text-white rounded px-3 py-1 disabled:opacity-50">
+        <button
+          onClick={runCheck}
+          disabled={busy}
+          className="bg-blue-600 text-white rounded px-3 py-1 disabled:opacity-50"
+        >
           {busy ? 'Checking…' : 'Check Degree Duplicates'}
         </button>
-        <button onClick={downloadExcel} className="bg-gray-800 text-white rounded px-3 py-1">Download Excel</button>
-  <button onClick={pruneDuplicates} disabled={busy} className="bg-red-600 text-white rounded px-3 py-1 disabled:opacity-50">{busy ? 'Processing…' : 'Prune Duplicates (Enroll only)'} </button>
-  <button onClick={pruneTripleDuplicates} disabled={busy} className="bg-red-700 text-white rounded px-3 py-1 disabled:opacity-50">{busy ? 'Processing…' : 'Prune Duplicates (Name+Enroll+Convo)'} </button>
+        <button
+          onClick={downloadExcel}
+          className="bg-gray-800 text-white rounded px-3 py-1"
+        >
+          Download Excel
+        </button>
+        <button
+          onClick={pruneDuplicates}
+          disabled={busy}
+          className="bg-red-600 text-white rounded px-3 py-1 disabled:opacity-50"
+        >
+          {busy ? 'Processing…' : 'Prune Duplicates (Enroll only)'}{' '}
+        </button>
+        <button
+          onClick={pruneTripleDuplicates}
+          disabled={busy}
+          className="bg-red-700 text-white rounded px-3 py-1 disabled:opacity-50"
+        >
+          {busy ? 'Processing…' : 'Prune Duplicates (Name+Enroll+Convo)'}{' '}
+        </button>
       </div>
 
       {error && <div className="text-red-600 text-sm">{error}</div>}
 
       {result && (
         <div className="border rounded p-3 space-y-2">
-          <div className="text-sm">Duplicate keys: <b>{result.duplicates || 0}</b> {result.normalized ? '(normalized)' : ''}</div>
+          <div className="text-sm">
+            Duplicate keys: <b>{result.duplicates || 0}</b>{' '}
+            {result.normalized ? '(normalized)' : ''}
+          </div>
           <div className="max-h-64 overflow-auto border rounded">
             <table className="min-w-full text-xs">
               <thead className="bg-gray-50">
@@ -168,15 +302,25 @@ export default function DataAnalysis() {
                   </thead>
                   <tbody>
                     {result.details.map((d, i) => {
-                      const dupKey = normalized ? (d.enrollment_no || '').toString().trim().toLowerCase().replace(/\s+/g, '') : (d.enrollment_no || '').toString();
+                      const dupKey = normalized
+                        ? (d.enrollment_no || '')
+                            .toString()
+                            .trim()
+                            .toLowerCase()
+                            .replace(/\s+/g, '')
+                        : (d.enrollment_no || '').toString();
                       return (
                         <tr key={i} className="border-t">
                           <td className="px-2 py-1">{dupKey}</td>
                           <td className="px-2 py-1">{d.id}</td>
                           <td className="px-2 py-1">{d.enrollment_no || ''}</td>
-                          <td className="px-2 py-1">{d.convocation_no || ''}</td>
+                          <td className="px-2 py-1">
+                            {d.convocation_no || ''}
+                          </td>
                           <td className="px-2 py-1">{d.dg_sr_no || ''}</td>
-                          <td className="px-2 py-1">{d.student_name_dg || ''}</td>
+                          <td className="px-2 py-1">
+                            {d.student_name_dg || ''}
+                          </td>
                           <td className="px-2 py-1">{d.createdat || ''}</td>
                           <td className="px-2 py-1">{d.updatedat || ''}</td>
                         </tr>
@@ -193,12 +337,25 @@ export default function DataAnalysis() {
       {pruneResult && (
         <div className="border rounded p-3 space-y-2">
           <div className="text-sm font-medium">Prune Summary</div>
-          <div className="text-sm">Normalized: {pruneResult.normalized ? 'Yes' : 'No'} | Dry Run: {pruneResult.dryRun ? 'Yes' : 'No'}</div>
+          <div className="text-sm">
+            Normalized: {pruneResult.normalized ? 'Yes' : 'No'} | Dry Run:{' '}
+            {pruneResult.dryRun ? 'Yes' : 'No'}
+          </div>
           <div className="text-sm">Duplicate groups: {pruneResult.groups}</div>
-          <div className="text-sm">Rows to delete: {pruneResult.toDelete} | Deleted: {pruneResult.deleted} | Kept: {pruneResult.kept}</div>
+          <div className="text-sm">
+            Rows to delete: {pruneResult.toDelete} | Deleted:{' '}
+            {pruneResult.deleted} | Kept: {pruneResult.kept}
+          </div>
           {pruneResult.logUrl && (
             <div>
-              <a href={pruneResult.logUrl} target="_blank" rel="noreferrer" className="text-blue-700 underline text-sm">Download prune log</a>
+              <a
+                href={pruneResult.logUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-700 underline text-sm"
+              >
+                Download prune log
+              </a>
             </div>
           )}
         </div>
@@ -206,13 +363,30 @@ export default function DataAnalysis() {
 
       {triplePruneResult && (
         <div className="border rounded p-3 space-y-2">
-          <div className="text-sm font-medium">Prune Summary (Name+Enrollment+Convocation)</div>
-          <div className="text-sm">Normalized: {triplePruneResult.normalized ? 'Yes' : 'No'} | Dry Run: {triplePruneResult.dryRun ? 'Yes' : 'No'}</div>
-          <div className="text-sm">Duplicate groups: {triplePruneResult.groups}</div>
-          <div className="text-sm">Rows to delete: {triplePruneResult.toDelete} | Deleted: {triplePruneResult.deleted} | Kept: {triplePruneResult.kept}</div>
+          <div className="text-sm font-medium">
+            Prune Summary (Name+Enrollment+Convocation)
+          </div>
+          <div className="text-sm">
+            Normalized: {triplePruneResult.normalized ? 'Yes' : 'No'} | Dry Run:{' '}
+            {triplePruneResult.dryRun ? 'Yes' : 'No'}
+          </div>
+          <div className="text-sm">
+            Duplicate groups: {triplePruneResult.groups}
+          </div>
+          <div className="text-sm">
+            Rows to delete: {triplePruneResult.toDelete} | Deleted:{' '}
+            {triplePruneResult.deleted} | Kept: {triplePruneResult.kept}
+          </div>
           {triplePruneResult.logUrl && (
             <div>
-              <a href={triplePruneResult.logUrl} target="_blank" rel="noreferrer" className="text-blue-700 underline text-sm">Download prune log</a>
+              <a
+                href={triplePruneResult.logUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-700 underline text-sm"
+              >
+                Download prune log
+              </a>
             </div>
           )}
         </div>
@@ -222,18 +396,40 @@ export default function DataAnalysis() {
       <div className="border rounded p-3 space-y-2">
         <div className="flex items-center gap-2">
           <div className="font-semibold text-sm">Enrollment Duplicates</div>
-          <button onClick={runEnrollmentDupCheck} disabled={busy} className="bg-blue-600 text-white rounded px-2 py-0.5 text-xs disabled:opacity-50">{busy ? 'Checking…' : 'Check'}</button>
-          <button onClick={downloadEnrollmentDup} className="bg-gray-800 text-white rounded px-2 py-0.5 text-xs">Download Excel</button>
+          <button
+            onClick={runEnrollmentDupCheck}
+            disabled={busy}
+            className="bg-blue-600 text-white rounded px-2 py-0.5 text-xs disabled:opacity-50"
+          >
+            {busy ? 'Checking…' : 'Check'}
+          </button>
+          <button
+            onClick={downloadEnrollmentDup}
+            className="bg-gray-800 text-white rounded px-2 py-0.5 text-xs"
+          >
+            Download Excel
+          </button>
         </div>
         {enrDupResult && (
           <div className="space-y-2">
-            <div className="text-sm">Duplicate keys: <b>{enrDupResult.duplicates || 0}</b> {enrDupResult.normalized ? '(normalized)' : ''}</div>
+            <div className="text-sm">
+              Duplicate keys: <b>{enrDupResult.duplicates || 0}</b>{' '}
+              {enrDupResult.normalized ? '(normalized)' : ''}
+            </div>
             <div className="max-h-64 overflow-auto border rounded">
               <table className="min-w-full text-xs">
-                <thead className="bg-gray-50"><tr><th className="px-2 py-1 text-left">dup_key</th><th className="px-2 py-1 text-left">count</th></tr></thead>
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-2 py-1 text-left">dup_key</th>
+                    <th className="px-2 py-1 text-left">count</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {(enrDupResult.groups || []).map((g, i) => (
-                    <tr key={i} className="border-t"><td className="px-2 py-1">{String(g.dup_key)}</td><td className="px-2 py-1">{Number(g.cnt)}</td></tr>
+                    <tr key={i} className="border-t">
+                      <td className="px-2 py-1">{String(g.dup_key)}</td>
+                      <td className="px-2 py-1">{Number(g.cnt)}</td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -257,7 +453,13 @@ export default function DataAnalysis() {
                   </thead>
                   <tbody>
                     {enrDupResult.details.map((d, i) => {
-                      const dupKey = normalized ? (d.enrollment_no || '').toString().trim().toLowerCase().replace(/\s+/g, '') : (d.enrollment_no || '').toString();
+                      const dupKey = normalized
+                        ? (d.enrollment_no || '')
+                            .toString()
+                            .trim()
+                            .toLowerCase()
+                            .replace(/\s+/g, '')
+                        : (d.enrollment_no || '').toString();
                       return (
                         <tr key={i} className="border-t">
                           <td className="px-2 py-1">{dupKey}</td>
@@ -284,9 +486,22 @@ export default function DataAnalysis() {
       {/* Enrollment Mismatches */}
       <div className="border rounded p-3 space-y-2">
         <div className="flex items-center gap-2">
-          <div className="font-semibold text-sm">Enrollment Mismatch (Institute/Main/Sub)</div>
-          <button onClick={runEnrollmentMismatch} disabled={busy} className="bg-blue-600 text-white rounded px-2 py-0.5 text-xs disabled:opacity-50">{busy ? 'Checking…' : 'Check'}</button>
-          <button onClick={downloadEnrollmentMismatch} className="bg-gray-800 text-white rounded px-2 py-0.5 text-xs">Download Excel</button>
+          <div className="font-semibold text-sm">
+            Enrollment Mismatch (Institute/Main/Sub)
+          </div>
+          <button
+            onClick={runEnrollmentMismatch}
+            disabled={busy}
+            className="bg-blue-600 text-white rounded px-2 py-0.5 text-xs disabled:opacity-50"
+          >
+            {busy ? 'Checking…' : 'Check'}
+          </button>
+          <button
+            onClick={downloadEnrollmentMismatch}
+            className="bg-gray-800 text-white rounded px-2 py-0.5 text-xs"
+          >
+            Download Excel
+          </button>
         </div>
         {enrMismatchResult && (
           <div className="max-h-96 overflow-auto border rounded">

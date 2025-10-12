@@ -7,6 +7,9 @@ import Provisional from '../pages/provisional';
 import Degree from '../pages/Degree';
 import InstitutionalVerification from '../pages/InstVerification';
 import DocumentReceive from '../pages/DocumentReceive';
+import Inward from '../pages/Inward';
+import Outward from '../pages/Outward';
+import Inventory from '../pages/Inventory';
 import EmpLeavePage from '../pages/emp-leave.jsx';
 import Enrollment from '../pages/Enrollment';
 import AdminDashboard from '../Admin/AdminDashboard';
@@ -31,7 +34,7 @@ const WorkArea = ({ selectedMenuItem }) => {
       if (v === 'true' && ts && Date.now() - ts < 30 * 60 * 1000) {
         setAdminUnlocked(true);
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, []);
@@ -39,51 +42,70 @@ const WorkArea = ({ selectedMenuItem }) => {
   // Global topbar removed: each page renders its own actions (Home/Add/Search/etc.)
 
   const renderPage = () => {
-    switch (selectedMenuItem) {
-      case '📜 Transcript':
-      case '📜 Verification': // current Sidebar label
+    const rawLabel = selectedMenuItem || '';
+    const normalized = rawLabel
+      .replace(/^[^A-Za-z0-9]+/, '')
+      .trim()
+      .toLowerCase();
+
+    if (!normalized || normalized === 'dashboard') {
+      return (
+        <h1 style={{ padding: '20px', fontSize: '20px', fontWeight: 'bold' }}>
+          Select a Menu Item
+        </h1>
+      );
+    }
+
+    if (normalized === 'admin panel') {
+      const isAdmin = Boolean(
+        user && (user.usertype === 'admin' || user.role === 'admin'),
+      );
+      if (!isAdmin) {
+        return (
+          <h2 style={{ padding: '20px', color: 'red' }}>Access Denied 🚫</h2>
+        );
+      }
+      return adminUnlocked ? (
+        <AdminDashboard />
+      ) : (
+        <AdminPanelAccess onSuccess={() => setAdminUnlocked(true)} />
+      );
+    }
+
+    if (normalized === 'profile settings') {
+      return <ProfileUpdate />;
+    }
+
+    switch (normalized) {
+      case 'transcript':
+      case 'verification':
         return <Transcript />;
-      case '📑 Migration': // legacy label
-      case '🚀 Migration': // current Sidebar label
+      case 'migration':
         return <Migration />;
-      case '📋 Provisional': // legacy label
-      case '📄 Provisional': // current Sidebar label
+      case 'provisional':
         return <Provisional />;
-      case '🏅 Degree':
+      case 'degree':
         return <Degree />;
-      case '🏛️ Institutional Verification':
-      case '🏛️ Inst-Verification': // current Sidebar label
+      case 'institutional verification':
+      case 'inst verification':
+      case 'inst-verification':
         return <InstitutionalVerification />;
-      case '📥 Document Receive':
+      case 'document receive':
         return <DocumentReceive />;
-      case 'Leave Management':
-      case '🏖️ Leave Management':
+      case 'inward':
+        return <Inward />;
+      case 'outward':
+        return <Outward />;
+      case 'inventory':
+        return <Inventory />;
+      case 'leave management':
         return <EmpLeavePage />;
-      case 'Enrollment':
-        // Let the Enrollment component enforce its own permissions.
+      case 'enrollment':
         return (
           <SimpleBoundary>
             <Enrollment />
           </SimpleBoundary>
         );
-      case 'Admin Panel': {
-        // backend uses `usertype`; some older records may use `role` — accept either
-        const isAdmin = Boolean(
-          user && (user.usertype === 'admin' || user.role === 'admin'),
-        );
-        if (!isAdmin) {
-          return (
-            <h2 style={{ padding: '20px', color: 'red' }}>Access Denied 🚫</h2>
-          );
-        }
-        return adminUnlocked ? (
-          <AdminDashboard />
-        ) : (
-          <AdminPanelAccess onSuccess={() => setAdminUnlocked(true)} />
-        );
-      }
-      case 'Profile Settings':
-        return <ProfileUpdate />;
       default:
         return (
           <h1 style={{ padding: '20px', fontSize: '20px', fontWeight: 'bold' }}>

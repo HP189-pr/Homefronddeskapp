@@ -28,7 +28,12 @@ ProtectedRoute.propTypes = {
 };
 
 // Layout stays same
-const Layout = ({ setSelectedMenuItem, isSidebarOpen, setSidebarOpen, selectedMenuItem }) => (
+const Layout = ({
+  setSelectedMenuItem,
+  isSidebarOpen,
+  setSidebarOpen,
+  selectedMenuItem,
+}) => (
   <div className="flex">
     <Sidebar
       isOpen={isSidebarOpen}
@@ -50,7 +55,8 @@ const PAGES = {
 
 export default function AppRouter() {
   // initial page from history.state or default 'login'
-  const initial = (window.history.state && window.history.state.page) || 'login';
+  const initial =
+    (window.history.state && window.history.state.page) || 'login';
   const [page, setPage] = useState(initial);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [selectedMenuItem, setSelectedMenuItem] = useState(null);
@@ -76,8 +82,14 @@ export default function AppRouter() {
     const homeHandler = () => {
       setSelectedMenuItem(null);
       setPage('dashboard');
-      window.history.pushState({ page: 'dashboard', ts: Date.now() }, '', window.location.pathname);
-      window.dispatchEvent(new CustomEvent('app:navigate', { detail: { page: 'dashboard' } }));
+      window.history.pushState(
+        { page: 'dashboard', ts: Date.now() },
+        '',
+        window.location.pathname,
+      );
+      window.dispatchEvent(
+        new CustomEvent('app:navigate', { detail: { page: 'dashboard' } }),
+      );
     };
     window.addEventListener('app:home', homeHandler);
 
@@ -93,8 +105,14 @@ export default function AppRouter() {
     // pushState will be called by pushPage via navigate from context
     // local setPage to ensure immediate render
     setPage(to);
-    window.history.pushState({ page: to, meta, ts: Date.now() }, '', window.location.pathname);
-    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { page: to, meta } }));
+    window.history.pushState(
+      { page: to, meta, ts: Date.now() },
+      '',
+      window.location.pathname,
+    );
+    window.dispatchEvent(
+      new CustomEvent('app:navigate', { detail: { page: to, meta } }),
+    );
   };
 
   // render current page, supply navigate + other props
@@ -109,7 +127,19 @@ export default function AppRouter() {
 
   return (
     <AuthProvider>
-      <NavigationProvider value={{ navigate, replace: (p, m) => { window.history.replaceState({ page: p, meta: m }, '', window.location.pathname); setPage(p); } }}>
+      <NavigationProvider
+        value={{
+          navigate,
+          replace: (p, m) => {
+            window.history.replaceState(
+              { page: p, meta: m },
+              '',
+              window.location.pathname,
+            );
+            setPage(p);
+          },
+        }}
+      >
         {PageComponent ? (
           // For protected pages handle auth check inside ProtectedRoute
           page === 'dashboard' ? (

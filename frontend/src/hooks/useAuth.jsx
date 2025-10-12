@@ -18,7 +18,7 @@ const decodeJwt = (token) => {
     const json = decodeURIComponent(
       Array.prototype.map
         .call(str, (c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
+        .join(''),
     );
     return JSON.parse(json);
   } catch (e) {
@@ -62,12 +62,12 @@ export const AuthProvider = ({ children }) => {
       window.history.pushState(
         { page: 'login', meta: { from: 'auth-logout' } },
         '',
-        window.location.pathname
+        window.location.pathname,
       );
       window.dispatchEvent(
         new CustomEvent('app:navigate', {
           detail: { page: 'login', meta: { from: 'auth-logout' } },
-        })
+        }),
       );
     } catch (err) {
       // Fallback: hard redirect
@@ -194,13 +194,15 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await authFetch('/api/profile', {
         method: 'GET',
-        headers: { 'Accept': 'application/json' },
+        headers: { Accept: 'application/json' },
       });
       if (!res.ok) return null;
       const payload = await res.json();
       if (payload?.user) {
         setUser(payload.user);
-        try { localStorage.setItem('user', JSON.stringify(payload.user)); } catch {}
+        try {
+          localStorage.setItem('user', JSON.stringify(payload.user));
+        } catch {}
       }
       return payload;
     } catch (e) {

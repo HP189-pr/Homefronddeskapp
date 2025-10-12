@@ -20,7 +20,9 @@ const InstitutesAdmin = () => {
   const [error, setError] = useState('');
 
   const sorted = useMemo(() => {
-    return [...list].sort((a, b) => (a.institute_id ?? 0) - (b.institute_id ?? 0));
+    return [...list].sort(
+      (a, b) => (a.institute_id ?? 0) - (b.institute_id ?? 0),
+    );
   }, [list]);
 
   const load = async () => {
@@ -36,7 +38,9 @@ const InstitutesAdmin = () => {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -102,10 +106,15 @@ const InstitutesAdmin = () => {
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Institutes</h2>
 
-      <form onSubmit={handleSubmit} className="bg-gray-50 border rounded p-4 space-y-3">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-gray-50 border rounded p-4 space-y-3"
+      >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label className="block text-sm font-medium mb-1">Institute ID (optional)</label>
+            <label className="block text-sm font-medium mb-1">
+              Institute ID (optional)
+            </label>
             <input
               type="number"
               name="institute_id"
@@ -116,7 +125,9 @@ const InstitutesAdmin = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Institute Code</label>
+            <label className="block text-sm font-medium mb-1">
+              Institute Code
+            </label>
             <input
               name="institute_code"
               value={form.institute_code}
@@ -126,7 +137,9 @@ const InstitutesAdmin = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Institute Name</label>
+            <label className="block text-sm font-medium mb-1">
+              Institute Name
+            </label>
             <input
               required
               name="institute_name"
@@ -170,11 +183,20 @@ const InstitutesAdmin = () => {
         </div>
         {error && <div className="text-red-600 text-sm">{error}</div>}
         <div className="flex gap-2">
-          <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded">
+          <button
+            type="submit"
+            className="px-4 py-2 bg-indigo-600 text-white rounded"
+          >
             {editingId ? 'Update Institute' : 'Add Institute'}
           </button>
           {editingId && (
-            <button type="button" onClick={reset} className="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+            <button
+              type="button"
+              onClick={reset}
+              className="px-4 py-2 bg-gray-200 rounded"
+            >
+              Cancel
+            </button>
           )}
         </div>
       </form>
@@ -195,9 +217,17 @@ const InstitutesAdmin = () => {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td className="px-3 py-2" colSpan={8}>Loading…</td></tr>
+              <tr>
+                <td className="px-3 py-2" colSpan={8}>
+                  Loading…
+                </td>
+              </tr>
             ) : sorted.length === 0 ? (
-              <tr><td className="px-3 py-4 text-gray-500" colSpan={8}>No institutes found.</td></tr>
+              <tr>
+                <td className="px-3 py-4 text-gray-500" colSpan={8}>
+                  No institutes found.
+                </td>
+              </tr>
             ) : (
               sorted.map((row, idx) => (
                 <tr key={row.id} className="border-t">
@@ -207,12 +237,19 @@ const InstitutesAdmin = () => {
                   <td className="px-3 py-2">{row.institute_name}</td>
                   <td className="px-3 py-2">{row.institute_campus || '—'}</td>
                   <td className="px-3 py-2">{row.institute_city || '—'}</td>
-                  <td className="px-3 py-2 max-w-[360px] truncate" title={row.institute_address || ''}>{row.institute_address || '—'}</td>
+                  <td
+                    className="px-3 py-2 max-w-[360px] truncate"
+                    title={row.institute_address || ''}
+                  >
+                    {row.institute_address || '—'}
+                  </td>
                   <td className="px-3 py-2">
                     <button
                       className="px-3 py-1 bg-white border rounded hover:bg-gray-50"
                       onClick={() => startEdit(row)}
-                    >Edit</button>
+                    >
+                      Edit
+                    </button>
                   </td>
                 </tr>
               ))

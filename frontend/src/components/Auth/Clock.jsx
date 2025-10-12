@@ -17,7 +17,9 @@ const Clock = ({ showDate = false }) => {
       {showDate && (
         <div className="text-sm opacity-80">{formatDateDMY(time)}</div>
       )}
-      <div className="text-lg font-semibold">{formatDateTimeIST(time).split(' ')[1]}</div>
+      <div className="text-lg font-semibold">
+        {formatDateTimeIST(time).split(' ')[1]}
+      </div>
     </div>
   );
 };
