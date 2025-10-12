@@ -21,7 +21,7 @@ const decodeJwt = (token) => {
         .join(''),
     );
     return JSON.parse(json);
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -32,26 +32,71 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
+  const devAutoLogin = import.meta?.env?.VITE_DEV_AUTO_LOGIN === '1';
 
   // On mount, restore auth state from localStorage (token + user)
   useEffect(() => {
     const token = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
 
+    const tryDevAutoLogin = async () => {
+      try {
+        const res = await fetch('/api/auth/dev-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ userid: 'admin', role: 'admin' }),
+        });
+        if (!res.ok) return;
+        const payload = await res.json();
+        if (payload?.token && payload?.user) {
+          localStorage.setItem('token', payload.token);
+          localStorage.setItem('user', JSON.stringify(payload.user));
+          setIsAuthenticated(true);
+          setUser(payload.user);
+          // If currently on login page, navigate to dashboard automatically
+          try {
+            const current = window.history.state && window.history.state.page;
+            if (!current || current === 'login') {
+              window.history.pushState(
+                { page: 'dashboard', ts: Date.now() },
+                '',
+                window.location.pathname,
+              );
+              window.dispatchEvent(
+                new CustomEvent('app:navigate', {
+                  detail: { page: 'dashboard', meta: { from: 'dev-auto' } },
+                }),
+              );
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+      } catch {
+        /* ignore dev auto login errors */
+      }
+    };
+
     if (token) {
       try {
         const decoded = decodeJwt(token);
-        if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+        if (decoded?.exp && decoded.exp * 1000 < Date.now()) {
           // token expired
           logout();
+          // If dev auto-login enabled, try to get a fresh token
+          if (devAutoLogin) tryDevAutoLogin();
         } else {
           setIsAuthenticated(true);
           if (storedUser) setUser(JSON.parse(storedUser));
         }
-      } catch (err) {
-        console.error('Invalid token, logging out', err);
+      } catch {
         logout();
+        if (devAutoLogin) tryDevAutoLogin();
       }
+    } else if (devAutoLogin) {
+      // No token present and dev auto-login is enabled
+      tryDevAutoLogin();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -69,7 +114,7 @@ export const AuthProvider = ({ children }) => {
           detail: { page: 'login', meta: { from: 'auth-logout' } },
         }),
       );
-    } catch (err) {
+    } catch {
       // Fallback: hard redirect
       window.location.href = '/';
     }
@@ -85,7 +130,7 @@ export const AuthProvider = ({ children }) => {
     try {
       sessionStorage.removeItem(ADMIN_VERIFIED_KEY);
       sessionStorage.removeItem(ADMIN_VERIFIED_TS_KEY);
-    } catch (e) {
+    } catch {
       /* ignore */
     }
   };
@@ -133,7 +178,6 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (!res.ok) {
-        console.error('Login failed status:', res.status);
         setIsAuthenticated(false);
         setUser(null);
         setLoading(false);
@@ -155,8 +199,8 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setLoading(false);
       return false;
-    } catch (err) {
-      console.error('Login error:', err);
+    } catch {
+      /* ignore */
       setIsAuthenticated(false);
       setUser(null);
       setLoading(false);
@@ -179,7 +223,7 @@ export const AuthProvider = ({ children }) => {
         method: 'POST',
         credentials: 'same-origin',
       }).catch(() => {});
-    } catch (e) {
+    } catch {
       // ignore
     }
 
@@ -202,10 +246,12 @@ export const AuthProvider = ({ children }) => {
         setUser(payload.user);
         try {
           localStorage.setItem('user', JSON.stringify(payload.user));
-        } catch {}
+        } catch {
+          /* ignore */
+        }
       }
       return payload;
-    } catch (e) {
+    } catch {
       return null;
     }
   };
@@ -223,13 +269,11 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (!res.ok) {
-        console.error('Failed to fetch users', res.status);
         return [];
       }
       const payload = await res.json();
       return payload?.users || [];
-    } catch (err) {
-      console.error('fetchUsers error', err);
+    } catch {
       return [];
     }
   };
@@ -253,7 +297,7 @@ export const AuthProvider = ({ children }) => {
         if (cached === 'true' && Date.now() - ts < VERIFY_EXPIRY_MS) {
           return true;
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
 
@@ -265,7 +309,6 @@ export const AuthProvider = ({ children }) => {
 
       if (!res.ok) {
         if (res.status >= 400 && res.status < 500) return false;
-        console.error('verifyPassword server error', res.status);
         return false;
       }
 
@@ -276,14 +319,14 @@ export const AuthProvider = ({ children }) => {
         try {
           sessionStorage.setItem(ADMIN_VERIFIED_KEY, 'true');
           sessionStorage.setItem(ADMIN_VERIFIED_TS_KEY, String(Date.now()));
-        } catch (e) {
+        } catch {
           /* ignore */
         }
       }
 
       return ok;
-    } catch (err) {
-      console.error('verifyPassword error', err);
+    } catch {
+      /* ignore */
       return false;
     }
   };
@@ -300,6 +343,7 @@ export const AuthProvider = ({ children }) => {
         verifyPassword,
         authFetch, // expose for convenience
         fetchUserProfile,
+        devAutoLoginEnabled: devAutoLogin,
       }}
     >
       {children}

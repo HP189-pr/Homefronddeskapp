@@ -6,6 +6,82 @@ import { User } from '../models/user.mjs';
 
 const router = express.Router();
 
+// DEV-ONLY: quick auto login for local development to avoid frequent re-auth
+// POST /api/auth/dev-login
+// Guarded by NODE_ENV !== 'production' and optional ALLOW_DEV_LOGIN flag
+router.post('/dev-login', async (req, res, next) => {
+  try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    if (process.env.ALLOW_DEV_LOGIN && process.env.ALLOW_DEV_LOGIN !== '1') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const { userid, role } = req.body || {};
+    const desiredId = (userid || '').toString().trim().toLowerCase();
+    const desiredRole = (role || '').toString().trim().toLowerCase();
+
+    let safeUser = null;
+    try {
+      // Prefer a real user from DB when possible
+      if (desiredId) {
+        const u = await User.findOne({
+          where: {
+            [Op.or]: [
+              sqlWhere(fn('LOWER', col('userid')), desiredId),
+              sqlWhere(fn('LOWER', col('usercode')), desiredId),
+            ],
+          },
+        });
+        if (u) {
+          const tmp = { ...u.get() };
+          delete tmp.usrpassword;
+          safeUser = tmp;
+        }
+      }
+      if (!safeUser) {
+        const admin = await User.findOne({
+          where: {
+            [Op.or]: [
+              { usertype: 'admin' },
+              sqlWhere(fn('LOWER', col('userid')), 'admin'),
+              sqlWhere(fn('LOWER', col('usercode')), 'admin'),
+            ],
+          },
+        });
+        if (admin) {
+          const tmp = { ...admin.get() };
+          delete tmp.usrpassword;
+          safeUser = tmp;
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
+
+    if (!safeUser) {
+      // Fallback stub user when DB not available or admin not found
+      safeUser = {
+        id: 0,
+        userid: desiredId || 'dev',
+        usertype: desiredRole || 'admin',
+        name: 'Dev User',
+      };
+    }
+
+    const token = jwt.sign(
+      { id: safeUser.id, userid: safeUser.userid, usertype: safeUser.usertype },
+      process.env.JWT_SECRET || 'change-me-secret',
+      { expiresIn: process.env.DEV_TOKEN_EXPIRES_IN || '7d' },
+    );
+
+    return res.json({ token, user: safeUser });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 // POST /api/auth/login
 // Accepts { userid, password } (preferred) or legacy { identifier, usrpassword }
 router.post('/login', async (req, res, next) => {

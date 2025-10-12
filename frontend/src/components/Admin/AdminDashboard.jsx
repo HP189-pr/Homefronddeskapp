@@ -8,6 +8,8 @@ import CourseAdmin from './CourseAdmin';
 import SystemSettings from './path.jsx';
 import Upload from './Upload.jsx';
 import DataAnalysis from './DataAnalysis.jsx';
+import EmployeeManagement from './EmployeeManagement.jsx';
+import LeaveManagement from './LeaveManagement.jsx';
 
 /**
  * AdminDashboard
@@ -47,6 +49,10 @@ const AdminDashboard = () => {
       case 'Course Management':
       case 'Add Course': // legacy synonym
         return <CourseAdmin />;
+      case 'Employee Management':
+        return <EmployeeManagement />;
+      case 'Leave Management':
+        return <LeaveManagement />;
       case 'User Rights':
         return <PermissionsAdmin />;
       case 'System Settings':
@@ -72,6 +78,8 @@ const AdminDashboard = () => {
             'Institute Management',
             'Course Management',
             'User Management',
+            'Employee Management',
+            'Leave Management',
             'User Rights',
             'System Settings',
             'Upload',
