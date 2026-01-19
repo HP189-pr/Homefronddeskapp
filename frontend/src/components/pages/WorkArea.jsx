@@ -1,27 +1,40 @@
-eimport React, { useState, useEffect } from "react";
-import Verification from "./verification";
-import Migration from "./migration";
-import Provisional from "./provisional";
-import Enrollment from "./Enrollment";
-import Degree from "./Degree";
-import InstitutionalVerification from "./Inst-Verification";
-import CustomDashboard from './CustomDashboardClean';
-import DocReceive from "./doc-receive";
-import AdminDashboard from "../Admin/AdminDashboard.jsx";
-import ProfileUpdate from "../Admin/ProfileUpdate";
-import EmpLeavePage from "./emp-leave.jsx";
-import MailRequestPage from "./mail_request";
-import TranscriptRequestPage from "./transcript_request";
-import StudentSearch from "./student-search";
-import AuthInventory from "../hooks/AuthInventory";
-import AuthDocRegister from "../hooks/AuthDocRegister";
-import AuthFees from "../hooks/AuthFees";
-
-
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import Verification from './verification';
+import Migration from './migration';
+import Provisional from './provisional';
+import Enrollment from './Enrollment';
+import Degree from './Degree';
+import InstitutionalVerification from './InstVerification.jsx';
+import CustomDashboard from './Dashboard.jsx';
+import DocReceive from './doc-receive.jsx';
+import AdminDashboard from '../Admin/AdminDashboard.jsx';
+import ProfileUpdate from '../Admin/ProfileUpdate';
+import EmpLeavePage from './emp-leave.jsx';
+import MailRequestPage from './mail_request';
+import TranscriptRequestPage from './transcript_request';
+import StudentSearch from './StudentSearch.jsx';
+import AuthInventory from '../../hooks/AuthInventory.jsx';
+import AuthDocRegister from '../../hooks/AuthDocRegister.jsx';
+import AuthFees from '../../hooks/AuthFees.jsx';
 
 // Pages will render their own topbars; WorkArea only decides which page to show.
 
-const WorkArea = ({ selectedSubmenu, onToggleSidebar, onToggleChatbox, isSidebarOpen, isChatboxOpen, setSelectedMenuItem, selectedMenuItem, setSidebarOpen }) => {
+const EmpBalanceCertificate = () => (
+  <div className="flex h-full items-center justify-center p-6 text-lg font-semibold text-gray-700">
+    Balance Certificate view is not available yet.
+  </div>
+);
+
+const WorkArea = ({
+  selectedSubmenu,
+  onToggleSidebar,
+  onToggleChatbox,
+  isSidebarOpen,
+  setSelectedMenuItem,
+  selectedMenuItem,
+  setSidebarOpen,
+}) => {
   // Keep a per-page ephemeral action if a page needs it
   const [selectedTopbarMenu, setSelectedTopbarMenu] = useState(null);
 
@@ -45,39 +58,61 @@ const WorkArea = ({ selectedSubmenu, onToggleSidebar, onToggleChatbox, isSidebar
         // Set window.selected_for_nav to be consumed by pages
         window.__admindesk_initial_nav = { nav, docrec };
       }
-    } catch (e) {}
+    } catch {
+      // Could not read admindesk navigation keys from localStorage
+    }
   }, []);
 
   // Normalize selectedSubmenu to a page key to handle label variations
   const renderPage = () => {
     // Check both selectedSubmenu and selectedMenuItem for routing
-    const s = (selectedSubmenu || selectedMenuItem || "").toString();
+    const s = (selectedSubmenu || selectedMenuItem || '').toString();
     const l = s.toLowerCase();
-    let key = "";
-  if (l.includes("dash")) key = "dashboard";
-  if (l.includes("enroll")) key = "enrollment";
-  // Prefer explicit 'inst' / 'inst-verification' labels so they don't fall through to the generic 'verification' page
-  else if (l.includes("inst") || l.includes("inst-") || l.includes("institution")) key = "inst_ver";
-  else if (l.includes("verification") && !l.includes("inst") && !l.includes("institution")) key = "verification";
-  else if (l.includes("migration")) key = "migration";
-  else if (l.includes("provisional")) key = "provisional";
-  else if (l.includes("degree")) key = "degree";
-  else if ((l.includes("document") || l.includes("doc")) && l.includes("receive")) key = "doc_receive";
-  else if ((l.includes("mail") && l.includes("status")) || l.includes("mail request")) key = "mail_request";
-  else if (l.includes("transcript")) key = "transcript_request";
-  else if (l.includes("student") && l.includes("search")) key = "student_search";
-  else if (l.includes("doc") && l.includes("register")) key = "doc_register";
-  else if (l.includes("cash register") || l.includes("daily register")) key = "cash_register";
-  else if (l.includes("fee type")) key = "fee_type_master";
-  else if (l.includes("inventory")) key = "inventory";
-  else if (l.includes("leave management")) key = "emp_leave";
-  else if (l.includes("leave report")) key = "emp_leave_report";
-  else if (l.includes("balance certificate")) key = "emp_balance_certificate";
-  else if (l.includes("admin panel")) key = "admin";
-  else if (l.includes("profile")) key = "profile";
+    let key = '';
+    if (l.includes('dash')) key = 'dashboard';
+    if (l.includes('enroll')) key = 'enrollment';
+    // Prefer explicit 'inst' / 'inst-verification' labels so they don't fall through to the generic 'verification' page
+    else if (
+      l.includes('inst') ||
+      l.includes('inst-') ||
+      l.includes('institution')
+    )
+      key = 'inst_ver';
+    else if (
+      l.includes('verification') &&
+      !l.includes('inst') &&
+      !l.includes('institution')
+    )
+      key = 'verification';
+    else if (l.includes('migration')) key = 'migration';
+    else if (l.includes('provisional')) key = 'provisional';
+    else if (l.includes('degree')) key = 'degree';
+    else if (
+      (l.includes('document') || l.includes('doc')) &&
+      l.includes('receive')
+    )
+      key = 'doc_receive';
+    else if (
+      (l.includes('mail') && l.includes('status')) ||
+      l.includes('mail request')
+    )
+      key = 'mail_request';
+    else if (l.includes('transcript')) key = 'transcript_request';
+    else if (l.includes('student') && l.includes('search'))
+      key = 'student_search';
+    else if (l.includes('doc') && l.includes('register')) key = 'doc_register';
+    else if (l.includes('cash register') || l.includes('daily register'))
+      key = 'cash_register';
+    else if (l.includes('fee type')) key = 'fee_type_master';
+    else if (l.includes('inventory')) key = 'inventory';
+    else if (l.includes('leave management')) key = 'emp_leave';
+    else if (l.includes('leave report')) key = 'emp_leave_report';
+    else if (l.includes('balance certificate')) key = 'emp_balance_certificate';
+    else if (l.includes('admin panel')) key = 'admin';
+    else if (l.includes('profile')) key = 'profile';
 
     switch (key) {
-      case "enrollment":
+      case 'enrollment':
         return (
           <Enrollment
             selectedTopbarMenu={selectedTopbarMenu}
@@ -86,89 +121,94 @@ const WorkArea = ({ selectedSubmenu, onToggleSidebar, onToggleChatbox, isSidebar
             onToggleChatbox={onToggleChatbox}
           />
         );
-      case "verification":
+      case 'verification':
         return <Verification />;
-      case "migration":
+      case 'migration':
         return (
           <Migration
             onToggleSidebar={onToggleSidebar}
             onToggleChatbox={onToggleChatbox}
           />
         );
-      case "provisional":
+      case 'provisional':
         return (
           <Provisional
             onToggleSidebar={onToggleSidebar}
             onToggleChatbox={onToggleChatbox}
           />
         );
-      case "degree":
+      case 'degree':
         return (
           <Degree
             onToggleSidebar={onToggleSidebar}
             onToggleChatbox={onToggleChatbox}
           />
         );
-      case "inst_ver":
+      case 'inst_ver':
         return (
           <InstitutionalVerification
             onToggleSidebar={onToggleSidebar}
             onToggleChatbox={onToggleChatbox}
           />
         );
-      case "dashboard":
+      case 'dashboard':
         return (
-          <CustomDashboard selectedMenuItem={selectedMenuItem} setSelectedMenuItem={setSelectedMenuItem} isSidebarOpen={isSidebarOpen} setSidebarOpen={setSidebarOpen} />
+          <CustomDashboard
+            selectedMenuItem={selectedMenuItem}
+            setSelectedMenuItem={setSelectedMenuItem}
+            isSidebarOpen={isSidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+          />
         );
-      case "doc_receive":
+      case 'doc_receive':
         return (
           <DocReceive
             onToggleSidebar={onToggleSidebar}
             onToggleChatbox={onToggleChatbox}
           />
         );
-      case "mail_request":
+      case 'mail_request':
         return (
           <MailRequestPage
             onToggleSidebar={onToggleSidebar}
             onToggleChatbox={onToggleChatbox}
           />
         );
-      case "transcript_request":
+      case 'transcript_request':
         return (
           <TranscriptRequestPage
             onToggleSidebar={onToggleSidebar}
             onToggleChatbox={onToggleChatbox}
           />
         );
-      case "student_search":
+      case 'student_search':
         return <StudentSearch />;
-      case "doc_register":
+      case 'doc_register':
         return (
           <AuthDocRegister
             onToggleSidebar={onToggleSidebar}
             onToggleChatbox={onToggleChatbox}
           />
         );
-      case "cash_register":
+      case 'cash_register':
         return <AuthFees view="cash-register" />;
-      case "fee_type_master":
+      case 'fee_type_master':
         return <AuthFees view="fee-type-master" />;
-      case "inventory":
+      case 'inventory':
         return (
           <AuthInventory
             onToggleSidebar={onToggleSidebar}
             onToggleChatbox={onToggleChatbox}
           />
         );
-      case "emp_leave":
+      case 'emp_leave':
         return <EmpLeavePage />;
-      case "emp_leave_report":
-  // EmpLeaveReport file does not exist; fallback to EmpLeavePage
-  return <EmpLeavePage />;
-      case "emp_balance_certificate":
+      case 'emp_leave_report':
+        // EmpLeaveReport file does not exist; fallback to EmpLeavePage
+        return <EmpLeavePage />;
+      case 'emp_balance_certificate':
         return <EmpBalanceCertificate />;
-      case "admin":
+      case 'admin':
         return (
           <AdminDashboard
             selectedTopbarMenu={selectedTopbarMenu}
@@ -177,11 +217,11 @@ const WorkArea = ({ selectedSubmenu, onToggleSidebar, onToggleChatbox, isSidebar
             onSelectTopbar={(a) => setSelectedTopbarMenu(a)}
           />
         );
-      case "profile":
+      case 'profile':
         return <ProfileUpdate />;
       default:
         return (
-          <h1 style={{ padding: "20px", fontSize: "20px", fontWeight: "bold" }}>
+          <h1 style={{ padding: '20px', fontSize: '20px', fontWeight: 'bold' }}>
             Select a Menu Item
           </h1>
         );
@@ -192,11 +232,20 @@ const WorkArea = ({ selectedSubmenu, onToggleSidebar, onToggleChatbox, isSidebar
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Page content (each page already renders its own topbar and panels). */}
-      <div className="flex-1 overflow-auto">
-        {renderPage()}
-      </div>
+      <div className="flex-1 overflow-auto">{renderPage()}</div>
     </div>
   );
+};
+
+WorkArea.propTypes = {
+  selectedSubmenu: PropTypes.string,
+  onToggleSidebar: PropTypes.func,
+  onToggleChatbox: PropTypes.func,
+  isSidebarOpen: PropTypes.bool,
+  isChatboxOpen: PropTypes.bool,
+  setSelectedMenuItem: PropTypes.func,
+  selectedMenuItem: PropTypes.string,
+  setSidebarOpen: PropTypes.func,
 };
 
 export default WorkArea;

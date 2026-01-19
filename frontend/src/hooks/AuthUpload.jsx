@@ -34,19 +34,27 @@ export default function AuthUpload() {
       return;
     }
     try {
-      const url = `${apiBase}/bulk-upload/?service=${service}${sheetName ? `&sheet_name=${encodeURIComponent(sheetName)}` : ''}`;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const url = `${apiBase}/bulk-upload/?service=${service}${
+        sheetName ? `&sheet_name=${encodeURIComponent(sheetName)}` : ''
+      }`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) {
         // Try to extract server error details
         const ct = res.headers.get('content-type') || '';
-        const errMsg = ct.includes('application/json') ? JSON.stringify(await res.json()) : await res.text();
+        const errMsg = ct.includes('application/json')
+          ? JSON.stringify(await res.json())
+          : await res.text();
         throw new Error(`Download failed (${res.status}): ${errMsg}`);
       }
       const blob = await res.blob();
       const a = document.createElement('a');
       const objectUrl = window.URL.createObjectURL(blob);
       a.href = objectUrl;
-      a.download = `template_${service.toLowerCase()}${sheetName ? `_${sheetName}` : ''}.xlsx`;
+      a.download = `template_${service.toLowerCase()}${
+        sheetName ? `_${sheetName}` : ''
+      }.xlsx`;
       a.click();
       window.URL.revokeObjectURL(objectUrl);
     } catch (e) {
@@ -63,7 +71,7 @@ export default function AuthUpload() {
     if (!file) return alert('Select a file');
     const fd = new FormData();
     fd.append('service', service);
-      if (sheetName) fd.append('sheet_name', sheetName);
+    if (sheetName) fd.append('sheet_name', sheetName);
     fd.append('file', file);
     try {
       const res = await fetch(`${apiBase}/bulk-upload/?action=preview`, {
@@ -73,7 +81,9 @@ export default function AuthUpload() {
       });
       if (!res.ok) {
         const ct = res.headers.get('content-type') || '';
-        const errMsg = ct.includes('application/json') ? JSON.stringify(await res.json()) : await res.text();
+        const errMsg = ct.includes('application/json')
+          ? JSON.stringify(await res.json())
+          : await res.text();
         throw new Error(`Preview failed (${res.status}): ${errMsg}`);
       }
       const data = await res.json();
@@ -95,9 +105,10 @@ export default function AuthUpload() {
     try {
       const fd = new FormData();
       fd.append('service', service);
-        if (sheetName) fd.append('sheet_name', sheetName);
+      if (sheetName) fd.append('sheet_name', sheetName);
       fd.append('file', file);
-      if (service === 'VERIFICATION' && autoCreateDocRec) fd.append('auto_create_docrec', '1');
+      if (service === 'VERIFICATION' && autoCreateDocRec)
+        fd.append('auto_create_docrec', '1');
       const res = await fetch(`${apiBase}/bulk-upload/?action=confirm`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -105,7 +116,9 @@ export default function AuthUpload() {
       });
       if (!res.ok) {
         const ct = res.headers.get('content-type') || '';
-        const errMsg = ct.includes('application/json') ? JSON.stringify(await res.json()) : await res.text();
+        const errMsg = ct.includes('application/json')
+          ? JSON.stringify(await res.json())
+          : await res.text();
         throw new Error(`Upload failed (${res.status}): ${errMsg}`);
       }
       const data = await res.json();
@@ -121,14 +134,30 @@ export default function AuthUpload() {
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-2">
         <label className="font-semibold">Service:</label>
-        <select value={service} onChange={(e) => setService(e.target.value)} className="border rounded p-1 text-black">
+        <select
+          value={service}
+          onChange={(e) => setService(e.target.value)}
+          className="border rounded p-1 text-black"
+        >
           {SERVICES.map((s) => (
-            <option key={s.key} value={s.key}>{s.label}</option>
+            <option key={s.key} value={s.key}>
+              {s.label}
+            </option>
           ))}
         </select>
         <label className="ml-3 font-semibold">Sheet Name:</label>
-        <input value={sheetName} onChange={(e) => setSheetName(e.target.value)} placeholder="Optional" className="border rounded p-1 text-black" />
-        <button onClick={downloadTemplate} className="ml-2 px-3 py-1 bg-blue-600 text-white rounded">Download Sample</button>
+        <input
+          value={sheetName}
+          onChange={(e) => setSheetName(e.target.value)}
+          placeholder="Optional"
+          className="border rounded p-1 text-black"
+        />
+        <button
+          onClick={downloadTemplate}
+          className="ml-2 px-3 py-1 bg-blue-600 text-white rounded"
+        >
+          Download Sample
+        </button>
       </div>
 
       <div>

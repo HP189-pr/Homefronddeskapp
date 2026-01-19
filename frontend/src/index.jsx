@@ -1,17 +1,11 @@
-// src/index.jsx
 import React from 'react';
-import { createRoot } from 'react-dom/client';
-import AppRouter from './AppRouter';
-import './styles/global.css';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import theme from './theme/theme';
+import ReactDOM from 'react-dom/client'; // ✅ Use "react-dom/client" in React 18
+import App from './App';
+import './index.css'; // Optional CSS import
 
-const container = document.getElementById('root');
-const root = createRoot(container);
-
+const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <ThemeProvider theme={theme}>
-    <CssBaseline />
-    <AppRouter />
-  </ThemeProvider>,
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
 );

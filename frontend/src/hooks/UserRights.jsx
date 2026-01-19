@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const UserRights = ({ fetchUserPermissions, updateUserPermission }) => {
   const [users, setUsers] = useState([]);
@@ -19,51 +19,60 @@ const UserRights = ({ fetchUserPermissions, updateUserPermission }) => {
 
   useEffect(() => {
     if (selectedUser) {
-      const uid = selectedUser?.id ?? selectedUser?.username ?? selectedUser?.usercode;
+      const uid =
+        selectedUser?.id ?? selectedUser?.username ?? selectedUser?.usercode;
       fetchUserPermissions(uid).then((data) => {
         // normalize incoming menus/modules to expected keys
         setSelectedMenus(data.menus || {});
-        setSelectedModules(Array.isArray(data.modules) ? data.modules.map(String) : []);
+        setSelectedModules(
+          Array.isArray(data.modules) ? data.modules.map(String) : [],
+        );
       });
     }
   }, [selectedUser]);
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem("access_token");
+      const token = localStorage.getItem('access_token');
       if (!token) return;
-      const response = await axios.get("http://127.0.0.1:8000/api/users/", {
+      const API_BASE_URL =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      const response = await axios.get(`${API_BASE_URL}/users/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsers(response.data || []);
     } catch (error) {
-      console.error("❌ Fetch Users Error:", error);
+      console.error('❌ Fetch Users Error:', error);
     }
   };
 
   const fetchModules = async () => {
     try {
-      const token = localStorage.getItem("access_token");
+      const token = localStorage.getItem('access_token');
       if (!token) return;
-      const response = await axios.get("http://127.0.0.1:8000/api/modules/", {
+      const API_BASE_URL =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      const response = await axios.get(`${API_BASE_URL}/modules/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setModules(response.data || []);
     } catch (error) {
-      console.error("Error fetching modules:", error);
+      console.error('Error fetching modules:', error);
     }
   };
 
   const fetchMenus = async () => {
     try {
-      const token = localStorage.getItem("access_token");
+      const token = localStorage.getItem('access_token');
       if (!token) return;
-      const response = await axios.get("http://127.0.0.1:8000/api/menus/", {
+      const API_BASE_URL =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      const response = await axios.get(`${API_BASE_URL}/menus/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMenus(response.data || []);
     } catch (error) {
-      console.error("Error fetching menus:", error);
+      console.error('Error fetching menus:', error);
     }
   };
 
@@ -80,15 +89,19 @@ const UserRights = ({ fetchUserPermissions, updateUserPermission }) => {
   };
 
   // helper getters to support different API shapes (moduleid/module_id/id)
-  const getModuleKey = (m) => String(m.moduleid ?? m.id ?? m.module_id ?? m.name ?? "");
-  const getMenuKey = (mm) => String(mm.menuid ?? mm.id ?? mm.pk ?? "");
-  const getMenuModuleKey = (mm) => String(mm.module ?? mm.module_id ?? mm.moduleid ?? mm.moduleid ?? mm.module);
+  const getModuleKey = (m) =>
+    String(m.moduleid ?? m.id ?? m.module_id ?? m.name ?? '');
+  const getMenuKey = (mm) => String(mm.menuid ?? mm.id ?? mm.pk ?? '');
+  const getMenuModuleKey = (mm) =>
+    String(
+      mm.module ?? mm.module_id ?? mm.moduleid ?? mm.moduleid ?? mm.module,
+    );
 
   const handlePermissionChange = (menuId, permissionType) => {
     setSelectedMenus((prevMenus) => {
       const updatedMenu = { ...(prevMenus[menuId] || {}) };
 
-      if (permissionType === "all") {
+      if (permissionType === 'all') {
         const newValue = !updatedMenu.all;
         updatedMenu.view = newValue;
         updatedMenu.add = newValue;
@@ -97,7 +110,11 @@ const UserRights = ({ fetchUserPermissions, updateUserPermission }) => {
         updatedMenu.all = newValue;
       } else {
         updatedMenu[permissionType] = !updatedMenu[permissionType];
-        updatedMenu.all = updatedMenu.view && updatedMenu.add && updatedMenu.edit && updatedMenu.delete;
+        updatedMenu.all =
+          updatedMenu.view &&
+          updatedMenu.add &&
+          updatedMenu.edit &&
+          updatedMenu.delete;
       }
 
       return { ...prevMenus, [menuId]: updatedMenu };
@@ -122,14 +139,18 @@ const UserRights = ({ fetchUserPermissions, updateUserPermission }) => {
         enrichedMenus[menuId] = { ...perms, module: moduleId };
       }
 
-  const userId = selectedUser?.id ?? selectedUser?.username ?? selectedUser?.usercode;
-  const res = await updateUserPermission(userId, { menus: enrichedMenus, modules: selectedModules });
+      const userId =
+        selectedUser?.id ?? selectedUser?.username ?? selectedUser?.usercode;
+      const res = await updateUserPermission(userId, {
+        menus: enrichedMenus,
+        modules: selectedModules,
+      });
       if (res === false) {
         toast.error('Save failed (server returned failure).');
         return;
       }
       toast.dismiss();
-      toast.success("✅ Permissions updated successfully!");
+      toast.success('✅ Permissions updated successfully!');
     } catch (err) {
       console.error('Save permissions error', err);
       toast.error('Failed to save permissions. See console for details.');
@@ -142,11 +163,21 @@ const UserRights = ({ fetchUserPermissions, updateUserPermission }) => {
 
       <select
         className="p-2 border rounded"
-        onChange={(e) => setSelectedUser(users.find((u) => String((u.id ?? u.username ?? u.usercode)) === e.target.value))}
+        onChange={(e) =>
+          setSelectedUser(
+            users.find(
+              (u) =>
+                String(u.id ?? u.username ?? u.usercode) === e.target.value,
+            ),
+          )
+        }
       >
         <option value="">Select a user</option>
         {users.map((user) => (
-          <option key={(user.id ?? user.username ?? user.usercode)} value={String((user.id ?? user.username ?? user.usercode))}>
+          <option
+            key={user.id ?? user.username ?? user.usercode}
+            value={String(user.id ?? user.username ?? user.usercode)}
+          >
             {user.username}
           </option>
         ))}
@@ -197,7 +228,9 @@ const UserRights = ({ fetchUserPermissions, updateUserPermission }) => {
             </thead>
             <tbody>
               {menus
-                .filter((menu) => selectedModules.includes(getMenuModuleKey(menu)))
+                .filter((menu) =>
+                  selectedModules.includes(getMenuModuleKey(menu)),
+                )
                 .map((menu) => {
                   const mKey = getMenuKey(menu);
                   const menuPermissions = selectedMenus[mKey] || {};
@@ -208,35 +241,37 @@ const UserRights = ({ fetchUserPermissions, updateUserPermission }) => {
                         <input
                           type="checkbox"
                           checked={menuPermissions.all || false}
-                          onChange={() => handlePermissionChange(mKey, "all")}
+                          onChange={() => handlePermissionChange(mKey, 'all')}
                         />
                       </td>
                       <td className="border p-2 text-center">
                         <input
                           type="checkbox"
                           checked={menuPermissions.view || false}
-                          onChange={() => handlePermissionChange(mKey, "view")}
+                          onChange={() => handlePermissionChange(mKey, 'view')}
                         />
                       </td>
                       <td className="border p-2 text-center">
                         <input
                           type="checkbox"
                           checked={menuPermissions.add || false}
-                          onChange={() => handlePermissionChange(mKey, "add")}
+                          onChange={() => handlePermissionChange(mKey, 'add')}
                         />
                       </td>
                       <td className="border p-2 text-center">
                         <input
                           type="checkbox"
                           checked={menuPermissions.edit || false}
-                          onChange={() => handlePermissionChange(mKey, "edit")}
+                          onChange={() => handlePermissionChange(mKey, 'edit')}
                         />
                       </td>
                       <td className="border p-2 text-center">
                         <input
                           type="checkbox"
                           checked={menuPermissions.delete || false}
-                          onChange={() => handlePermissionChange(mKey, "delete")}
+                          onChange={() =>
+                            handlePermissionChange(mKey, 'delete')
+                          }
                         />
                       </td>
                     </tr>
@@ -247,7 +282,10 @@ const UserRights = ({ fetchUserPermissions, updateUserPermission }) => {
         </div>
       </div>
 
-      <button onClick={savePermissions} className="bg-blue-500 text-white px-4 py-2 rounded mt-4">
+      <button
+        onClick={savePermissions}
+        className="bg-blue-500 text-white px-4 py-2 rounded mt-4"
+      >
         Save Permissions
       </button>
       <ToastContainer position="top-right" autoClose={3000} />

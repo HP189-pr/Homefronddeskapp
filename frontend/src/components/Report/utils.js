@@ -43,4 +43,5 @@ export const roundLeave = (value, leaveType) => {
   return Math.round(num * 2) / 2;
 };
 
-export const toDate = (value) => parseDMY(value) || (value ? new Date(value) : null);
+export const toDate = (value) =>
+  parseDMY(value) || (value ? new Date(value) : null);

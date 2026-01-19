@@ -1,8 +1,9 @@
 // src/components/Auth/Login.jsx
 import React, { useEffect, useState, useRef } from 'react';
-import Clock from './Clock';
+import { useNavigate } from 'react-router-dom';
+import Clock from '../common/Clock';
 import { formatDateDMY } from '../../utils/date';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../hooks/AuthContext.jsx';
 
 /**
  * Login component that works with AppRouter-style navigation:
@@ -15,8 +16,9 @@ import { useAuth } from '../../hooks/useAuth';
  *
  * If your backend route differs, adjust fetchHolidayUrl below accordingly.
  */
-const Login = ({ navigate }) => {
+const Login = () => {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ identifier: '', usrpassword: '' });
   const [loginError, setLoginError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,6 +27,7 @@ const Login = ({ navigate }) => {
   const [holidays, setHolidays] = useState([]);
   const [holidaysLoading, setHolidaysLoading] = useState(false);
   const [holidayType, setHolidayType] = useState('upcoming');
+  const [holidaysError, setHolidaysError] = useState('');
 
   // keep ref to abort previous fetch if user toggles quickly
   const holidaysAbortRef = useRef(null);
@@ -43,10 +46,10 @@ const Login = ({ navigate }) => {
     }
     const controller = new AbortController();
     holidaysAbortRef.current = controller;
-
     setHolidayType(type);
     setHolidaysLoading(true);
     setHolidays([]);
+    setHolidaysError('');
 
     try {
       // adjust this URL if your backend path differs
@@ -68,7 +71,7 @@ const Login = ({ navigate }) => {
       setHolidays(Array.isArray(list) ? list : []);
     } catch (err) {
       if (err.name !== 'AbortError') {
-        console.error('Error fetching holidays:', err);
+        setHolidaysError('Unable to load holidays. Please try again.');
       }
       setHolidays([]);
     } finally {
@@ -99,18 +102,17 @@ const Login = ({ navigate }) => {
     setLoading(true);
 
     try {
-      // useAuth.login should return truthy on success
-      const success = await login(identifier, password);
-      if (success) {
-        // navigate must be the function from AppRouter: navigate('dashboard', meta)
-        navigate('dashboard', { from: 'login' });
+      const result = await login(identifier, password);
+      const ok = typeof result === 'object' ? result.success : !!result;
+      if (ok) {
+        navigate('/dashboard', { replace: true, state: { from: 'login' } });
       } else {
         setLoginError(
-          'Invalid user ID or password. Make sure your User ID/User Code is correct.',
+          result?.error ||
+            'Invalid user ID or password. Make sure your User ID/User Code is correct.',
         );
       }
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch {
       setLoginError(
         'Login failed. Please check your credentials or contact admin.',
       );
@@ -175,9 +177,10 @@ const Login = ({ navigate }) => {
               </button>
             </div>
 
-            {/* Holiday List Display */}
             {holidaysLoading ? (
               <p className="text-center text-purple-600 mt-2">Loading...</p>
+            ) : holidaysError ? (
+              <p className="text-center text-red-500 mt-2">{holidaysError}</p>
             ) : (
               <div className="space-y-2 mt-3">
                 {Array.isArray(holidays) && holidays.length > 0 ? (
@@ -233,7 +236,6 @@ const Login = ({ navigate }) => {
               value={form.identifier}
               onChange={handleChange}
               className="w-full p-3 border rounded-md mb-1 focus:ring-4 focus:ring-green-500 transition outline-none"
-              autoFocus
               autoComplete="username"
               aria-required="true"
               disabled={loading}
@@ -302,5 +304,7 @@ const Login = ({ navigate }) => {
     </div>
   );
 };
+
+Login.propTypes = {};
 
 export default Login;

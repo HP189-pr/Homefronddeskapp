@@ -1,11 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import CashRegister from '../pages/CashRegister';
-import FeeTypeMaster from '../pages/FeeTypeMaster';
+import CashRegister from '../components/pages/CashRegister.jsx';
+import FeeTypeMaster from '../components/pages/FeeTypeMaster.jsx';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
-const DEFAULT_RIGHTS = { can_view: false, can_create: false, can_edit: false, can_delete: false };
-const FULL_RIGHTS = { can_view: true, can_create: true, can_edit: true, can_delete: true };
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const DEFAULT_RIGHTS = {
+  can_view: false,
+  can_create: false,
+  can_edit: false,
+  can_delete: false,
+};
+const FULL_RIGHTS = {
+  can_view: true,
+  can_create: true,
+  can_edit: true,
+  can_delete: true,
+};
 
 const MENU_KEYWORDS = {
   'cash-register': ['cash register', 'daily register'],
@@ -18,7 +29,9 @@ const AccessDenied = ({ message }) => (
       <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-red-100 flex items-center justify-center">
         <span className="text-3xl">⚠️</span>
       </div>
-      <h2 className="text-2xl font-semibold text-gray-800 mb-2">Access Denied</h2>
+      <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+        Access Denied
+      </h2>
       <p className="text-gray-600 mb-6">{message}</p>
       <button
         type="button"
@@ -67,16 +80,20 @@ const AuthFees = ({ view = 'cash-register' }) => {
           return;
         }
 
-        const response = await axios.get(`${API_BASE_URL}/api/my-navigation/`, {
+  const response = await axios.get(`${API_BASE_URL}/my-navigation/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         const modules = response.data?.modules || [];
-        const financeModule = modules.find((mod) => (mod.name || '').toLowerCase().includes('accounts'));
+        const financeModule = modules.find((mod) =>
+          (mod.name || '').toLowerCase().includes('accounts'),
+        );
 
         if (!financeModule) {
           setRights(DEFAULT_RIGHTS);
-          setError('Accounts & Finance module permissions are not configured for this user.');
+          setError(
+            'Accounts & Finance module permissions are not configured for this user.',
+          );
           setLoading(false);
           return;
         }
@@ -89,7 +106,9 @@ const AuthFees = ({ view = 'cash-register' }) => {
               can_view: Boolean(menu.rights?.can_view || menu.rights?.view),
               can_create: Boolean(menu.rights?.can_create || menu.rights?.add),
               can_edit: Boolean(menu.rights?.can_edit || menu.rights?.edit),
-              can_delete: Boolean(menu.rights?.can_delete || menu.rights?.delete),
+              can_delete: Boolean(
+                menu.rights?.can_delete || menu.rights?.delete,
+              ),
             };
             break;
           }
@@ -115,10 +134,15 @@ const AuthFees = ({ view = 'cash-register' }) => {
   }
 
   if (!rights.can_view) {
-    return <AccessDenied message={error || 'You do not have permission to view this page.'} />;
+    return (
+      <AccessDenied
+        message={error || 'You do not have permission to view this page.'}
+      />
+    );
   }
 
-  const PageComponent = view === 'fee-type-master' ? FeeTypeMaster : CashRegister;
+  const PageComponent =
+    view === 'fee-type-master' ? FeeTypeMaster : CashRegister;
   return <PageComponent rights={rights} />;
 };
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../hooks/AuthContext.jsx';
 
 const ProfileUpdate = ({ setWorkArea }) => {
   const { user, authFetch } = useAuth();

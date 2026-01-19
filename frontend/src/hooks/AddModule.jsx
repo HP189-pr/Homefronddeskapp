@@ -1,121 +1,137 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { useAuth } from "./AuthContext";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useAuth } from './AuthContext';
 
 const AddModule = () => {
   const [modules, setModules] = useState([]);
   const [menus, setMenus] = useState({});
   const [showModuleForm, setShowModuleForm] = useState(false);
   const [showMenuForm, setShowMenuForm] = useState(false);
-  const [newModuleName, setNewModuleName] = useState("");
-  const [newMenuName, setNewMenuName] = useState("");
+  const [newModuleName, setNewModuleName] = useState('');
+  const [newMenuName, setNewMenuName] = useState('');
   const [selectedModule, setSelectedModule] = useState(null);
   const { refreshToken } = useAuth();
-
 
   // 🔹 Fetch Modules
   const fetchModules = async () => {
     try {
-      let token = localStorage.getItem("access_token");
-  
+      let token = localStorage.getItem('access_token');
+
       if (!token) {
-        console.error("❌ No access token. Redirecting to login.");
+        console.error('❌ No access token. Redirecting to login.');
         return;
       }
-  
-      const response = await axios.get("http://127.0.0.1:8000/api/modules/", {
+
+      const API_BASE_URL =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      const response = await axios.get(`${API_BASE_URL}/modules/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-  
+
       setModules(response.data);
     } catch (error) {
-      console.error("❌ Error fetching modules:", error.response?.data || error.message);
-  
+      console.error(
+        '❌ Error fetching modules:',
+        error.response?.data || error.message,
+      );
+
       if (error.response?.status === 401) {
-        console.error("🔄 Trying to refresh token...");
+        console.error('🔄 Trying to refresh token...');
         token = await refreshToken();
-  
+
         if (token) {
           fetchModules(); // Retry fetching modules with new token
         } else {
-          console.error("❌ Unable to refresh token. Redirecting to login.");
+          console.error('❌ Unable to refresh token. Redirecting to login.');
         }
       }
     }
   };
-  
 
   // 🔹 Fetch Menus for a Specific Module
   const fetchMenus = async (moduleId) => {
-    const apiUrl = `http://127.0.0.1:8000/api/modules/${moduleId}/menus/`;
-    let token = localStorage.getItem("access_token");
+    const API_BASE_URL =
+      import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const apiUrl = `${API_BASE_URL}/modules/${moduleId}/menus/`;
+    let token = localStorage.getItem('access_token');
 
     if (!token) {
-        console.error("❌ No access token found.");
-        return;
+      console.error('❌ No access token found.');
+      return;
     }
 
     try {
-        const response = await axios.get(apiUrl, {
-            headers: {
-                "Authorization": `Bearer ${token}`, // ✅ Ensure token is included
-                "Content-Type": "application/json",
-            },
-        });
+      const response = await axios.get(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`, // ✅ Ensure token is included
+          'Content-Type': 'application/json',
+        },
+      });
 
-        // Store menus under moduleId to prevent overwriting other menus
-        setMenus((prevMenus) => ({
-            ...prevMenus,
-            [moduleId]: response.data, 
-        }));
+      // Store menus under moduleId to prevent overwriting other menus
+      setMenus((prevMenus) => ({
+        ...prevMenus,
+        [moduleId]: response.data,
+      }));
     } catch (error) {
-        console.error("❌ Error fetching menus:", error.response?.data || error.message);
+      console.error(
+        '❌ Error fetching menus:',
+        error.response?.data || error.message,
+      );
     }
-};
-
+  };
 
   // 🔹 Add New Module
   const handleAddModule = async () => {
-    if (!newModuleName.trim()) return alert("⚠️ Module name is required.");
+    if (!newModuleName.trim()) return alert('⚠️ Module name is required.');
 
     try {
-      let token = localStorage.getItem("access_token") || await refreshToken();
+      let token =
+        localStorage.getItem('access_token') || (await refreshToken());
       if (!token) return;
 
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/modules/",
+        (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api') +
+          '/modules/',
         { name: newModuleName },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
-      setNewModuleName("");
+      setNewModuleName('');
       fetchModules(); // Refresh the module list
     } catch (error) {
-      console.error("❌ Error adding module:", error.response?.data || error.message);
+      console.error(
+        '❌ Error adding module:',
+        error.response?.data || error.message,
+      );
     }
   };
 
   // 🔹 Add New Menu
   const handleAddMenu = async () => {
-    if (!selectedModule) return alert("⚠️ Please select a module.");
-    if (!newMenuName.trim()) return alert("⚠️ Menu name is required.");
+    if (!selectedModule) return alert('⚠️ Please select a module.');
+    if (!newMenuName.trim()) return alert('⚠️ Menu name is required.');
 
     try {
-      let token = localStorage.getItem("access_token") || await refreshToken();
+      let token =
+        localStorage.getItem('access_token') || (await refreshToken());
       if (!token) return;
 
       // The API exposes menus as a top-level resource; create via /api/menus/ and pass module id
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/menus/",
+        (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api') +
+          '/menus/',
         { name: newMenuName, module: selectedModule },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
-      setNewMenuName("");
+      setNewMenuName('');
       fetchMenus(selectedModule); // Refresh the menu list for the module
     } catch (error) {
-      const serverMsg = error?.response?.data ? JSON.stringify(error.response.data) : (error.message || 'Error adding menu');
-      console.error("❌ Error adding menu:", serverMsg);
+      const serverMsg = error?.response?.data
+        ? JSON.stringify(error.response.data)
+        : error.message || 'Error adding menu';
+      console.error('❌ Error adding menu:', serverMsg);
       alert(`Add menu failed: ${serverMsg}`);
     }
   };
@@ -171,7 +187,7 @@ const AddModule = () => {
           <h2 className="text-lg font-semibold mb-2">📌 Add Menu to Module</h2>
           <div className="flex gap-2">
             <select
-              value={selectedModule || ""}
+              value={selectedModule || ''}
               onChange={(e) => setSelectedModule(e.target.value)}
               className="border p-2 rounded w-full"
             >

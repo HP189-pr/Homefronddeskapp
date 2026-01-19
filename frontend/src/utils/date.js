@@ -1,6 +1,24 @@
 // Simple date utilities for DD-MM-YYYY and IST date-time formatting
 
-const pad2 = (n) => String(n).padStart(2, '0');
+export const pad2 = (n) => String(n).padStart(2, '0');
+
+// Convert ISO/Date to DD-MM-YYYY (alias for legacy usage)
+export function isoToDMY(value) {
+  return formatDateDMY(value);
+}
+
+// Convert DD-MM-YYYY (or DD/MM/YYYY) to ISO YYYY-MM-DD
+export function dmyToISO(value) {
+  if (!value) return '';
+  const cleaned = String(value).trim().replace(/\//g, '-');
+  const parts = cleaned.split('-');
+  if (parts.length < 3) return '';
+  const [day, month, year] = parts;
+  if (!day || !month || !year) return '';
+  const iso = `${String(year).padStart(4, '0')}-${pad2(month)}-${pad2(day)}`;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : iso;
+}
 
 export function formatDateDMY(value) {
   if (!value) return '';
