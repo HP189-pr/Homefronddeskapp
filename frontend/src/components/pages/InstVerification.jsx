@@ -56,6 +56,20 @@ export default function InstitutionalVerification() {
   }, [authFetch, q, status]);
 
   useEffect(() => {
+    // If navigated from Document Receive, try to focus by temp number or enrollment
+    try {
+      const raw = sessionStorage.getItem('service_focus');
+      if (raw) {
+        const f = JSON.parse(raw);
+        if (f?.type === 'institutional') {
+          if (f.ivyearautonumber) setQ(f.ivyearautonumber);
+          else if (f.enrollment_no) setQ(f.enrollment_no);
+          sessionStorage.removeItem('service_focus');
+        }
+      }
+    } catch (err) {
+      void err; // ignore
+    }
     load();
   }, [load]);
 

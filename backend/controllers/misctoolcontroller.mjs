@@ -9,7 +9,7 @@ import PDFDocument from 'pdfkit';
 import mime from 'mime-types';
 import models, { sequelize } from '../models/index.mjs';
 import { logAction } from '../utils/logAction.mjs';
-import Verification from '../models/verification.mjs';
+import Verification from '../models/docrec/verification.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -1,131 +1,87 @@
 import { Op, fn, col, where as sqlWhere, literal } from 'sequelize';
-import Verification from '../models/verification.mjs';
-import { Setting } from '../models/path.mjs';
-import { findFileRecursive } from '../utils/fsSearch.mjs';
+import Verification from '../models/docrec/verification.mjs';
 
-function twoDigitYear(d = new Date()) {
-  return String(d.getFullYear()).slice(-2);
-}
-
-async function generateNextVerificationNumber() {
-  const yy = twoDigitYear();
-  const prefix = `01-${yy}`;
-  // Find latest number for this year
-  const last = await Verification.findOne({
-    where: sqlWhere(fn('LOWER', col('verification_no')), { [Op.like]: `${prefix}%`.toLowerCase() }),
-    order: [[col('verification_no'), 'DESC']],
-  });
-  let seq = 0;
-  if (last?.verification_no) {
-    const parts = last.verification_no.split('-');
-    const num = parseInt(parts[1]?.slice(2), 10);
-    if (!Number.isNaN(num)) seq = num;
-  }
-  const next = seq + 1;
-  const padded = String(next).padStart(4, '0');
-  return `${prefix}${padded}`; // e.g., 01-250001
-}
-
-async function getSetting(key) {
-  const row = await Setting.findByPk(key);
-  return row ? row.value : null;
-}
-
-async function applyDocPathIfMissing(payload) {
-  if (!payload.doc_scan_copy && payload.verification_no) {
-    // If admin configured a base folder for verification, try to FIND the file across year-wise subfolders.
-    const base = (await getSetting('verification.doc_base')) || (await getSetting('docs.base'));
-    const filename = `${payload.verification_no}.pdf`;
-    if (base) {
-      // Try file system search; only set absolute path if actually found.
-      const found = await findFileRecursive(filename, base, { maxDepth: 4 });
-      if (found) {
-        payload.doc_scan_copy = found;
-      } else {
-        // Leave blank if not found
-        payload.doc_scan_copy = '';
-      }
-    } else {
-      // No base configured: leave blank per request
-      payload.doc_scan_copy = '';
-    }
-  }
-}
+// Note: docrec verification model uses fields like:
+// - final_no (instead of verification_no)
+// - doc_rec_id (instead of vryearautonumber)
+// - student_name, enrollment_no
+// - status enum: IN_PROGRESS, PENDING, CORRECTION, CANCEL, DONE
 
 export async function listVerifications(params = {}) {
-  const { q, status, enrollment_no, limit = 50, offset = 0 } = params;
+  const { q, status, enrollment_no, vryearautonumber, limit = 50, offset = 0 } = params;
   const where = {};
-  if (status) where.status = status;
-  if (enrollment_no) where.enrollment_no = enrollment_no;
+  if (status) {
+    const map = { 'in-progress': 'IN_PROGRESS', pending: 'PENDING', done: 'DONE', cancel: 'CANCEL', correction: 'CORRECTION' };
+    where.status = map[String(status).toLowerCase()] || status;
+  }
+  if (vryearautonumber) where.doc_rec_id = vryearautonumber;
+  if (enrollment_no) {
+    // docrec stores enrollment in enrollment_no/second_enrollment_id
+    where[Op.or] = [
+      { enrollment_no: enrollment_no },
+      { second_enrollment_id: enrollment_no },
+    ];
+  }
   if (q) {
     const like = `%${q.toString().toLowerCase()}%`;
     where[Op.or] = [
-      sqlWhere(fn('LOWER', col('verification_no')), { [Op.like]: like }),
-      sqlWhere(fn('LOWER', col('enrollment_no')), { [Op.like]: like }),
-      sqlWhere(fn('LOWER', col('studentname')), { [Op.like]: like }),
-      sqlWhere(fn('LOWER', col('fees_rec_no')), { [Op.like]: like }),
-      sqlWhere(fn('LOWER', col('ref_no')), { [Op.like]: like }),
-      sqlWhere(fn('LOWER', col('vryearautonumber')), { [Op.like]: like }),
+      sqlWhere(fn('LOWER', col('final_no')), { [Op.like]: like }),
+      sqlWhere(fn('LOWER', col('enrollment_id')), { [Op.like]: like }),
+      sqlWhere(fn('LOWER', col('student_name')), { [Op.like]: like }),
+      sqlWhere(fn('LOWER', col('pay_rec_no')), { [Op.like]: like }),
+      sqlWhere(fn('LOWER', col('doc_rec_id')), { [Op.like]: like }),
     ];
   }
-
-  // Order: final number desc (nulls last), then temp number desc (nulls last), then id desc
   const rows = await Verification.findAll({
     where,
     limit,
     offset,
     order: [
-      [literal("CASE WHEN verification_no IS NULL OR verification_no = '' THEN 1 ELSE 0 END"), 'ASC'],
-      ['verification_no', 'DESC'],
-      [fn('COALESCE', col('vryearautonumber'), ''), 'DESC'],
+      [literal("CASE WHEN final_no IS NULL OR final_no = '' THEN 1 ELSE 0 END"), 'ASC'],
+      ['final_no', 'DESC'],
+      [fn('COALESCE', col('doc_rec_id'), ''), 'DESC'],
       ['id', 'DESC'],
     ],
   });
-  return rows;
+  // Shape for frontend compatibility
+  return rows.map((r) => {
+    const o = r.toJSON();
+    return {
+      ...o,
+      verification_no: o.final_no || null,
+      vryearautonumber: o.doc_rec_id || null,
+      enrollment_no: o.enrollment_no || null,
+      studentname: o.student_name || null,
+      remark: o.vr_remark || null,
+      status: (o.status || '').toString().toLowerCase() || o.status,
+    };
+  });
 }
 
 export async function getVerification(id) {
-  return Verification.findByPk(id);
-}
-
-export async function createVerification(payload) {
-  const data = { ...payload };
-  // If status is done and verification_no not provided, auto-generate
-  if (data.status === 'done' && !data.verification_no) {
-    data.verification_no = await generateNextVerificationNumber();
-  }
-  // If status is done and still missing a number, reject
-  if (data.status === 'done' && !data.verification_no) {
-    const err = new Error('verification_no required when status is done');
-    err.status = 400;
-    throw err;
-  }
-  await applyDocPathIfMissing(data);
-  return Verification.create(data);
-}
-
-export async function updateVerification(id, payload) {
   const row = await Verification.findByPk(id);
   if (!row) return null;
-  const prev = row.toJSON();
-  const data = { ...payload };
-  // Auto-generate when moving to done if missing
-  if (data.status === 'done' && !prev.verification_no && !data.verification_no) {
-    data.verification_no = await generateNextVerificationNumber();
-  }
-  if ((data.status || prev.status) === 'done' && !(data.verification_no || prev.verification_no)) {
-    const err = new Error('verification_no required when status is done');
-    err.status = 400;
-    throw err;
-  }
-  // If cancel, allow null verification_no (do not clear unless explicitly set)
-  if (data.status === 'cancel' && data.verification_no === undefined) {
-    // leave as-is
-  }
-  const next = { ...prev, ...data };
-  await applyDocPathIfMissing(next);
-  await row.update(next);
-  return row;
+  const o = row.toJSON();
+  return {
+    ...o,
+    verification_no: o.final_no || null,
+    vryearautonumber: o.doc_rec_id || null,
+    enrollment_no: o.enrollment_no || null,
+    studentname: o.student_name || null,
+    remark: o.vr_remark || null,
+    status: (o.status || '').toString().toLowerCase() || o.status,
+  };
+}
+
+export async function createVerification(_payload) {
+  // Not implemented against docrec model (needs full mapping). Keep placeholder.
+  const err = new Error('Not implemented');
+  err.status = 501; throw err;
+}
+
+export async function updateVerification() {
+  const err = new Error('Not implemented');
+  err.status = 501; throw err;
 }
 
 export default {

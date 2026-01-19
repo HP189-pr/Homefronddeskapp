@@ -19,49 +19,36 @@ import PageLayout from './PageLayout';
 
 const initialForm = {
   doc_rec_date: '',
-  enrollment_no: '',
-  studentname: '',
-  doc_type: 'verification',
-  // temp numbers
-  vryearautonumber: '',
-  mgyearautonumber: '',
-  pryearautonumber: '',
-  ivyearautonumber: '',
-  gtmyearautonumber: '',
-  // verification counts
+  apply_for: 'VR',
+  doc_rec_id: '',
+  pay_by: 'NA',
+  pay_rec_no_pre: '',
+  pay_rec_no: '',
+  pay_amount: '',
+  // Verification-specific
+  enrollment_id: '',
+  second_enrollment_id: '',
+  student_name: '',
   no_of_transcript: 0,
-  no_of_marksheet_set: 0,
+  no_of_marksheet: 0,
   no_of_degree: 0,
   no_of_moi: 0,
   no_of_backlog: 0,
-  // ECA fields (for verification)
-  is_eca: false,
-  eca_agency: '',
-  eca_agency_other: '',
-  eca_remark: '',
-  // receipts
-  mgrec_no: '',
-  prrec_no: '',
-  ivrec_no: '',
-  // institutional fields
-  institution_name: '',
-  address1: '',
-  address2: '',
-  address3: '',
-  city: '',
-  pincode: '',
-  mobile: '',
-  email: '',
-  // status at receipt stage
-  status: 'received',
+  eca_required: false,
+  // Institutional-specific
+  rec_inst_name: '',
+  // GT-specific (optional)
+  gtmyearautonumber: '',
+  // Shared remark
+  doc_rec_remark: '',
 };
 
 const docTypeOptions = [
-  { label: 'Verification', value: 'verification' },
-  { label: 'Migration', value: 'migration' },
-  { label: 'Provisional', value: 'provisional' },
-  { label: 'Institutional Verification', value: 'institutional' },
-  { label: 'Grade to Marks', value: 'gtm' },
+  { label: 'Verification', value: 'VR' },
+  { label: 'Provisional', value: 'PR' },
+  { label: 'Migration', value: 'MG' },
+  { label: 'Institutional Verification', value: 'IV' },
+  { label: 'Grade to Marks', value: 'GT' },
 ];
 
 export default function DocumentReceive() {
@@ -69,20 +56,29 @@ export default function DocumentReceive() {
   const [items, setItems] = useState([]);
   const [q, setQ] = useState('');
   const [filterType, setFilterType] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
   const [form, setForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
   const enrollDebounceRef = useRef();
+  const duplicateDebounceRef = useRef();
   const [panelOpen, setPanelOpen] = useState(true);
   const [panelMode, setPanelMode] = useState('addEdit');
+  const [duplicateWarning, setDuplicateWarning] = useState('');
 
-  const canSave = useMemo(() => !!form.doc_rec_date && !!form.doc_type, [form]);
+  const canSave = useMemo(() => {
+    const base =
+      !!form.doc_rec_date &&
+      !!form.apply_for &&
+      !!form.doc_rec_id &&
+      !!form.pay_by;
+    const needsDupCheck = form.apply_for === 'PR' || form.apply_for === 'MG';
+    const blocked = needsDupCheck && !!duplicateWarning;
+    return base && !blocked;
+  }, [form, duplicateWarning]);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
     if (q) params.set('q', q);
-    if (filterType) params.set('doc_type', filterType);
-    if (filterStatus) params.set('status', filterStatus);
+    if (filterType) params.set('apply_for', filterType);
     // try to fetch many rows; backend supports limit param
     params.set('limit', '1000');
     const res = await authFetch(`/api/admin/doc-receipts?${params.toString()}`);
@@ -90,11 +86,40 @@ export default function DocumentReceive() {
       const data = await res.json();
       setItems(data.items || []);
     }
-  }, [authFetch, q, filterType, filterStatus]);
+  }, [authFetch, q, filterType]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // Auto-generate doc_rec_id when apply_for or date changes and doc_rec_id is empty
+  useEffect(() => {
+    const run = async () => {
+      if (!form.apply_for || !form.doc_rec_date) return;
+      if (
+        form.doc_rec_id &&
+        form.doc_rec_id.startsWith(`${form.apply_for.toLowerCase()}_`)
+      )
+        return;
+      try {
+        const params = new URLSearchParams();
+        params.set('apply_for', form.apply_for);
+        params.set('doc_rec_date', form.doc_rec_date);
+        const res = await authFetch(
+          `/api/admin/doc-receipts/next-id?${params.toString()}`,
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.next_id)
+            setForm((p) => ({ ...p, doc_rec_id: data.next_id }));
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.apply_for, form.doc_rec_date]);
   const onChange = (e) => {
     const { name, value } = e.target;
     setForm((p) => ({ ...p, [name]: value }));
@@ -106,7 +131,7 @@ export default function DocumentReceive() {
   };
   const onTypeChange = (e) => {
     const value = e.target.value;
-    setForm((p) => ({ ...p, doc_type: value }));
+    setForm((p) => ({ ...p, apply_for: value }));
   };
 
   const onEdit = (row) => {
@@ -117,6 +142,7 @@ export default function DocumentReceive() {
   const onReset = () => {
     setForm(initialForm);
     setEditingId(null);
+    setDuplicateWarning('');
   };
 
   const onSave = async () => {
@@ -130,22 +156,57 @@ export default function DocumentReceive() {
       body: JSON.stringify(form),
     });
     if (res.ok) {
+      const saved = await res.json().catch(() => null);
       await load();
       onReset();
+
+      // Build a service focus so the target page can show this record immediately
+      const focus = { type: form.apply_for };
+      if (saved) {
+        focus.doc_rec_id = saved.doc_rec_id;
+        if (form.enrollment_id) focus.enrollment_no = form.enrollment_id;
+      }
+      try {
+        sessionStorage.setItem('service_focus', JSON.stringify(focus));
+      } catch (err) {
+        void err; // ignore storage errors
+      }
+
+      // After saving, navigate to the corresponding page for the doc type
+      const menuLabelForDocType = (t) => {
+        switch ((t || '').toUpperCase()) {
+          case 'VR':
+            return '📜 Transcript';
+          case 'MG':
+            return '🚀 Migration';
+          case 'PR':
+            return '📄 Provisional';
+          case 'IV':
+            return '🏛️ Institutional Verification';
+          default:
+            return null;
+        }
+      };
+      const label = menuLabelForDocType(form.apply_for);
+      if (label) {
+        window.dispatchEvent(
+          new CustomEvent('app:setMenu', { detail: { label, meta: focus } }),
+        );
+      }
     } else {
       const err = await res.json().catch(() => ({}));
       alert(err.error || 'Save failed');
     }
   };
 
-  // Auto-fill student name when enrollment_no changes (debounced)
+  // Auto-fill student name when enrollment_id changes (debounced)
   useEffect(() => {
-    if (!form.enrollment_no) return;
+    if (!form.enrollment_id) return;
     if (enrollDebounceRef.current) clearTimeout(enrollDebounceRef.current);
     enrollDebounceRef.current = setTimeout(async () => {
       try {
         const res = await authFetch(
-          `/api/enrollments?q=${encodeURIComponent(form.enrollment_no)}`,
+          `/api/enrollments?q=${encodeURIComponent(form.enrollment_id)}`,
         );
         if (res.ok) {
           const data = await res.json();
@@ -154,7 +215,7 @@ export default function DocumentReceive() {
             const s = list[0];
             setForm((p) => ({
               ...p,
-              studentname: s.studentname || s.student_name || p.studentname,
+              student_name: s.studentname || s.student_name || p.student_name,
             }));
           }
         }
@@ -166,13 +227,67 @@ export default function DocumentReceive() {
       if (enrollDebounceRef.current) clearTimeout(enrollDebounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.enrollment_no]);
+  }, [form.enrollment_id]);
 
-  const showVerification = form.doc_type === 'verification';
-  const showMigration = form.doc_type === 'migration';
-  const showProvisional = form.doc_type === 'provisional';
-  const showInstitutional = form.doc_type === 'institutional';
-  const showGtm = form.doc_type === 'gtm';
+  // Duplicate enrollment check for PR/MG
+  useEffect(() => {
+    // reset warning by default
+    setDuplicateWarning('');
+    const type = form.apply_for;
+    const enroll = (form.enrollment_id || '').trim();
+    if (!(type === 'PR' || type === 'MG')) return;
+    if (!enroll) return;
+    if (duplicateDebounceRef.current) {
+      clearTimeout(duplicateDebounceRef.current);
+    }
+    duplicateDebounceRef.current = setTimeout(async () => {
+      try {
+        const endpoint =
+          type === 'PR' ? '/api/admin/provisionals' : '/api/admin/migrations';
+        const params = new URLSearchParams({
+          enrollment_no: enroll,
+          limit: '10',
+        });
+        const res = await authFetch(`${endpoint}?${params.toString()}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const list = data.items || data.rows || data || [];
+        if (!Array.isArray(list) || list.length === 0) {
+          setDuplicateWarning('');
+          return;
+        }
+        // Determine statuses; prefer normalized 'status', else raw mg_status/prv_status
+        const statuses = list.map((it) =>
+          String(it.status || it.mg_status || it.prv_status || '')
+            .toLowerCase()
+            .trim(),
+        );
+        const allCancelled =
+          statuses.length > 0 && statuses.every((s) => s === 'cancelled');
+        // Treat anything not-cancelled as blocked (includes '', 'done', 'pending', etc.) per spec allowing only cancelled
+        if (allCancelled) {
+          setDuplicateWarning('');
+        } else {
+          setDuplicateWarning('Duplicate enrollment: action not allowed');
+        }
+      } catch {
+        // on errors, do not block save artificially
+        setDuplicateWarning('');
+      }
+    }, 400);
+    return () => {
+      if (duplicateDebounceRef.current) {
+        clearTimeout(duplicateDebounceRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.apply_for, form.enrollment_id]);
+
+  const showVerification = form.apply_for === 'VR';
+  const showProvisional = form.apply_for === 'PR';
+  const showMigration = form.apply_for === 'MG';
+  const showInstitutional = form.apply_for === 'IV';
+  const showGtm = form.apply_for === 'GT';
 
   const actions = (
     <div className="flex flex-wrap items-center gap-2">
@@ -240,33 +355,11 @@ export default function DocumentReceive() {
               />
             </div>
             <div>
-              <label htmlFor="enrollment_no">Enrollment No</label>
-              <input
-                type="text"
-                name="enrollment_no"
-                id="enrollment_no"
-                value={form.enrollment_no}
-                onChange={onChange}
-                className="border p-2 w-full"
-              />
-            </div>
-            <div>
-              <label htmlFor="studentname">Student Name</label>
-              <input
-                type="text"
-                name="studentname"
-                id="studentname"
-                value={form.studentname}
-                onChange={onChange}
-                className="border p-2 w-full"
-              />
-            </div>
-            <div>
-              <label htmlFor="doc_type">Document Type</label>
+              <label htmlFor="apply_for">Apply For</label>
               <select
-                name="doc_type"
-                id="doc_type"
-                value={form.doc_type}
+                name="apply_for"
+                id="apply_for"
+                value={form.apply_for}
                 onChange={onTypeChange}
                 className="border p-2 w-full"
               >
@@ -277,24 +370,122 @@ export default function DocumentReceive() {
                 ))}
               </select>
             </div>
+            {!!form.apply_for && (
+              <div>
+                <label htmlFor="doc_rec_id">Doc Receipt ID</label>
+                <input
+                  type="text"
+                  name="doc_rec_id"
+                  id="doc_rec_id"
+                  value={form.doc_rec_id}
+                  onChange={onChange}
+                  className="border p-2 w-full"
+                />
+              </div>
+            )}
             <div>
-              <label htmlFor="status">Status</label>
+              <label htmlFor="pay_by">Pay By</label>
               <select
-                name="status"
-                id="status"
-                value={form.status}
+                name="pay_by"
+                id="pay_by"
+                value={form.pay_by}
                 onChange={onChange}
                 className="border p-2 w-full"
               >
-                <option value="received">received</option>
-                <option value="in-progress">in-progress</option>
-                <option value="done">done</option>
-                <option value="cancel">cancel</option>
+                <option value="CASH">CASH</option>
+                <option value="BANK">BANK</option>
+                <option value="UPI">UPI</option>
+                <option value="NA">NA</option>
               </select>
+            </div>
+            <div>
+              <label htmlFor="pay_rec_no_pre">Receipt Prefix</label>
+              <input
+                type="text"
+                name="pay_rec_no_pre"
+                id="pay_rec_no_pre"
+                value={form.pay_rec_no_pre}
+                onChange={onChange}
+                disabled={form.pay_by === 'NA'}
+                className="border p-2 w-full"
+              />
+            </div>
+            <div>
+              <label htmlFor="pay_rec_no">Receipt Number</label>
+              <input
+                type="text"
+                name="pay_rec_no"
+                id="pay_rec_no"
+                value={form.pay_rec_no}
+                onChange={onChange}
+                disabled={form.pay_by === 'NA'}
+                className="border p-2 w-full"
+              />
+            </div>
+            <div>
+              <label htmlFor="pay_amount">Amount</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                name="pay_amount"
+                id="pay_amount"
+                value={form.pay_amount}
+                onChange={onChange}
+                disabled={form.pay_by === 'NA'}
+                className="border p-2 w-full"
+              />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label htmlFor="doc_rec_remark">Remark</label>
+              <input
+                type="text"
+                name="doc_rec_remark"
+                id="doc_rec_remark"
+                value={form.doc_rec_remark}
+                onChange={onChange}
+                placeholder="remark for this receipt (shared)"
+                className="border p-2 w-full"
+              />
             </div>
 
             {showVerification && (
               <>
+                <div>
+                  <label htmlFor="enrollment_id">Enrollment No</label>
+                  <input
+                    type="text"
+                    name="enrollment_id"
+                    id="enrollment_id"
+                    value={form.enrollment_id}
+                    onChange={onChange}
+                    className="border p-2 w-full"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="second_enrollment_id">
+                    Second Enrollment
+                  </label>
+                  <input
+                    type="text"
+                    name="second_enrollment_id"
+                    id="second_enrollment_id"
+                    value={form.second_enrollment_id}
+                    onChange={onChange}
+                    className="border p-2 w-full"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="student_name">Student Name</label>
+                  <input
+                    type="text"
+                    name="student_name"
+                    id="student_name"
+                    value={form.student_name}
+                    onChange={onChange}
+                    className="border p-2 w-full"
+                  />
+                </div>
                 <div>
                   <label htmlFor="no_of_transcript">No. of Transcript</label>
                   <input
@@ -307,14 +498,12 @@ export default function DocumentReceive() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="no_of_marksheet_set">
-                    No. of Marksheet Set
-                  </label>
+                  <label htmlFor="no_of_marksheet">No. of Marksheet</label>
                   <input
                     type="number"
-                    name="no_of_marksheet_set"
-                    id="no_of_marksheet_set"
-                    value={form.no_of_marksheet_set}
+                    name="no_of_marksheet"
+                    id="no_of_marksheet"
+                    value={form.no_of_marksheet}
                     onChange={onChangeNum}
                     className="border p-2 w-full"
                   />
@@ -354,252 +543,139 @@ export default function DocumentReceive() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <input
-                    id="is_eca"
+                    id="eca_required"
                     type="checkbox"
-                    name="is_eca"
-                    checked={!!form.is_eca}
+                    name="eca_required"
+                    checked={!!form.eca_required}
                     onChange={(e) =>
-                      setForm((p) => ({ ...p, is_eca: e.target.checked }))
+                      setForm((p) => ({ ...p, eca_required: e.target.checked }))
                     }
                   />
-                  <label htmlFor="is_eca">ECA</label>
+                  <label htmlFor="eca_required">ECA required</label>
                 </div>
-                {form.is_eca && (
-                  <>
-                    <div>
-                      <label htmlFor="eca_agency">ECA Agency</label>
-                      <select
-                        id="eca_agency"
-                        name="eca_agency"
-                        value={form.eca_agency}
-                        onChange={onChange}
-                        className="border p-2 w-full"
-                      >
-                        <option value="">Select</option>
-                        <option value="WES">WES</option>
-                        <option value="IQAS">IQAS</option>
-                        <option value="ICES">ICES</option>
-                        <option value="ICAS">ICAS</option>
-                        <option value="CES">CES</option>
-                        <option value="ECE">ECE</option>
-                        <option value="PEBC">PEBC</option>
-                        <option value="OTHER">OTHER</option>
-                      </select>
-                    </div>
-                    {form.eca_agency === 'OTHER' && (
-                      <div>
-                        <label htmlFor="eca_agency_other">Other Agency</label>
-                        <input
-                          id="eca_agency_other"
-                          type="text"
-                          name="eca_agency_other"
-                          value={form.eca_agency_other}
-                          onChange={onChange}
-                          className="border p-2 w-full"
-                        />
-                      </div>
-                    )}
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <label htmlFor="eca_remark">ECA Remark</label>
-                      <input
-                        type="text"
-                        name="eca_remark"
-                        id="eca_remark"
-                        value={form.eca_remark}
-                        onChange={onChange}
-                        className="border p-2 w-full"
-                      />
-                    </div>
-                  </>
-                )}
               </>
             )}
 
             {showMigration && (
               <>
                 <div>
-                  <label htmlFor="mgyearautonumber">MG Year Auto No</label>
+                  <label htmlFor="enrollment_id">Enrollment No</label>
                   <input
                     type="text"
-                    name="mgyearautonumber"
-                    id="mgyearautonumber"
-                    value={form.mgyearautonumber}
+                    name="enrollment_id"
+                    id="enrollment_id"
+                    value={form.enrollment_id}
                     onChange={onChange}
-                    placeholder="auto if blank"
                     className="border p-2 w-full"
                   />
                 </div>
                 <div>
-                  <label htmlFor="mgrec_no">Payment Receipt (MG)</label>
+                  <label htmlFor="student_name">Student Name</label>
                   <input
                     type="text"
-                    name="mgrec_no"
-                    id="mgrec_no"
-                    value={form.mgrec_no}
+                    name="student_name"
+                    id="student_name"
+                    value={form.student_name}
                     onChange={onChange}
                     className="border p-2 w-full"
                   />
+                </div>
+                {!!duplicateWarning && (
+                  <div className="text-red-600 text-sm col-span-full">
+                    {duplicateWarning}
+                  </div>
+                )}
+                <div className="text-sm text-gray-500 col-span-full">
+                  Migration details will be captured on its page.
                 </div>
               </>
             )}
-
             {showProvisional && (
               <>
                 <div>
-                  <label htmlFor="pryearautonumber">PR Year Auto No</label>
+                  <label htmlFor="enrollment_id">Enrollment No</label>
                   <input
                     type="text"
-                    name="pryearautonumber"
-                    id="pryearautonumber"
-                    value={form.pryearautonumber}
+                    name="enrollment_id"
+                    id="enrollment_id"
+                    value={form.enrollment_id}
                     onChange={onChange}
-                    placeholder="auto if blank"
                     className="border p-2 w-full"
                   />
                 </div>
                 <div>
-                  <label htmlFor="prrec_no">Payment Receipt (PR)</label>
+                  <label htmlFor="student_name">Student Name</label>
                   <input
                     type="text"
-                    name="prrec_no"
-                    id="prrec_no"
-                    value={form.prrec_no}
+                    name="student_name"
+                    id="student_name"
+                    value={form.student_name}
                     onChange={onChange}
                     className="border p-2 w-full"
                   />
+                </div>
+                {!!duplicateWarning && (
+                  <div className="text-red-600 text-sm col-span-full">
+                    {duplicateWarning}
+                  </div>
+                )}
+                <div className="text-sm text-gray-500 col-span-full">
+                  Provisional details will be captured on its page.
                 </div>
               </>
             )}
 
             {showInstitutional && (
+              <div>
+                <label htmlFor="rec_inst_name">Institution Name</label>
+                <input
+                  type="text"
+                  name="rec_inst_name"
+                  id="rec_inst_name"
+                  value={form.rec_inst_name}
+                  onChange={onChange}
+                  className="border p-2 w-full"
+                />
+              </div>
+            )}
+
+            {showGtm && (
               <>
                 <div>
-                  <label htmlFor="ivyearautonumber">IV Year Auto No</label>
+                  <label htmlFor="enrollment_id">Enrollment No</label>
                   <input
                     type="text"
-                    name="ivyearautonumber"
-                    id="ivyearautonumber"
-                    value={form.ivyearautonumber}
+                    name="enrollment_id"
+                    id="enrollment_id"
+                    value={form.enrollment_id}
+                    onChange={onChange}
+                    className="border p-2 w-full"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="student_name">Student Name</label>
+                  <input
+                    type="text"
+                    name="student_name"
+                    id="student_name"
+                    value={form.student_name}
+                    onChange={onChange}
+                    className="border p-2 w-full"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="gtmyearautonumber">GTM Year Auto No</label>
+                  <input
+                    type="text"
+                    name="gtmyearautonumber"
+                    id="gtmyearautonumber"
+                    value={form.gtmyearautonumber}
                     onChange={onChange}
                     placeholder="auto if blank"
                     className="border p-2 w-full"
                   />
                 </div>
-                <div>
-                  <label htmlFor="institution_name">Institution Name</label>
-                  <input
-                    type="text"
-                    name="institution_name"
-                    id="institution_name"
-                    value={form.institution_name}
-                    onChange={onChange}
-                    className="border p-2 w-full"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="address1">Address 1</label>
-                  <input
-                    type="text"
-                    name="address1"
-                    id="address1"
-                    value={form.address1}
-                    onChange={onChange}
-                    className="border p-2 w-full"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="address2">Address 2</label>
-                  <input
-                    type="text"
-                    name="address2"
-                    id="address2"
-                    value={form.address2}
-                    onChange={onChange}
-                    className="border p-2 w-full"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="address3">Address 3</label>
-                  <input
-                    type="text"
-                    name="address3"
-                    id="address3"
-                    value={form.address3}
-                    onChange={onChange}
-                    className="border p-2 w-full"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="city">City</label>
-                  <input
-                    type="text"
-                    name="city"
-                    id="city"
-                    value={form.city}
-                    onChange={onChange}
-                    className="border p-2 w-full"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="pincode">Pincode</label>
-                  <input
-                    type="text"
-                    name="pincode"
-                    id="pincode"
-                    value={form.pincode}
-                    onChange={onChange}
-                    className="border p-2 w-full"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="mobile">Mobile</label>
-                  <input
-                    type="text"
-                    name="mobile"
-                    id="mobile"
-                    value={form.mobile}
-                    onChange={onChange}
-                    className="border p-2 w-full"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="email">Email</label>
-                  <input
-                    type="email"
-                    name="email"
-                    id="email"
-                    value={form.email}
-                    onChange={onChange}
-                    className="border p-2 w-full"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="ivrec_no">Payment Receipt (IV)</label>
-                  <input
-                    type="text"
-                    name="ivrec_no"
-                    id="ivrec_no"
-                    value={form.ivrec_no}
-                    onChange={onChange}
-                    className="border p-2 w-full"
-                  />
-                </div>
               </>
-            )}
-
-            {showGtm && (
-              <div>
-                <label htmlFor="gtmyearautonumber">GTM Year Auto No</label>
-                <input
-                  type="text"
-                  name="gtmyearautonumber"
-                  id="gtmyearautonumber"
-                  value={form.gtmyearautonumber}
-                  onChange={onChange}
-                  placeholder="auto if blank"
-                  className="border p-2 w-full"
-                />
-              </div>
             )}
             {/* End grid container */}
           </div>
@@ -646,17 +722,7 @@ export default function DocumentReceive() {
           </option>
         ))}
       </select>
-      <select
-        value={filterStatus}
-        onChange={(e) => setFilterStatus(e.target.value)}
-        className="border p-2"
-      >
-        <option value="">All Status</option>
-        <option value="received">received</option>
-        <option value="in-progress">in-progress</option>
-        <option value="done">done</option>
-        <option value="cancel">cancel</option>
-      </select>
+      {/* No status filter on doc_rec */}
       <button
         onClick={load}
         style={{
@@ -678,37 +744,20 @@ export default function DocumentReceive() {
         <thead className="bg-gray-100">
           <tr>
             <th className="px-3 py-2 text-left">Date</th>
-            <th className="px-3 py-2 text-left">Type</th>
-            <th className="px-3 py-2 text-left">Enrollment</th>
-            <th className="px-3 py-2 text-left">Name</th>
-            <th className="px-3 py-2 text-left">Temp #</th>
-            <th className="px-3 py-2 text-left">Details</th>
-            <th className="px-3 py-2 text-left">Status</th>
+            <th className="px-3 py-2 text-left">Apply For</th>
+            <th className="px-3 py-2 text-left">Doc Rec ID</th>
+            <th className="px-3 py-2 text-left">Payment</th>
+            <th className="px-3 py-2 text-left">Remark</th>
           </tr>
         </thead>
         <tbody>
           {items.map((row) => {
-            const temp =
-              row.vryearautonumber ||
-              row.mgyearautonumber ||
-              row.pryearautonumber ||
-              row.ivyearautonumber ||
-              row.gtmyearautonumber ||
-              '-';
-            let details = '';
-            if (row.doc_type === 'verification') {
-              details = `T:${row.no_of_transcript ?? 0} M:${
-                row.no_of_marksheet_set ?? 0
-              } D:${row.no_of_degree ?? 0} MOI:${row.no_of_moi ?? 0} B:${
-                row.no_of_backlog ?? 0
-              }`;
-            } else if (row.doc_type === 'migration') {
-              details = row.mgrec_no || '';
-            } else if (row.doc_type === 'provisional') {
-              details = row.prrec_no || '';
-            } else if (row.doc_type === 'institutional') {
-              details = row.ivrec_no || '';
-            }
+            const payment =
+              row.pay_by === 'NA'
+                ? 'NA'
+                : `${row.pay_rec_no_pre || ''}${row.pay_rec_no || ''} (${
+                    row.pay_by
+                  })`;
             return (
               <tr
                 key={row.id}
@@ -718,12 +767,10 @@ export default function DocumentReceive() {
                 <td className="px-3 py-2">
                   {row.doc_rec_date ? formatDateDMY(row.doc_rec_date) : '-'}
                 </td>
-                <td className="px-3 py-2 capitalize">{row.doc_type}</td>
-                <td className="px-3 py-2">{row.enrollment_no || '-'}</td>
-                <td className="px-3 py-2">{row.studentname || '-'}</td>
-                <td className="px-3 py-2">{temp}</td>
-                <td className="px-3 py-2">{details || '—'}</td>
-                <td className="px-3 py-2 capitalize">{row.status}</td>
+                <td className="px-3 py-2">{row.apply_for}</td>
+                <td className="px-3 py-2">{row.doc_rec_id}</td>
+                <td className="px-3 py-2">{payment}</td>
+                <td className="px-3 py-2">{row.doc_rec_remark || '-'}</td>
               </tr>
             );
           })}

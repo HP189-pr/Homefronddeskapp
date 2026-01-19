@@ -179,6 +179,16 @@ const Dashboard = ({
     'institutional',
   ]);
 
+  // Allow other components to request opening a specific menu/page
+  useEffect(() => {
+    const handler = (e) => {
+      const label = e?.detail?.label;
+      if (label) setSelectedMenuItem(label);
+    };
+    window.addEventListener('app:setMenu', handler);
+    return () => window.removeEventListener('app:setMenu', handler);
+  }, [setSelectedMenuItem]);
+
   const handleSecureNavigation = async (menuItem) => {
     // Centralize admin access prompting in AdminPanelAccess/WorkArea.
     setSelectedMenuItem(menuItem);

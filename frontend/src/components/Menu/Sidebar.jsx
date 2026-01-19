@@ -1,20 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { useNav } from '../../navigation/NavigationContext';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
-const BACKEND_MEDIA_URL = 'http://localhost:5000/media/Profpic/';
-
-const staticModules = [
+// Styled Sidebar with static modules, adapted to labels used in this app
+const modules = [
   {
     id: 'student',
     name: 'Student Module',
     icon: '🎓',
     menu: [
-      'Enrollment',
+      '📑 Enrollment',
       '📜 Verification',
-      '🚀 Migration',
-      '📄 Provisional',
+      '📑 Migration',
+      '📋 Provisional',
       '🏅 Degree',
       '🏛️ Inst-Verification',
     ],
@@ -25,8 +24,8 @@ const staticModules = [
     icon: '🏢',
     menu: [
       '📥 Document Receive',
-      '📥 Inward',
-      '📤 Outward',
+      '� Inward',
+      '� Outward',
       '🏖️ Leave Management',
       '📦 Inventory',
     ],
@@ -35,78 +34,50 @@ const staticModules = [
     id: 'finance',
     name: 'Accounts & Finance',
     icon: '💰',
-    menu: ['📊 Daily Register', '💵 Student Fees', '🔍 Payment Track'],
+    menu: [
+      // Hook up when finance pages are integrated into WorkArea
+      // '📊 Cash Register',
+      // '🧾 Fee Type Master',
+    ],
   },
 ];
 
 const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
-  const { navigate } = useNav();
+  const navigate = useNavigate();
+  const {
+    user,
+    profilePicture,
+    logout,
+    verifyPassword,
+    verifyAdminPanelPassword,
+    isAdminPanelVerified,
+    isAdmin,
+  } = useAuth();
+
   const [selectedModule, setSelectedModule] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
-  const { user, logout, authFetch } = useAuth();
-  const [allowedModules, setAllowedModules] = useState([]); // from backend
-  const [allowedMenusByModule, setAllowedMenusByModule] = useState({});
-  const [canAccessAdminPanel, setCanAccessAdminPanel] = useState(false);
   const [profilePic, setProfilePic] = useState(
-    '/profilepic/default-profile.jpg',
+    '/profilepic/default-profile.png',
   );
-
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [securePage, setSecurePage] = useState(null);
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [isAdminPanelFlow, setIsAdminPanelFlow] = useState(false);
+  const passwordInputRef = useRef(null);
   useEffect(() => {
-    if (user?.usrpic) {
-      setProfilePic(`${BACKEND_MEDIA_URL}${user.usrpic}`);
+    if (user) {
+      setProfilePic(profilePicture || '/profilepic/default-profile.png');
     } else {
-      setProfilePic('/profilepic/default-profile.jpg');
+      setProfilePic('/profilepic/default-profile.png');
     }
-  }, [user, authFetch]);
+  }, [user, profilePicture]);
 
-  // Fetch rights and build allowed menu tree
   useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      try {
-        const res = await authFetch('/api/admin/rights/my');
-        if (!res.ok) {
-          // Fallback for non-admin users: minimal rights info
-          const res2 = await authFetch('/api/rights/my');
-          if (res2.ok) {
-            const d2 = await res2.json();
-            if (!cancelled)
-              setCanAccessAdminPanel(
-                !!(d2.admin || (d2.permissions && d2.permissions.length)),
-              );
-          }
-          return;
-        }
-        const data = await res.json();
-        if (cancelled) return;
-        const moduleMap = new Map(
-          (data.modules || []).map((m) => [m.moduleid, m]),
-        );
-        const menus = data.menus || [];
-        const byModule = {};
-        for (const m of menus) {
-          const key = String(m.moduleid);
-          if (!byModule[key]) byModule[key] = [];
-          byModule[key].push(m);
-        }
-        const mods = Array.from(moduleMap.values());
-        setAllowedModules(mods);
-        setAllowedMenusByModule(byModule);
-        setCanAccessAdminPanel(
-          !!(mods.length || (data.permissions && data.permissions.length)),
-        );
-      } catch (error) {
-        console.error('Failed to load user rights', error);
-        setAllowedModules([]);
-        setAllowedMenusByModule({});
-        setCanAccessAdminPanel(false);
-      }
-    };
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [user, authFetch]);
+    if (showPasswordModal && passwordInputRef.current) {
+      passwordInputRef.current.focus();
+    }
+  }, [showPasswordModal]);
 
   const handleModuleSelect = (moduleId) => {
     setSelectedModule(moduleId);
@@ -115,14 +86,48 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
 
   const handleLogout = () => {
     logout(navigate);
-    setProfilePic('/profilepic/default-profile.jpg');
+    setProfilePic('/profilepic/default-profile.png');
   };
 
   const handleSecurePageAccess = async (menuItem) => {
-    // Don't prompt here; navigate to the secure page and let the page-level
-    // AdminPanelAccess handle prompting. If session cache shows verified,
-    // WorkArea will auto-unlock.
-    setSelectedMenuItem(menuItem);
+    setSecurePage(menuItem);
+    if (menuItem === 'Admin Panel') {
+      setIsAdminPanelFlow(true);
+      // If already verified this session, skip prompt
+      const ok = await isAdminPanelVerified();
+      if (ok) {
+        setSelectedMenuItem(menuItem);
+        return;
+      }
+    } else {
+      setIsAdminPanelFlow(false);
+    }
+    setShowPasswordModal(true);
+  };
+
+  const handleVerifyPassword = async () => {
+    setPasswordError('');
+    if (isAdminPanelFlow) {
+      const result = await verifyAdminPanelPassword(password);
+      if (result && result.success) {
+        setShowPasswordModal(false);
+        setPassword('');
+        setSelectedMenuItem(securePage);
+      } else {
+        setPasswordError(result?.message || 'Incorrect admin password');
+        setPassword('');
+      }
+    } else {
+      const ok = await verifyPassword(password);
+      if (ok) {
+        setShowPasswordModal(false);
+        setPassword('');
+        setSelectedMenuItem(securePage);
+      } else {
+        setPasswordError('Incorrect password');
+        setPassword('');
+      }
+    }
   };
 
   const handleMenuClick = (menuItem) => {
@@ -150,7 +155,7 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
         {isOpen && (
           <div className="ml-4 flex items-center">
             <span className="text-lg font-semibold">
-              {user?.first_name || 'Guest'}
+              {user?.first_name || user?.username || 'Guest'}
             </span>
             <button
               onClick={() => handleMenuClick('Profile Settings')}
@@ -190,35 +195,21 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
         >
           {isOpen
             ? selectedModule
-              ? (() => {
-                  // Prefer dynamic module name if available
-                  const dyn = allowedModules.find(
-                    (m) => String(m.moduleid) === String(selectedModule),
-                  );
-                  if (dyn) return dyn.name;
-                  const stat = staticModules.find(
-                    (m) => m.id === selectedModule,
-                  );
-                  return stat ? stat.name : '🗃️ Select Module';
-                })()
+              ? modules.find((m) => m.id === selectedModule)?.name
               : '🗃️ Select Module'
             : '🗃️'}
         </button>
         {showDropdown && (
           <div className="absolute left-0 w-full bg-gray-700 rounded shadow-lg z-10">
-            {(allowedModules.length ? allowedModules : staticModules).map(
-              (mod) => (
-                <button
-                  key={mod.id || mod.moduleid}
-                  onClick={() =>
-                    handleModuleSelect(mod.id || String(mod.moduleid))
-                  }
-                  className="w-full text-left px-4 py-2 hover:bg-gray-600 flex items-center"
-                >
-                  <span className="mr-2">{mod.icon || '📦'}</span> {mod.name}
-                </button>
-              ),
-            )}
+            {modules.map((mod) => (
+              <button
+                key={mod.id}
+                onClick={() => handleModuleSelect(mod.id)}
+                className="w-full text-left px-4 py-2 hover:bg-gray-600 flex items-center"
+              >
+                <span className="mr-2">{mod.icon}</span> {mod.name}
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -228,14 +219,9 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
       {/* Module Menus */}
       {selectedModule && (
         <div className={`${isOpen ? 'block' : 'hidden'}`}>
-          {(() => {
-            const staticMenus =
-              staticModules.find((m) => m.id === selectedModule)?.menu || [];
-            const dynamicMenus = allowedMenusByModule[selectedModule]
-              ? allowedMenusByModule[selectedModule].map((m) => m.name)
-              : [];
-            const items = dynamicMenus.length ? dynamicMenus : staticMenus;
-            return items.map((item) => (
+          {modules
+            .find((mod) => mod.id === selectedModule)
+            ?.menu.map((item) => (
               <button
                 key={item}
                 onClick={() => handleMenuClick(item)}
@@ -243,17 +229,14 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
               >
                 {isOpen ? item : '•'}
               </button>
-            ));
-          })()}
+            ))}
         </div>
       )}
 
       <hr className="border-gray-600 my-4" />
 
       {/* Admin Panel Button */}
-      {(canAccessAdminPanel ||
-        user?.usertype === 'admin' ||
-        user?.usertype === 'superuser') && (
+      {(isAdmin || (user && user.is_admin)) && (
         <button
           onClick={() => handleMenuClick('Admin Panel')}
           className="w-full text-left px-4 py-2 rounded hover:bg-gray-700"
@@ -272,6 +255,48 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
           {isOpen ? '🚪 Logout' : '🚪'}
         </button>
       </div>
+
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 pointer-events-auto">
+          <div className="relative z-[10000] bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-lg font-semibold mb-2">
+              {isAdminPanelFlow
+                ? 'Enter Admin Panel Password'
+                : `Enter Password for ${securePage}`}
+            </h2>
+            <input
+              ref={passwordInputRef}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-2 border rounded bg-gray-100 text-black focus:ring-0 focus:outline-none"
+              placeholder={
+                isAdminPanelFlow
+                  ? 'Admin panel password'
+                  : 'Your account password'
+              }
+            />
+            {passwordError && (
+              <div className="text-sm text-red-600 mt-2">{passwordError}</div>
+            )}
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={handleVerifyPassword}
+                className="bg-blue-500 text-white px-4 py-2 rounded"
+              >
+                Submit
+              </button>
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="ml-2 px-4 py-2 bg-gray-300 rounded"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -281,4 +306,5 @@ Sidebar.propTypes = {
   setSidebarOpen: PropTypes.func.isRequired,
   setSelectedMenuItem: PropTypes.func.isRequired,
 };
+
 export default Sidebar;

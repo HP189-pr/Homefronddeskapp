@@ -18,11 +18,10 @@
     "test": "node --test",
     "migrate": "sequelize db:migrate",
     "seed": "sequelize db:seed:all",
-    "db:add-eca-columns": "node scripts/add-eca-columns-to-document-receipts.mjs",
-    "backfill:verifications": "node scripts/backfill-verifications-from-receipts.mjs",
+    
     "prepare": "husky install || echo husky skipped",
     "db:align": "node scripts/db-align-constraints.mjs",
-    "db:validate": "node scripts/db-validate-and-align.mjs"
+  "db:validate": "node scripts/db-validate-and-align.mjs"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

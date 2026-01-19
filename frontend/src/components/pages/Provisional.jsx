@@ -23,6 +23,11 @@ const initialForm = {
 export default function Provisional() {
   const { authFetch } = useAuth();
   const [items, setItems] = useState([]);
+  const [docRecs, setDocRecs] = useState([]);
+  const [selectedDocRecId, setSelectedDocRecId] = useState('');
+  const [docRecRemark, setDocRecRemark] = useState('');
+  const [entries, setEntries] = useState([]);
+  const [selectedDocRecRow, setSelectedDocRecRow] = useState(null);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [form, setForm] = useState(initialForm);
@@ -44,8 +49,75 @@ export default function Provisional() {
   }, [authFetch, q, status]);
 
   useEffect(() => {
+    // If navigated from Document Receive, try to focus by temp number or enrollment
+    try {
+      const raw = sessionStorage.getItem('service_focus');
+      if (raw) {
+        const f = JSON.parse(raw);
+        if (f?.type === 'provisional') {
+          if (f.pryearautonumber) setQ(f.pryearautonumber);
+          else if (f.enrollment_no) setQ(f.enrollment_no);
+          sessionStorage.removeItem('service_focus');
+        }
+      }
+    } catch (err) {
+      void err; // ignore
+    }
     load();
   }, [load]);
+
+  // Load doc receipts for PR that don't have non-cancelled entries
+  useEffect(() => {
+    (async () => {
+      try {
+        const p = new URLSearchParams({ apply_for: 'PR', limit: '200' });
+        const res = await authFetch(`/api/admin/doc-receipts?${p.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          let recs = data.items || [];
+          const prov = await authFetch(`/api/admin/provisionals?limit=1000`);
+          if (prov.ok) {
+            const pd = await prov.json();
+            const all = pd.items || [];
+            const blocked = new Set();
+            for (const x of all) {
+              const st = String(x.status || '').toLowerCase();
+              const id = x.pryearautonumber;
+              if (id && st !== 'cancel') blocked.add(id);
+            }
+            recs = recs.filter((r) => !blocked.has(r.doc_rec_id));
+          }
+          setDocRecs(recs);
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [authFetch]);
+
+  useEffect(() => {
+    if (!selectedDocRecId) {
+      setEntries([]);
+      setDocRecRemark('');
+      setSelectedDocRecRow(null);
+      return;
+    }
+    const row =
+      (docRecs || []).find((r) => r.doc_rec_id === selectedDocRecId) || null;
+    setSelectedDocRecRow(row);
+    setDocRecRemark(row?.doc_rec_remark || '');
+    (async () => {
+      const qs = new URLSearchParams({
+        pryearautonumber: selectedDocRecId,
+        limit: '200',
+      });
+      const res = await authFetch(`/api/admin/provisionals?${qs.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setEntries(data.items || []);
+      }
+    })();
+  }, [selectedDocRecId, docRecs, authFetch]);
   const onChange = (e) =>
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
   const onEdit = (row) => {
@@ -60,6 +132,13 @@ export default function Provisional() {
     setEditingId(null);
   };
   const onSave = async () => {
+    const payload = {
+      doc_rec_id: selectedDocRecId || form.pryearautonumber || form.doc_rec_id,
+      prv_number: form.provisional_number,
+      status: form.status,
+      enrollment_no: form.enrollment_no,
+      student_name: form.studentname,
+    };
     const method = editingId ? 'PATCH' : 'POST';
     const url = editingId
       ? `/api/admin/provisionals/${editingId}`
@@ -67,7 +146,7 @@ export default function Provisional() {
     const res = await authFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify(editingId ? form : payload),
     });
     if (res.ok) {
       await load();
@@ -128,6 +207,24 @@ export default function Provisional() {
               gap: 12,
             }}
           >
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label htmlFor="doc_rec_selector">
+                Select Doc Receipt (no final# yet)
+              </label>
+              <select
+                id="doc_rec_selector"
+                value={selectedDocRecId}
+                onChange={(e) => setSelectedDocRecId(e.target.value)}
+                className="border p-2 w-full"
+              >
+                <option value="">-- choose --</option>
+                {docRecs.map((r) => (
+                  <option key={r.id} value={r.doc_rec_id}>
+                    {r.doc_rec_id} — {r.student_name || r.enrollment_no || ''}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label htmlFor="doc_rec_date">Date</label>
               <DateInputDMY
@@ -199,6 +296,32 @@ export default function Provisional() {
                 className="border p-2 w-full"
               />
             </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label htmlFor="doc_rec_remark">Receipt Remark (shared)</label>
+              <input
+                type="text"
+                id="doc_rec_remark"
+                value={docRecRemark}
+                onChange={(e) => setDocRecRemark(e.target.value)}
+                onBlur={async () => {
+                  try {
+                    if (!selectedDocRecRow?.id) return;
+                    await authFetch(
+                      `/api/admin/doc-receipts/${selectedDocRecRow.id}`,
+                      {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ doc_rec_remark: docRecRemark }),
+                      },
+                    );
+                  } catch {
+                    /* ignore */
+                  }
+                }}
+                className="border p-2 w-full"
+                placeholder="view/update shared remark"
+              />
+            </div>
             <div>
               <label htmlFor="provisional_scan_copy">Scan Copy (path)</label>
               <input
@@ -234,6 +357,48 @@ export default function Provisional() {
 
   const records = (
     <div>
+      {selectedDocRecId && (
+        <div className="border rounded p-3 mb-3">
+          <div className="font-semibold mb-2">
+            Entries for {selectedDocRecId}
+          </div>
+          <div className="overflow-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-3 py-2 text-left">Date</th>
+                  <th className="px-3 py-2 text-left">Doc Rec ID</th>
+                  <th className="px-3 py-2 text-left">Final#</th>
+                  <th className="px-3 py-2 text-left">Enrollment</th>
+                  <th className="px-3 py-2 text-left">Name</th>
+                  <th className="px-3 py-2 text-left">Status</th>
+                  <th className="px-3 py-2 text-left">Remark</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((e) => (
+                  <tr key={e.id} className="border-t">
+                    <td className="px-3 py-2">{e.doc_rec_date || '-'}</td>
+                    <td className="px-3 py-2">{e.pryearautonumber || '-'}</td>
+                    <td className="px-3 py-2">{e.provisional_number || '-'}</td>
+                    <td className="px-3 py-2">{e.enrollment_no || '-'}</td>
+                    <td className="px-3 py-2">{e.studentname || '-'}</td>
+                    <td className="px-3 py-2">{e.status || '-'}</td>
+                    <td className="px-3 py-2">{docRecRemark || '-'}</td>
+                  </tr>
+                ))}
+                {!entries.length && (
+                  <tr>
+                    <td className="px-3 py-2" colSpan={7}>
+                      No entries yet. Add one using the form above.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
       <div
         style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}
       >

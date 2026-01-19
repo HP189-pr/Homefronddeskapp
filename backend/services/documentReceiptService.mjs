@@ -1,276 +1,144 @@
 import { Op, fn, col, where as sqlWhere } from 'sequelize';
-import DocumentReceipt from '../models/document_receipt.mjs';
-import Verification from '../models/verification.mjs';
-import MigrationRequest from '../models/migration_request.mjs';
-import ProvisionalRequest from '../models/provisional_request.mjs';
-import InstitutionalVerification from '../models/institutional_verification.mjs';
+import DocRec from '../models/docrec/doc_rec.mjs';
+import Verification from '../models/docrec/verification.mjs';
+import InstVerificationMain from '../models/docrec/inst_verification_main.mjs';
 
-function yearString(d = new Date()) { return String(d.getFullYear()); }
-
-async function nextSeqFor(prefixCol, prefixString) {
-  const last = await DocumentReceipt.findOne({
-    where: sqlWhere(fn('LOWER', col(prefixCol)), { [Op.like]: `${prefixString.toLowerCase()}%` }),
-    order: [[col(prefixCol), 'DESC']],
-  });
-  let seq = 0;
-  if (last && last[prefixCol]) {
-    const tail = last[prefixCol].match(/(\d{4})$/)?.[1];
-    const n = parseInt(tail, 10); if (!Number.isNaN(n)) seq = n;
-  }
-  return String(seq + 1).padStart(4, '0');
-}
-
-async function ensureTempNumber(payload) {
-  const year = yearString();
-  switch (payload.doc_type) {
-    case 'verification': {
-      if (!payload.vryearautonumber) {
-        const prefix = `vr${year}`;
-        const seq = await nextSeqFor('vryearautonumber', prefix);
-        payload.vryearautonumber = `${prefix}${seq}`;
-      }
-      break;
-    }
-    case 'migration': {
-      if (!payload.mgyearautonumber) {
-        const prefix = `mg${year}`;
-        const seq = await nextSeqFor('mgyearautonumber', prefix);
-        payload.mgyearautonumber = `${prefix}${seq}`;
-      }
-      break;
-    }
-    case 'provisional': {
-      if (!payload.pryearautonumber) {
-        const prefix = `pr${year}`;
-        const seq = await nextSeqFor('pryearautonumber', prefix);
-        payload.pryearautonumber = `${prefix}${seq}`;
-      }
-      break;
-    }
-    case 'institutional': {
-      if (!payload.ivyearautonumber) {
-        const prefix = `iv${year}`;
-        const seq = await nextSeqFor('ivyearautonumber', prefix);
-        payload.ivyearautonumber = `${prefix}${seq}`;
-      }
-      break;
-    }
-    case 'gtm': {
-      if (!payload.gtmyearautonumber) {
-        const prefix = `gtm${year}`;
-        const seq = await nextSeqFor('gtmyearautonumber', prefix);
-        payload.gtmyearautonumber = `${prefix}${seq}`;
-      }
-      break;
-    }
-    default: break;
-  }
+// Helper: build a unified pay receipt number string for child rows
+function composePayRecNo(prefix, number) {
+  const a = String(prefix || '').trim();
+  const b = String(number || '').trim();
+  return (a + b) || null;
 }
 
 export async function listReceipts(params = {}) {
-  const { q, doc_type, status, enrollment_no, limit = 50, offset = 0 } = params;
+  const { q, apply_for, limit = 50, offset = 0 } = params;
   const where = {};
-  if (doc_type) where.doc_type = doc_type;
-  if (status) where.status = status;
-  if (enrollment_no) where.enrollment_no = enrollment_no;
+  if (apply_for) where.apply_for = apply_for;
   if (q) {
     const like = `%${q.toString().toLowerCase()}%`;
     where[Op.or] = [
-      sqlWhere(fn('LOWER', col('enrollment_no')), { [Op.like]: like }),
-      sqlWhere(fn('LOWER', col('studentname')), { [Op.like]: like }),
-      sqlWhere(fn('LOWER', col('vryearautonumber')), { [Op.like]: like }),
-      sqlWhere(fn('LOWER', col('mgyearautonumber')), { [Op.like]: like }),
-      sqlWhere(fn('LOWER', col('pryearautonumber')), { [Op.like]: like }),
-      sqlWhere(fn('LOWER', col('ivyearautonumber')), { [Op.like]: like }),
-      sqlWhere(fn('LOWER', col('gtmyearautonumber')), { [Op.like]: like }),
+      sqlWhere(fn('LOWER', col('doc_rec_id')), { [Op.like]: like }),
+      sqlWhere(fn('LOWER', col('apply_for')), { [Op.like]: like }),
+      sqlWhere(fn('LOWER', col('pay_rec_no')), { [Op.like]: like }),
     ];
   }
-  return DocumentReceipt.findAll({ where, limit, offset, order: [['id','DESC']] });
+  const rows = await DocRec.findAll({ where, limit, offset, order: [['id','DESC']] });
+  return rows;
 }
 
-export async function getReceipt(id) { return DocumentReceipt.findByPk(id); }
+export async function getReceipt(id) { return DocRec.findByPk(id); }
+
+function _prefixForApply(apply_for) {
+  const map = { VR: 'vr', IV: 'iv', PR: 'pr', MG: 'mg', GT: 'gt' };
+  return map[String(apply_for || '').toUpperCase()] || 'vr';
+}
+
+function _twoDigitYear(d) {
+  const dt = d ? new Date(d) : new Date();
+  return String(dt.getFullYear()).slice(-2);
+}
+
+export async function getNextDocRecId(params = {}) {
+  const apply = String(params.apply_for || '').toUpperCase();
+  const yy = _twoDigitYear(params.doc_rec_date);
+  const prefix = _prefixForApply(apply);
+  const pattern = `${prefix}_${yy}_`;
+  const last = await DocRec.findOne({
+    where: {
+      apply_for: apply,
+      doc_rec_id: { [Op.iLike]: `${pattern}%` },
+    },
+    order: [[col('doc_rec_id'), 'DESC']],
+  });
+  let seq = 0;
+  if (last?.doc_rec_id) {
+    const m = last.doc_rec_id.match(/_(\d{4})$/);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (!Number.isNaN(n)) seq = n;
+    }
+  }
+  const next = String(seq + 1).padStart(4, '0');
+  return { next_id: `${pattern}${next}` };
+}
 
 export async function createReceipt(payload) {
   const data = { ...payload };
-  await ensureTempNumber(data);
-  const rec = await DocumentReceipt.create(data);
-  // If verification type, create a linked verification entry as in-progress
-  if (rec.doc_type === 'verification') {
-    try {
-      await Verification.create({
-        doc_rec_date: rec.doc_rec_date,
-        enrollment_no: rec.enrollment_no,
-        studentname: rec.studentname,
-        fees_rec_no: rec.prrec_no || rec.mgrec_no || rec.ivrec_no || null,
-        no_of_transcript: rec.no_of_transcript,
-        no_of_marksheet_set: rec.no_of_marksheet_set,
-        no_of_degree: rec.no_of_degree,
-        no_of_moi: rec.no_of_moi,
-        no_of_backlog: rec.no_of_backlog,
-        is_eca: rec.is_eca,
-        eca_agency: rec.eca_agency,
-        eca_agency_other: rec.eca_agency_other,
-        eca_remark: rec.eca_remark,
-        vryearautonumber: rec.vryearautonumber,
-        status: 'in-progress',
-      });
-    } catch (e) {
-      // Fallback if enum doesn't include 'in-progress' yet
-      try {
-        await Verification.create({
-          doc_rec_date: rec.doc_rec_date,
-          enrollment_no: rec.enrollment_no,
-          studentname: rec.studentname,
-          fees_rec_no: rec.prrec_no || rec.mgrec_no || rec.ivrec_no || null,
-          no_of_transcript: rec.no_of_transcript,
-          no_of_marksheet_set: rec.no_of_marksheet_set,
-          no_of_degree: rec.no_of_degree,
-          no_of_moi: rec.no_of_moi,
-          no_of_backlog: rec.no_of_backlog,
-          is_eca: rec.is_eca,
-          eca_agency: rec.eca_agency,
-          eca_agency_other: rec.eca_agency_other,
-          eca_remark: rec.eca_remark,
-          vryearautonumber: rec.vryearautonumber,
-          status: 'pending',
-        });
-      } catch (_) {
-        // swallow - do not block receipt creation
-      }
-    }
+  // Validate minimal
+  const apply = String(data.apply_for || '').toUpperCase();
+  if (!data.doc_rec_id) {
+    // Auto-generate if not provided
+    const gen = await getNextDocRecId({ apply_for: apply, doc_rec_date: data.doc_rec_date });
+    data.doc_rec_id = gen.next_id;
   }
-  // If migration type, create in pending
-  if (rec.doc_type === 'migration') {
-    try {
-      await MigrationRequest.create({
-        doc_rec_date: rec.doc_rec_date,
-        enrollment_no: rec.enrollment_no,
-        studentname: rec.studentname,
-        pryearautonumber: rec.mgyearautonumber,
-        status: 'pending',
-      });
-    } catch (_) { /* ignore */ }
+  if (!apply || !['VR','IV','PR','MG','GT'].includes(apply)) { const e = new Error('apply_for must be one of VR, IV, PR, MG, GT'); e.status = 400; throw e; }
+  if (!data.pay_by) { const e = new Error('pay_by is required'); e.status = 400; throw e; }
+
+  const rec = await DocRec.create({
+    doc_rec_date: data.doc_rec_date || null,
+    apply_for: apply,
+    doc_rec_id: data.doc_rec_id,
+    pay_by: data.pay_by,
+    pay_rec_no_pre: data.pay_by === 'NA' ? null : (data.pay_rec_no_pre || null),
+    pay_rec_no: data.pay_by === 'NA' ? null : (data.pay_rec_no || null),
+    pay_amount: data.pay_by === 'NA' ? 0 : Number(data.pay_amount || 0),
+    enrollment_no: data.enrollment_id || data.enrollment_no || null,
+    student_name: data.student_name || null,
+    doc_rec_remark: data.doc_rec_remark || null,
+  });
+
+  // Create child row for Verification (VR)
+  if (apply === 'VR') {
+    const status = 'IN_PROGRESS';
+    await Verification.create({
+      doc_rec_date: rec.doc_rec_date || new Date(),
+      doc_rec_id: rec.doc_rec_id,
+      enrollment_no: data.enrollment_id || data.enrollment_no,
+      second_enrollment_id: data.second_enrollment_id || null,
+      student_name: data.student_name,
+      no_of_transcript: Number(data.no_of_transcript || 0),
+      no_of_marksheet: Number(data.no_of_marksheet || 0),
+      no_of_degree: Number(data.no_of_degree || 0),
+      no_of_moi: Number(data.no_of_moi || 0),
+      no_of_backlog: Number(data.no_of_backlog || 0),
+      pay_rec_no: composePayRecNo(rec.pay_rec_no_pre, rec.pay_rec_no),
+      status,
+      eca_required: !!data.eca_required,
+    });
   }
-  // If provisional type, create in pending
-  if (rec.doc_type === 'provisional') {
-    try {
-      await ProvisionalRequest.create({
-        doc_rec_date: rec.doc_rec_date,
-        enrollment_no: rec.enrollment_no,
-        studentname: rec.studentname,
-        pryearautonumber: rec.pryearautonumber,
-        status: 'pending',
-      });
-    } catch (_) { /* ignore */ }
+
+  // Create child row for Institutional Verification (IV)
+  if (apply === 'IV') {
+    await InstVerificationMain.create({
+      doc_rec_id: rec.doc_rec_id,
+      inst_veri_date: rec.doc_rec_date || null,
+      rec_inst_name: data.rec_inst_name || null,
+      doc_rec_date: rec.doc_rec_date || null,
+    });
   }
-  // If institutional type, create in pending
-  if (rec.doc_type === 'institutional') {
-    try {
-      await InstitutionalVerification.create({
-        doc_rec_date: rec.doc_rec_date,
-        ivyearautonumber: rec.ivyearautonumber,
-        institution_name: rec.institution_name,
-        address1: rec.address1,
-        address2: rec.address2,
-        address3: rec.address3,
-        city: rec.city,
-        pincode: rec.pincode,
-        mobile: rec.mobile,
-        email: rec.email,
-        payment_receipt_no: rec.ivrec_no,
-        enrollment_no: rec.enrollment_no,
-        studentname: rec.studentname,
-        status: 'pending',
-      });
-    } catch (_) { /* ignore */ }
-  }
+
   return rec;
 }
 
 export async function updateReceipt(id, payload) {
-  const row = await DocumentReceipt.findByPk(id); if (!row) return null;
-  const prev = row.toJSON(); const data = { ...payload };
-  // Keep existing temp number; do not overwrite unless new one provided
-  const next = { ...prev, ...data };
+  const row = await DocRec.findByPk(id); if (!row) return null;
+  const prev = row.toJSON();
+  const next = { ...prev };
+  if (payload.doc_rec_date !== undefined) next.doc_rec_date = payload.doc_rec_date;
+  if (payload.pay_by !== undefined) next.pay_by = payload.pay_by;
+  if (payload.pay_by === 'NA') {
+    next.pay_rec_no_pre = null; next.pay_rec_no = null; next.pay_amount = 0;
+  } else {
+    if (payload.pay_rec_no_pre !== undefined) next.pay_rec_no_pre = payload.pay_rec_no_pre;
+    if (payload.pay_rec_no !== undefined) next.pay_rec_no = payload.pay_rec_no;
+    if (payload.pay_amount !== undefined) next.pay_amount = Number(payload.pay_amount || 0);
+  }
+  if (payload.enrollment_id !== undefined || payload.enrollment_no !== undefined) {
+    next.enrollment_no = payload.enrollment_id || payload.enrollment_no || null;
+  }
+  if (payload.student_name !== undefined) next.student_name = payload.student_name || null;
+  if (payload.doc_rec_remark !== undefined) next.doc_rec_remark = payload.doc_rec_remark || null;
   await row.update(next);
-  // Sync to Verification if type is verification
-  if (row.doc_type === 'verification') {
-    const where = { vryearautonumber: row.vryearautonumber };
-    const found = await Verification.findOne({ where });
-    const payloadV = {
-      doc_rec_date: row.doc_rec_date,
-      enrollment_no: row.enrollment_no,
-      studentname: row.studentname,
-      fees_rec_no: row.prrec_no || row.mgrec_no || row.ivrec_no || null,
-      no_of_transcript: row.no_of_transcript,
-      no_of_marksheet_set: row.no_of_marksheet_set,
-      no_of_degree: row.no_of_degree,
-      no_of_moi: row.no_of_moi,
-      no_of_backlog: row.no_of_backlog,
-      is_eca: row.is_eca,
-      eca_agency: row.eca_agency,
-      eca_agency_other: row.eca_agency_other,
-      eca_remark: row.eca_remark,
-      vryearautonumber: row.vryearautonumber,
-    };
-    if (found) {
-      try { await found.update(payloadV); } catch (_) { /* ignore */ }
-    } else {
-      try { await Verification.create({ ...payloadV, status: 'in-progress' }); }
-      catch (e) { try { await Verification.create({ ...payloadV, status: 'pending' }); } catch (_) { /* ignore */ } }
-    }
-  }
-  // Sync migration
-  if (row.doc_type === 'migration') {
-    try {
-      const where = { pryearautonumber: row.mgyearautonumber };
-      const found = await MigrationRequest.findOne({ where });
-      const payloadM = {
-        doc_rec_date: row.doc_rec_date,
-        enrollment_no: row.enrollment_no,
-        studentname: row.studentname,
-        pryearautonumber: row.mgyearautonumber,
-      };
-      if (found) await found.update(payloadM); else await MigrationRequest.create({ ...payloadM, status: 'pending' });
-    } catch (_) { /* ignore */ }
-  }
-  // Sync provisional
-  if (row.doc_type === 'provisional') {
-    try {
-      const where = { pryearautonumber: row.pryearautonumber };
-      const found = await ProvisionalRequest.findOne({ where });
-      const payloadP = {
-        doc_rec_date: row.doc_rec_date,
-        enrollment_no: row.enrollment_no,
-        studentname: row.studentname,
-        pryearautonumber: row.pryearautonumber,
-      };
-      if (found) await found.update(payloadP); else await ProvisionalRequest.create({ ...payloadP, status: 'pending' });
-    } catch (_) { /* ignore */ }
-  }
-  // Sync institutional
-  if (row.doc_type === 'institutional') {
-    try {
-      const where = { ivyearautonumber: row.ivyearautonumber };
-      const found = await InstitutionalVerification.findOne({ where });
-      const payloadI = {
-        doc_rec_date: row.doc_rec_date,
-        ivyearautonumber: row.ivyearautonumber,
-        institution_name: row.institution_name,
-        address1: row.address1,
-        address2: row.address2,
-        address3: row.address3,
-        city: row.city,
-        pincode: row.pincode,
-        mobile: row.mobile,
-        email: row.email,
-        payment_receipt_no: row.ivrec_no,
-        enrollment_no: row.enrollment_no,
-        studentname: row.studentname,
-      };
-      if (found) await found.update(payloadI); else await InstitutionalVerification.create({ ...payloadI, status: 'pending' });
-    } catch (_) { /* ignore */ }
-  }
   return row;
 }
 
