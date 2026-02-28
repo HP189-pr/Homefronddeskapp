@@ -1,11 +1,8 @@
-import express from 'express';
-import * as ctrl from '../controllers/institutionalVerificationController.mjs';
+const router = require("express").Router();
+const ctrl = require("../controllers/instLetter.controller");
 
-const router = express.Router();
+router.post("/", ctrl.create);
+router.get("/:docRecId", ctrl.getOne);
+router.delete("/:docRecId", ctrl.remove);
 
-router.get('/', ctrl.list);
-router.get('/:id', ctrl.getById);
-router.post('/', ctrl.create);
-router.patch('/:id', ctrl.update);
-
-export default router;
+module.exports = router;
