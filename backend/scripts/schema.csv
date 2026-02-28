@@ -1,0 +1,657 @@
+"table_schema","table_name","column_name","data_type","character_maximum_length","numeric_precision","numeric_scale","is_nullable","column_default"
+"public","admission_cancel","id","integer",NULL,32,0,"NO",NULL
+"public","admission_cancel","cancel_date","date",NULL,NULL,NULL,"NO",NULL
+"public","admission_cancel","student_name","character varying",100,NULL,NULL,"NO",NULL
+"public","admission_cancel","inward_no","character varying",50,NULL,NULL,"YES",NULL
+"public","admission_cancel","inward_date","date",NULL,NULL,NULL,"YES",NULL
+"public","admission_cancel","outward_no","character varying",50,NULL,NULL,"YES",NULL
+"public","admission_cancel","outward_date","date",NULL,NULL,NULL,"YES",NULL
+"public","admission_cancel","can_remark","text",NULL,NULL,NULL,"YES",NULL
+"public","admission_cancel","status","character varying",20,NULL,NULL,"NO",NULL
+"public","admission_cancel","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","admission_cancel","enrollment_id","integer",NULL,32,0,"NO",NULL
+"public","api_cctvcentreentry","id","bigint",NULL,64,0,"NO",NULL
+"public","api_cctvcentreentry","session","character varying",1,NULL,NULL,"NO",NULL
+"public","api_cctvcentreentry","place","character varying",100,NULL,NULL,"NO",NULL
+"public","api_cctvcentreentry","no_of_cd","integer",NULL,32,0,"NO",NULL
+"public","api_cctvcentreentry","start_number","integer",NULL,32,0,"YES",NULL
+"public","api_cctvcentreentry","end_number","integer",NULL,32,0,"YES",NULL
+"public","api_cctvcentreentry","start_label","character varying",20,NULL,NULL,"YES",NULL
+"public","api_cctvcentreentry","end_label","character varying",20,NULL,NULL,"YES",NULL
+"public","api_cctvcentreentry","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_cctvcentreentry","exam_id","bigint",NULL,64,0,"NO",NULL
+"public","api_cctvcentreentry","cc_end_label","character varying",20,NULL,NULL,"YES",NULL
+"public","api_cctvcentreentry","cc_start_label","character varying",20,NULL,NULL,"YES",NULL
+"public","api_cctvcentreentry","cc_total","integer",NULL,32,0,"NO",NULL
+"public","api_cctvdvd","id","bigint",NULL,64,0,"NO",NULL
+"public","api_cctvdvd","number","integer",NULL,32,0,"NO",NULL
+"public","api_cctvdvd","label","character varying",20,NULL,NULL,"NO",NULL
+"public","api_cctvdvd","objection_found","boolean",NULL,NULL,NULL,"NO",NULL
+"public","api_cctvdvd","cc_number","integer",NULL,32,0,"YES",NULL
+"public","api_cctvdvd","cc_label","character varying",20,NULL,NULL,"NO",NULL
+"public","api_cctvdvd","sent_to_college","boolean",NULL,NULL,NULL,"NO",NULL
+"public","api_cctvdvd","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_cctvdvd","centre_id","bigint",NULL,64,0,"NO",NULL
+"public","api_cctvexam","id","bigint",NULL,64,0,"NO",NULL
+"public","api_cctvexam","exam_year_session","character varying",20,NULL,NULL,"NO",NULL
+"public","api_cctvexam","exam_date","character varying",50,NULL,NULL,"NO",NULL
+"public","api_cctvexam","exam_time","character varying",100,NULL,NULL,"NO",NULL
+"public","api_cctvexam","course","character varying",50,NULL,NULL,"NO",NULL
+"public","api_cctvexam","sem","character varying",10,NULL,NULL,"NO",NULL
+"public","api_cctvexam","subject_code","character varying",50,NULL,NULL,"NO",NULL
+"public","api_cctvexam","subject_name","character varying",200,NULL,NULL,"NO",NULL
+"public","api_cctvexam","no_of_students","integer",NULL,32,0,"NO",NULL
+"public","api_cctvexam","institute_remarks","character varying",200,NULL,NULL,"YES",NULL
+"public","api_cctvexam","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_cctvexam","raw_row","jsonb",NULL,NULL,NULL,"NO",NULL
+"public","api_cctvoutward","id","bigint",NULL,64,0,"NO",NULL
+"public","api_cctvoutward","outward_no","character varying",50,NULL,NULL,"YES",NULL
+"public","api_cctvoutward","outward_date","date",NULL,NULL,NULL,"YES",NULL
+"public","api_cctvoutward","cc_start_label","character varying",20,NULL,NULL,"YES",NULL
+"public","api_cctvoutward","cc_end_label","character varying",20,NULL,NULL,"YES",NULL
+"public","api_cctvoutward","return_received","boolean",NULL,NULL,NULL,"NO",NULL
+"public","api_cctvoutward","case_found","boolean",NULL,NULL,NULL,"NO",NULL
+"public","api_cctvoutward","case_type","character varying",20,NULL,NULL,"YES",NULL
+"public","api_cctvoutward","case_details","text",NULL,NULL,NULL,"NO",NULL
+"public","api_cctvoutward","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_cctvoutward","cctv_record_no","character varying",50,NULL,NULL,"YES",NULL
+"public","api_cctvoutward","centre_name","character varying",200,NULL,NULL,"YES",NULL
+"public","api_cctvoutward","college_name","character varying",200,NULL,NULL,"NO",NULL
+"public","api_cctvoutward","exam_on","character varying",200,NULL,NULL,"NO",NULL
+"public","api_cctvoutward","last_date","date",NULL,NULL,NULL,"YES",NULL
+"public","api_cctvoutward","no_of_dvd","integer",NULL,32,0,"NO",NULL
+"public","api_cctvoutward","no_of_report","integer",NULL,32,0,"NO",NULL
+"public","api_cctvoutward","remark","text",NULL,NULL,NULL,"NO",NULL
+"public","api_empprofile","id","bigint",NULL,64,0,"NO",NULL
+"public","api_empprofile","emp_id","character varying",20,NULL,NULL,"NO",NULL
+"public","api_empprofile","emp_name","character varying",100,NULL,NULL,"NO",NULL
+"public","api_empprofile","emp_designation","character varying",100,NULL,NULL,"YES",NULL
+"public","api_empprofile","left_date","date",NULL,NULL,NULL,"YES",NULL
+"public","api_empprofile","leave_group","character varying",20,NULL,NULL,"YES",NULL
+"public","api_empprofile","emp_birth_date","date",NULL,NULL,NULL,"YES",NULL
+"public","api_empprofile","el_balance","numeric",NULL,5,2,"YES",NULL
+"public","api_empprofile","sl_balance","numeric",NULL,5,2,"YES",NULL
+"public","api_empprofile","cl_balance","numeric",NULL,5,2,"YES",NULL
+"public","api_empprofile","vacation_balance","numeric",NULL,5,2,"YES",NULL
+"public","api_empprofile","actual_joining","date",NULL,NULL,NULL,"YES",NULL
+"public","api_empprofile","department_joining","character varying",100,NULL,NULL,"YES",NULL
+"public","api_empprofile","institute_id","character varying",50,NULL,NULL,"YES",NULL
+"public","api_empprofile","joining_year_allocation_el","numeric",NULL,5,2,"YES",NULL
+"public","api_empprofile","joining_year_allocation_cl","numeric",NULL,5,2,"YES",NULL
+"public","api_empprofile","joining_year_allocation_sl","numeric",NULL,5,2,"YES",NULL
+"public","api_empprofile","joining_year_allocation_vac","numeric",NULL,5,2,"YES",NULL
+"public","api_empprofile","leave_calculation_date","date",NULL,NULL,NULL,"YES",NULL
+"public","api_empprofile","emp_short","integer",NULL,32,0,"YES",NULL
+"public","api_empprofile","status","character varying",20,NULL,NULL,"NO",NULL
+"public","api_empprofile","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_empprofile","updated_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_empprofile","created_by","character varying",50,NULL,NULL,"YES",NULL
+"public","api_empprofile","usr_birth_date","date",NULL,NULL,NULL,"YES",NULL
+"public","api_empprofile","username","character varying",150,NULL,NULL,"YES",NULL
+"public","api_empprofile","usercode","character varying",50,NULL,NULL,"YES",NULL
+"public","api_leaveallocation","id","bigint",NULL,64,0,"NO",NULL
+"public","api_leaveallocation","created_at","timestamp with time zone",NULL,NULL,NULL,"YES",NULL
+"public","api_leaveallocation","updated_at","timestamp with time zone",NULL,NULL,NULL,"YES",NULL
+"public","api_leaveallocation","leave_code","character varying",20,NULL,NULL,"YES",NULL
+"public","api_leaveallocation","emp_id","bigint",NULL,64,0,"YES",NULL
+"public","api_leaveallocation","period_id","bigint",NULL,64,0,"NO",NULL
+"public","api_leaveallocation","allocated_start_date","date",NULL,NULL,NULL,"YES",NULL
+"public","api_leaveallocation","allocated_end_date","date",NULL,NULL,NULL,"YES",NULL
+"public","api_leaveallocation","allocated","numeric",NULL,NULL,NULL,"YES","0"
+"public","api_leaveallocation","apply_to","character varying",20,NULL,NULL,"YES",NULL
+"public","api_leavebalancesnapshot","id","bigint",NULL,64,0,"NO",NULL
+"public","api_leavebalancesnapshot","balance_date","date",NULL,NULL,NULL,"NO",NULL
+"public","api_leavebalancesnapshot","el_balance","numeric",NULL,6,2,"NO",NULL
+"public","api_leavebalancesnapshot","sl_balance","numeric",NULL,6,2,"NO",NULL
+"public","api_leavebalancesnapshot","cl_balance","numeric",NULL,6,2,"NO",NULL
+"public","api_leavebalancesnapshot","vacation_balance","numeric",NULL,6,2,"NO",NULL
+"public","api_leavebalancesnapshot","note","text",NULL,NULL,NULL,"YES",NULL
+"public","api_leavebalancesnapshot","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_leavebalancesnapshot","emp_id","bigint",NULL,64,0,"NO",NULL
+"public","api_leavebalancesnapshot","period_id","bigint",NULL,64,0,"YES",NULL
+"public","api_leavebalancesnapshot","allocation_id","bigint",NULL,64,0,"YES",NULL
+"public","api_leavebalancesnapshot","allocation_start_date","date",NULL,NULL,NULL,"YES",NULL
+"public","api_leavebalancesnapshot","allocation_end_date","date",NULL,NULL,NULL,"YES",NULL
+"public","api_leavebalancesnapshot","snapshot_date","timestamp with time zone",NULL,NULL,NULL,"YES","now()"
+"public","api_leavebalancesnapshot","effective_joining_date","date",NULL,NULL,NULL,"YES",NULL
+"public","api_leavebalancesnapshot","starting_el","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","starting_sl","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","starting_cl","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","joining_year_allocation_el","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","joining_year_allocation_cl","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","joining_year_allocation_sl","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","allocated_el","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","allocated_cl","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","allocated_sl","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","used_el","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","used_cl","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","used_sl","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","used_vacation","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","used_dl","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","used_lwp","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","used_ml","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","used_pl","numeric",NULL,10,2,"YES","0"
+"public","api_leavebalancesnapshot","ending_el","numeric",NULL,12,2,"YES","0"
+"public","api_leavebalancesnapshot","ending_sl","numeric",NULL,12,2,"YES","0"
+"public","api_leavebalancesnapshot","ending_cl","numeric",NULL,12,2,"YES","0"
+"public","api_leavebalancesnapshot","ending_vacation","numeric",NULL,12,2,"YES","0"
+"public","api_leavebalancesnapshot","carry_forward_el","numeric",NULL,12,2,"YES","0"
+"public","api_leavebalancesnapshot","carry_forward_sl","numeric",NULL,12,2,"YES","0"
+"public","api_leavebalancesnapshot","notes","text",NULL,NULL,NULL,"YES",NULL
+"public","api_leavebalancesnapshot","snapshot_type","character varying",20,NULL,NULL,"YES","'auto'::character varying"
+"public","api_leavebalancesnapshot","created_by","character varying",NULL,NULL,NULL,"YES",NULL
+"public","api_leavebalancesnapshot","updated_at","timestamp with time zone",NULL,NULL,NULL,"YES",NULL
+"public","api_leaveentry","id","bigint",NULL,64,0,"NO",NULL
+"public","api_leaveentry","leave_report_no","character varying",20,NULL,NULL,"NO",NULL
+"public","api_leaveentry","start_date","date",NULL,NULL,NULL,"NO",NULL
+"public","api_leaveentry","end_date","date",NULL,NULL,NULL,"NO",NULL
+"public","api_leaveentry","total_days","numeric",NULL,5,2,"YES",NULL
+"public","api_leaveentry","reason","text",NULL,NULL,NULL,"YES",NULL
+"public","api_leaveentry","status","character varying",20,NULL,NULL,"YES",NULL
+"public","api_leaveentry","created_by","character varying",50,NULL,NULL,"YES",NULL
+"public","api_leaveentry","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_leaveentry","approved_by","character varying",50,NULL,NULL,"YES",NULL
+"public","api_leaveentry","approved_at","timestamp with time zone",NULL,NULL,NULL,"YES",NULL
+"public","api_leaveentry","emp_id","character varying",20,NULL,NULL,"NO",NULL
+"public","api_leaveentry","leave_code","character varying",20,NULL,NULL,"NO",NULL
+"public","api_leaveentry","report_date","date",NULL,NULL,NULL,"YES",NULL
+"public","api_leaveentry","leave_remark","character varying",100,NULL,NULL,"YES",NULL
+"public","api_leaveentry","emp_name","character varying",100,NULL,NULL,"YES",NULL
+"public","api_leaveentry","sandwich_leave","boolean",NULL,NULL,NULL,"YES",NULL
+"public","api_leaveperiod","id","bigint",NULL,64,0,"NO",NULL
+"public","api_leaveperiod","period_name","character varying",50,NULL,NULL,"NO",NULL
+"public","api_leaveperiod","start_date","date",NULL,NULL,NULL,"NO",NULL
+"public","api_leaveperiod","end_date","date",NULL,NULL,NULL,"NO",NULL
+"public","api_leaveperiod","description","text",NULL,NULL,NULL,"YES",NULL
+"public","api_leaveperiod","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_leaveperiod","updated_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_leavetype","id","integer",NULL,32,0,"NO","nextval('api_leavetype_id_seq'::regclass)"
+"public","api_leavetype","leave_code","character varying",10,NULL,NULL,"NO",NULL
+"public","api_leavetype","leave_name","character varying",100,NULL,NULL,"NO",NULL
+"public","api_leavetype","parent_leave","character varying",10,NULL,NULL,"YES",NULL
+"public","api_leavetype","leave_unit","numeric",NULL,4,2,"NO",NULL
+"public","api_leavetype","leave_mode","character varying",20,NULL,NULL,"NO",NULL
+"public","api_leavetype","annual_limit","integer",NULL,32,0,"YES",NULL
+"public","api_leavetype","is_half","boolean",NULL,NULL,NULL,"YES","false"
+"public","api_leavetype","created_at","timestamp without time zone",NULL,NULL,NULL,"YES","now()"
+"public","api_leavetype","updated_at","timestamp without time zone",NULL,NULL,NULL,"YES","now()"
+"public","api_leavetype","is_active","boolean",NULL,NULL,NULL,"YES","true"
+"public","api_menu","menuid","integer",NULL,32,0,"NO",NULL
+"public","api_menu","name","character varying",255,NULL,NULL,"NO",NULL
+"public","api_menu","createdat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_menu","updatedat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_menu","updatedby","integer",NULL,32,0,"YES",NULL
+"public","api_menu","moduleid","integer",NULL,32,0,"NO",NULL
+"public","api_module","moduleid","integer",NULL,32,0,"NO",NULL
+"public","api_module","name","character varying",255,NULL,NULL,"NO",NULL
+"public","api_module","createdat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_module","updatedat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_module","updatedby","integer",NULL,32,0,"YES",NULL
+"public","api_userpermissions","permitid","integer",NULL,32,0,"NO",NULL
+"public","api_userpermissions","canview","boolean",NULL,NULL,NULL,"NO",NULL
+"public","api_userpermissions","canedit","boolean",NULL,NULL,NULL,"NO",NULL
+"public","api_userpermissions","candelete","boolean",NULL,NULL,NULL,"NO",NULL
+"public","api_userpermissions","cancreate","boolean",NULL,NULL,NULL,"NO",NULL
+"public","api_userpermissions","createdat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_userpermissions","updatedat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","api_userpermissions","menuid","integer",NULL,32,0,"YES",NULL
+"public","api_userpermissions","moduleid","integer",NULL,32,0,"YES",NULL
+"public","api_userpermissions","userid","integer",NULL,32,0,"NO",NULL
+"public","auth_group","id","integer",NULL,32,0,"NO",NULL
+"public","auth_group","name","character varying",150,NULL,NULL,"NO",NULL
+"public","auth_group_permissions","id","bigint",NULL,64,0,"NO",NULL
+"public","auth_group_permissions","group_id","integer",NULL,32,0,"NO",NULL
+"public","auth_group_permissions","permission_id","integer",NULL,32,0,"NO",NULL
+"public","auth_permission","id","integer",NULL,32,0,"NO",NULL
+"public","auth_permission","name","character varying",255,NULL,NULL,"NO",NULL
+"public","auth_permission","content_type_id","integer",NULL,32,0,"NO",NULL
+"public","auth_permission","codename","character varying",100,NULL,NULL,"NO",NULL
+"public","auth_user","id","integer",NULL,32,0,"NO",NULL
+"public","auth_user","password","character varying",128,NULL,NULL,"NO",NULL
+"public","auth_user","last_login","timestamp with time zone",NULL,NULL,NULL,"YES",NULL
+"public","auth_user","is_superuser","boolean",NULL,NULL,NULL,"NO",NULL
+"public","auth_user","username","character varying",150,NULL,NULL,"NO",NULL
+"public","auth_user","first_name","character varying",150,NULL,NULL,"NO",NULL
+"public","auth_user","last_name","character varying",150,NULL,NULL,"NO",NULL
+"public","auth_user","email","character varying",254,NULL,NULL,"NO",NULL
+"public","auth_user","is_staff","boolean",NULL,NULL,NULL,"NO",NULL
+"public","auth_user","is_active","boolean",NULL,NULL,NULL,"NO",NULL
+"public","auth_user","date_joined","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","auth_user","usercode","character varying",20,NULL,NULL,"YES",NULL
+"public","auth_user","usr_birth_date","date",NULL,NULL,NULL,"YES",NULL
+"public","auth_user_groups","id","bigint",NULL,64,0,"NO",NULL
+"public","auth_user_groups","user_id","integer",NULL,32,0,"NO",NULL
+"public","auth_user_groups","group_id","integer",NULL,32,0,"NO",NULL
+"public","auth_user_user_permissions","id","bigint",NULL,64,0,"NO",NULL
+"public","auth_user_user_permissions","user_id","integer",NULL,32,0,"NO",NULL
+"public","auth_user_user_permissions","permission_id","integer",NULL,32,0,"NO",NULL
+"public","cash_on_hand","id","bigint",NULL,64,0,"NO",NULL
+"public","cash_on_hand","date","date",NULL,NULL,NULL,"NO",NULL
+"public","cash_on_hand","system_cash","numeric",NULL,14,2,"NO",NULL
+"public","cash_on_hand","total_deposit","numeric",NULL,14,2,"NO",NULL
+"public","cash_on_hand","total_expense","numeric",NULL,14,2,"NO",NULL
+"public","cash_on_hand","expected_cash","numeric",NULL,14,2,"NO",NULL
+"public","cash_on_hand","physical_cash","numeric",NULL,14,2,"NO",NULL
+"public","cash_on_hand","difference","numeric",NULL,14,2,"NO",NULL
+"public","cash_on_hand","status","character varying",10,NULL,NULL,"NO",NULL
+"public","cash_on_hand","closed_at","timestamp with time zone",NULL,NULL,NULL,"YES",NULL
+"public","cash_on_hand","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","cash_on_hand","closed_by_id","integer",NULL,32,0,"YES",NULL
+"public","cash_on_hand_item","id","bigint",NULL,64,0,"NO",NULL
+"public","cash_on_hand_item","denomination","integer",NULL,32,0,"NO",NULL
+"public","cash_on_hand_item","is_coin","boolean",NULL,NULL,NULL,"NO",NULL
+"public","cash_on_hand_item","qty","integer",NULL,32,0,"NO",NULL
+"public","cash_on_hand_item","amount","numeric",NULL,12,2,"NO",NULL
+"public","cash_on_hand_item","cash_on_hand_id","bigint",NULL,64,0,"NO",NULL
+"public","cash_outward","id","bigint",NULL,64,0,"NO",NULL
+"public","cash_outward","date","date",NULL,NULL,NULL,"NO",NULL
+"public","cash_outward","txn_type","character varying",10,NULL,NULL,"NO",NULL
+"public","cash_outward","ref_no","character varying",50,NULL,NULL,"NO",NULL
+"public","cash_outward","amount","numeric",NULL,14,2,"NO",NULL
+"public","cash_outward","remark","text",NULL,NULL,NULL,"NO",NULL
+"public","cash_outward","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","cash_outward","created_by_id","integer",NULL,32,0,"NO",NULL
+"public","chat_messages","id","bigint",NULL,64,0,"NO",NULL
+"public","chat_messages","text","text",NULL,NULL,NULL,"YES",NULL
+"public","chat_messages","file_name","character varying",255,NULL,NULL,"YES",NULL
+"public","chat_messages","file_path","character varying",500,NULL,NULL,"YES",NULL
+"public","chat_messages","file_mime","character varying",100,NULL,NULL,"YES",NULL
+"public","chat_messages","file_size","bigint",NULL,64,0,"YES",NULL
+"public","chat_messages","createdat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","chat_messages","hide_for_sender","boolean",NULL,NULL,NULL,"NO",NULL
+"public","chat_messages","hide_for_receiver","boolean",NULL,NULL,NULL,"NO",NULL
+"public","chat_messages","from_user_id","integer",NULL,32,0,"NO",NULL
+"public","chat_messages","to_user_id","integer",NULL,32,0,"NO",NULL
+"public","chat_messages","downloaded_at","timestamp with time zone",NULL,NULL,NULL,"YES",NULL
+"public","chat_messages","file_delivered","boolean",NULL,NULL,NULL,"NO","false"
+"public","chat_messages","file_downloaded","boolean",NULL,NULL,NULL,"NO","false"
+"public","chat_messages","delivered","boolean",NULL,NULL,NULL,"NO",NULL
+"public","chat_messages","seen","boolean",NULL,NULL,NULL,"NO",NULL
+"public","convocation_master","id","integer",NULL,32,0,"NO","nextval('convocation_master_id_seq'::regclass)"
+"public","convocation_master","convocation_no","integer",NULL,32,0,"NO",NULL
+"public","convocation_master","convocation_title","character varying",50,NULL,NULL,"YES",NULL
+"public","convocation_master","convocation_date","date",NULL,NULL,NULL,"NO",NULL
+"public","convocation_master","month_year","character varying",20,NULL,NULL,"YES",NULL
+"public","dashboard_preferences","id","bigint",NULL,64,0,"NO",NULL
+"public","dashboard_preferences","selected_modules","jsonb",NULL,NULL,NULL,"NO",NULL
+"public","dashboard_preferences","updated_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","dashboard_preferences","userid","integer",NULL,32,0,"NO",NULL
+"public","django_admin_log","id","integer",NULL,32,0,"NO",NULL
+"public","django_admin_log","action_time","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","django_admin_log","object_id","text",NULL,NULL,NULL,"YES",NULL
+"public","django_admin_log","object_repr","character varying",200,NULL,NULL,"NO",NULL
+"public","django_admin_log","action_flag","smallint",NULL,16,0,"NO",NULL
+"public","django_admin_log","change_message","text",NULL,NULL,NULL,"NO",NULL
+"public","django_admin_log","content_type_id","integer",NULL,32,0,"YES",NULL
+"public","django_admin_log","user_id","integer",NULL,32,0,"NO",NULL
+"public","django_content_type","id","integer",NULL,32,0,"NO",NULL
+"public","django_content_type","app_label","character varying",100,NULL,NULL,"NO",NULL
+"public","django_content_type","model","character varying",100,NULL,NULL,"NO",NULL
+"public","django_migrations","id","bigint",NULL,64,0,"NO",NULL
+"public","django_migrations","app","character varying",255,NULL,NULL,"NO",NULL
+"public","django_migrations","name","character varying",255,NULL,NULL,"NO",NULL
+"public","django_migrations","applied","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","django_session","session_key","character varying",40,NULL,NULL,"NO",NULL
+"public","django_session","session_data","text",NULL,NULL,NULL,"NO",NULL
+"public","django_session","expire_date","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","doc_rec","id","bigint",NULL,64,0,"NO",NULL
+"public","doc_rec","apply_for","character varying",2,NULL,NULL,"NO",NULL
+"public","doc_rec","doc_rec_id","character varying",NULL,NULL,NULL,"NO",NULL
+"public","doc_rec","pay_by","character varying",10,NULL,NULL,"NO",NULL
+"public","doc_rec","pay_rec_no_pre","character varying",20,NULL,NULL,"YES",NULL
+"public","doc_rec","pay_rec_no","character varying",50,NULL,NULL,"YES",NULL
+"public","doc_rec","pay_amount","numeric",NULL,12,2,"NO",NULL
+"public","doc_rec","createdat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","doc_rec","updatedat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","doc_rec","doc_rec_date","date",NULL,NULL,NULL,"YES",NULL
+"public","doc_rec","created_by","integer",NULL,32,0,"YES",NULL
+"public","doc_rec","search_vector","tsvector",NULL,NULL,NULL,"YES",NULL
+"public","doc_rec","doc_remark","character varying",255,NULL,NULL,"YES",NULL
+"public","eca","id","bigint",NULL,64,0,"NO",NULL
+"public","eca","eca_name","character varying",255,NULL,NULL,"YES",NULL
+"public","eca","eca_ref_no","character varying",100,NULL,NULL,"YES",NULL
+"public","eca","eca_send_date","date",NULL,NULL,NULL,"YES",NULL
+"public","eca","createdat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","eca","updatedat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","eca","createdby","integer",NULL,32,0,"YES",NULL
+"public","eca","doc_rec_id","character varying",20,NULL,NULL,"YES",NULL
+"public","eca","doc_remark","text",NULL,NULL,NULL,"YES",NULL
+"public","enrollment","id","integer",NULL,32,0,"NO",NULL
+"public","enrollment","student_name","character varying",100,NULL,NULL,"NO",NULL
+"public","enrollment","enrollment_date","date",NULL,NULL,NULL,"YES",NULL
+"public","enrollment","admission_date","date",NULL,NULL,NULL,"YES",NULL
+"public","enrollment","batch","integer",NULL,32,0,"NO",NULL
+"public","enrollment","enrollment_no","character varying",50,NULL,NULL,"YES",NULL
+"public","enrollment","temp_enroll_no","character varying",50,NULL,NULL,"YES",NULL
+"public","enrollment","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","enrollment","updated_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","enrollment","updated_by","integer",NULL,32,0,"YES",NULL
+"public","enrollment","institute_id","integer",NULL,32,0,"NO",NULL
+"public","enrollment","maincourse_id","character varying",255,NULL,NULL,"NO",NULL
+"public","enrollment","subcourse_id","character varying",255,NULL,NULL,"NO",NULL
+"public","enrollment","search_vector","tsvector",NULL,NULL,NULL,"YES",NULL
+"public","enrollment","cancel","boolean",NULL,NULL,NULL,"YES",NULL
+"public","error_log","id","bigint",NULL,64,0,"NO",NULL
+"public","error_log","path","character varying",1000,NULL,NULL,"YES",NULL
+"public","error_log","method","character varying",10,NULL,NULL,"YES",NULL
+"public","error_log","message","text",NULL,NULL,NULL,"YES",NULL
+"public","error_log","stack","text",NULL,NULL,NULL,"YES",NULL
+"public","error_log","payload","jsonb",NULL,NULL,NULL,"YES",NULL
+"public","error_log","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","error_log","updated_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","error_log","user_id","integer",NULL,32,0,"YES",NULL
+"public","fee_type","id","bigint",NULL,64,0,"NO",NULL
+"public","fee_type","code","character varying",20,NULL,NULL,"NO",NULL
+"public","fee_type","name","character varying",255,NULL,NULL,"NO",NULL
+"public","fee_type","is_active","boolean",NULL,NULL,NULL,"NO",NULL
+"public","fee_type","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","fee_type","updated_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","google_form_submission","id","bigint",NULL,64,0,"NO",NULL
+"public","google_form_submission","timestamp","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","google_form_submission","enrollment_no","character varying",64,NULL,NULL,"NO",NULL
+"public","google_form_submission","student_name","character varying",255,NULL,NULL,"NO",NULL
+"public","google_form_submission","rec_institute_name","character varying",512,NULL,NULL,"NO",NULL
+"public","google_form_submission","rec_official_mail","character varying",255,NULL,NULL,"NO",NULL
+"public","google_form_submission","rec_ref_id","character varying",128,NULL,NULL,"NO",NULL
+"public","google_form_submission","send_doc_type","character varying",255,NULL,NULL,"NO",NULL
+"public","google_form_submission","form_submit_mail","character varying",255,NULL,NULL,"NO",NULL
+"public","google_form_submission","mail_status","character varying",32,NULL,NULL,"NO",NULL
+"public","google_form_submission","remark","text",NULL,NULL,NULL,"NO",NULL
+"public","google_form_submission","student_verification","character varying",255,NULL,NULL,"NO",NULL
+"public","google_form_submission","raw_row","jsonb",NULL,NULL,NULL,"YES",NULL
+"public","google_form_submission","created","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","google_form_submission","mail_req_no","integer",NULL,32,0,"YES",NULL
+"public","google_form_submission","search_vector","tsvector",NULL,NULL,NULL,"YES",NULL
+"public","holiday","hdid","integer",NULL,32,0,"NO",NULL
+"public","holiday","holiday_date","date",NULL,NULL,NULL,"NO",NULL
+"public","holiday","holiday_name","character varying",255,NULL,NULL,"NO",NULL
+"public","holiday","holiday_day","character varying",50,NULL,NULL,"NO",NULL
+"public","inst_verification_main","id","bigint",NULL,64,0,"NO",NULL
+"public","inst_verification_main","inst_veri_number","character varying",100,NULL,NULL,"YES",NULL
+"public","inst_verification_main","inst_veri_date","date",NULL,NULL,NULL,"YES",NULL
+"public","inst_verification_main","rec_inst_name","character varying",255,NULL,NULL,"YES",NULL
+"public","inst_verification_main","rec_inst_address_1","character varying",255,NULL,NULL,"YES",NULL
+"public","inst_verification_main","rec_inst_address_2","character varying",255,NULL,NULL,"YES",NULL
+"public","inst_verification_main","rec_inst_location","character varying",255,NULL,NULL,"YES",NULL
+"public","inst_verification_main","rec_inst_city","character varying",255,NULL,NULL,"YES",NULL
+"public","inst_verification_main","rec_inst_pin","character varying",20,NULL,NULL,"YES",NULL
+"public","inst_verification_main","rec_inst_email","character varying",254,NULL,NULL,"YES",NULL
+"public","inst_verification_main","rec_by","character varying",255,NULL,NULL,"YES",NULL
+"public","inst_verification_main","doc_rec_date","date",NULL,NULL,NULL,"YES",NULL
+"public","inst_verification_main","inst_ref_no","character varying",100,NULL,NULL,"YES",NULL
+"public","inst_verification_main","ref_date","date",NULL,NULL,NULL,"YES",NULL
+"public","inst_verification_main","doc_rec_id","character varying",20,NULL,NULL,"YES",NULL
+"public","inst_verification_main","institute_id","integer",NULL,32,0,"YES",NULL
+"public","inst_verification_main","doc_types","character varying",NULL,NULL,NULL,"YES",NULL
+"public","inst_verification_main","rec_inst_sfx_name","character varying",100,NULL,NULL,"YES",NULL
+"public","inst_verification_main","iv_status","character varying",20,NULL,NULL,"YES",NULL
+"public","inst_verification_main","iv_record_no","integer",NULL,32,0,"YES",NULL
+"public","inst_verification_main","search_vector","tsvector",NULL,NULL,NULL,"YES",NULL
+"public","inst_verification_main","rec_inst_phone","character varying",50,NULL,NULL,"YES",NULL
+"public","inst_verification_student","id","bigint",NULL,64,0,"NO",NULL
+"public","inst_verification_student","sr_no","integer",NULL,32,0,"YES",NULL
+"public","inst_verification_student","student_name","character varying",255,NULL,NULL,"YES",NULL
+"public","inst_verification_student","type_of_credential","character varying",50,NULL,NULL,"YES",NULL
+"public","inst_verification_student","month_year","character varying",20,NULL,NULL,"YES",NULL
+"public","inst_verification_student","verification_status","character varying",100,NULL,NULL,"YES",NULL
+"public","inst_verification_student","doc_rec_id","character varying",20,NULL,NULL,"YES",NULL
+"public","inst_verification_student","enrollment_no","character varying",50,NULL,NULL,"YES",NULL
+"public","inst_verification_student","iv_degree_name","character varying",NULL,NULL,NULL,"YES",NULL
+"public","inst_verification_student","enrollment_no_text","character varying",64,NULL,NULL,"YES",NULL
+"public","inst_verification_student","study_mode","character varying",20,NULL,NULL,"YES",NULL
+"public","institute","institute_id","integer",NULL,32,0,"NO",NULL
+"public","institute","institute_code","character varying",255,NULL,NULL,"NO",NULL
+"public","institute","institute_name","character varying",255,NULL,NULL,"YES",NULL
+"public","institute","institute_campus","character varying",255,NULL,NULL,"YES",NULL
+"public","institute","institute_address","text",NULL,NULL,NULL,"YES",NULL
+"public","institute","institute_city","character varying",255,NULL,NULL,"YES",NULL
+"public","institute","createdat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","institute","updatedat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","institute","updatedby","integer",NULL,32,0,"YES",NULL
+"public","institute_course_offering","id","integer",NULL,32,0,"NO",NULL
+"public","institute_course_offering","campus","character varying",255,NULL,NULL,"YES",NULL
+"public","institute_course_offering","start_date","date",NULL,NULL,NULL,"NO",NULL
+"public","institute_course_offering","end_date","date",NULL,NULL,NULL,"YES",NULL
+"public","institute_course_offering","createdat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","institute_course_offering","updatedat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","institute_course_offering","institute_id","integer",NULL,32,0,"NO",NULL
+"public","institute_course_offering","updatedby","integer",NULL,32,0,"YES",NULL
+"public","institute_course_offering","maincourse_id","character varying",255,NULL,NULL,"NO",NULL
+"public","institute_course_offering","subcourse_id","character varying",255,NULL,NULL,"YES",NULL
+"public","inventory_inward","id","bigint",NULL,64,0,"NO",NULL
+"public","inventory_inward","inward_date","date",NULL,NULL,NULL,"NO",NULL
+"public","inventory_inward","qty","integer",NULL,32,0,"NO",NULL
+"public","inventory_inward","details","text",NULL,NULL,NULL,"YES",NULL
+"public","inventory_inward","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","inventory_inward","item_id","bigint",NULL,64,0,"NO",NULL
+"public","inventory_item","id","bigint",NULL,64,0,"NO",NULL
+"public","inventory_item","item_name","character varying",255,NULL,NULL,"NO",NULL
+"public","inventory_item","description","text",NULL,NULL,NULL,"YES",NULL
+"public","inventory_item","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","inventory_item","updated_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","inventory_outward","id","bigint",NULL,64,0,"NO",NULL
+"public","inventory_outward","outward_date","date",NULL,NULL,NULL,"NO",NULL
+"public","inventory_outward","qty","integer",NULL,32,0,"NO",NULL
+"public","inventory_outward","receiver","character varying",255,NULL,NULL,"NO",NULL
+"public","inventory_outward","received_qty","integer",NULL,32,0,"YES",NULL
+"public","inventory_outward","remark","text",NULL,NULL,NULL,"YES",NULL
+"public","inventory_outward","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","inventory_outward","item_id","bigint",NULL,64,0,"NO",NULL
+"public","inward_register","id","bigint",NULL,64,0,"NO",NULL
+"public","inward_register","inward_no","character varying",20,NULL,NULL,"NO",NULL
+"public","inward_register","inward_date","date",NULL,NULL,NULL,"NO",NULL
+"public","inward_register","inward_type","character varying",20,NULL,NULL,"NO",NULL
+"public","inward_register","inward_from","character varying",255,NULL,NULL,"NO",NULL
+"public","inward_register","rec_type","character varying",20,NULL,NULL,"NO",NULL
+"public","inward_register","details","text",NULL,NULL,NULL,"YES",NULL
+"public","inward_register","remark","text",NULL,NULL,NULL,"YES",NULL
+"public","inward_register","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","inward_register","updated_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","main_branch","id","integer",NULL,32,0,"NO",NULL
+"public","main_branch","maincourse_id","character varying",255,NULL,NULL,"NO",NULL
+"public","main_branch","course_name","character varying",255,NULL,NULL,"YES",NULL
+"public","main_branch","course_code","character varying",50,NULL,NULL,"YES",NULL
+"public","main_branch","createdat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","main_branch","updatedat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","main_branch","updatedby","integer",NULL,32,0,"YES",NULL
+"public","migration","id","bigint",NULL,64,0,"NO",NULL
+"public","migration","student_name","character varying",255,NULL,NULL,"YES",NULL
+"public","migration","mg_number","character varying",50,NULL,NULL,"NO",NULL
+"public","migration","mg_date","date",NULL,NULL,NULL,"YES",NULL
+"public","migration","exam_year","character varying",20,NULL,NULL,"YES",NULL
+"public","migration","admission_year","character varying",20,NULL,NULL,"YES",NULL
+"public","migration","exam_details","text",NULL,NULL,NULL,"YES",NULL
+"public","migration","mg_status","character varying",20,NULL,NULL,"YES",NULL
+"public","migration","pay_rec_no","character varying",50,NULL,NULL,"YES",NULL
+"public","migration","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","migration","updated_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","migration","createdby","integer",NULL,32,0,"YES",NULL
+"public","migration","doc_rec_id","character varying",100,NULL,NULL,"YES",NULL
+"public","migration","enrollment_no","character varying",50,NULL,NULL,"YES",NULL
+"public","migration","institute_id","integer",NULL,32,0,"YES",NULL
+"public","migration","maincourse_id","character varying",255,NULL,NULL,"YES",NULL
+"public","migration","subcourse_id","character varying",255,NULL,NULL,"YES",NULL
+"public","migration","doc_remark","character varying",255,NULL,NULL,"YES",NULL
+"public","outward_register","id","bigint",NULL,64,0,"NO",NULL
+"public","outward_register","outward_no","character varying",20,NULL,NULL,"NO",NULL
+"public","outward_register","outward_date","date",NULL,NULL,NULL,"NO",NULL
+"public","outward_register","outward_type","character varying",20,NULL,NULL,"NO",NULL
+"public","outward_register","outward_to","character varying",255,NULL,NULL,"NO",NULL
+"public","outward_register","send_type","character varying",20,NULL,NULL,"NO",NULL
+"public","outward_register","details","text",NULL,NULL,NULL,"YES",NULL
+"public","outward_register","remark","text",NULL,NULL,NULL,"YES",NULL
+"public","outward_register","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","outward_register","updated_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","pay_prefix_rule","id","bigint",NULL,64,0,"NO",NULL
+"public","pay_prefix_rule","pay_by","character varying",10,NULL,NULL,"NO",NULL
+"public","pay_prefix_rule","year_full","integer",NULL,32,0,"YES",NULL
+"public","pay_prefix_rule","pattern","character varying",50,NULL,NULL,"NO",NULL
+"public","pay_prefix_rule","is_active","boolean",NULL,NULL,NULL,"NO",NULL
+"public","pay_prefix_rule","priority","integer",NULL,32,0,"NO",NULL
+"public","pay_prefix_rule","createdat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","pay_prefix_rule","updatedat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","provisional","id","bigint",NULL,64,0,"NO",NULL
+"public","provisional","student_name","character varying",255,NULL,NULL,"YES",NULL
+"public","provisional","class_obtain","character varying",100,NULL,NULL,"YES",NULL
+"public","provisional","prv_number","character varying",50,NULL,NULL,"NO",NULL
+"public","provisional","prv_date","date",NULL,NULL,NULL,"NO",NULL
+"public","provisional","passing_year","character varying",20,NULL,NULL,"YES",NULL
+"public","provisional","prv_status","character varying",20,NULL,NULL,"YES",NULL
+"public","provisional","pay_rec_no","character varying",50,NULL,NULL,"YES",NULL
+"public","provisional","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","provisional","updated_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","provisional","createdby","integer",NULL,32,0,"YES",NULL
+"public","provisional","doc_rec_id","character varying",100,NULL,NULL,"YES",NULL
+"public","provisional","enrollment_no","character varying",50,NULL,NULL,"YES",NULL
+"public","provisional","institute_id","integer",NULL,32,0,"YES",NULL
+"public","provisional","maincourse_id","character varying",255,NULL,NULL,"YES",NULL
+"public","provisional","subcourse_id","character varying",255,NULL,NULL,"YES",NULL
+"public","provisional","prv_degree_name","character varying",NULL,NULL,NULL,"YES",NULL
+"public","provisional","doc_remark","character varying",255,NULL,NULL,"YES",NULL
+"public","receipt","id","bigint",NULL,64,0,"NO",NULL
+"public","receipt","date","date",NULL,NULL,NULL,"NO",NULL
+"public","receipt","payment_mode","character varying",10,NULL,NULL,"NO",NULL
+"public","receipt","rec_ref","character varying",32,NULL,NULL,"NO",NULL
+"public","receipt","rec_no","integer",NULL,32,0,"NO",NULL
+"public","receipt","receipt_no_full","character varying",64,NULL,NULL,"NO",NULL
+"public","receipt","total_amount","numeric",NULL,14,2,"NO",NULL
+"public","receipt","remark","text",NULL,NULL,NULL,"YES",NULL
+"public","receipt","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","receipt","created_by_id","integer",NULL,32,0,"NO",NULL
+"public","receipt","updated_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","receipt","cancel_reason","text",NULL,NULL,NULL,"YES",NULL
+"public","receipt","cancelled_by_id","integer",NULL,32,0,"YES",NULL
+"public","receipt","is_cancelled","boolean",NULL,NULL,NULL,"YES",NULL
+"public","receipt_item","id","bigint",NULL,64,0,"NO",NULL
+"public","receipt_item","amount","numeric",NULL,12,2,"NO",NULL
+"public","receipt_item","remark","text",NULL,NULL,NULL,"YES",NULL
+"public","receipt_item","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","receipt_item","fee_type_id","bigint",NULL,64,0,"NO",NULL
+"public","receipt_item","receipt_id","bigint",NULL,64,0,"NO",NULL
+"public","student_degree","id","integer",NULL,32,0,"NO","nextval('student_degree_id_seq'::regclass)"
+"public","student_degree","dg_sr_no","character varying",20,NULL,NULL,"YES",NULL
+"public","student_degree","enrollment_no","character varying",50,NULL,NULL,"NO",NULL
+"public","student_degree","student_name_dg","character varying",200,NULL,NULL,"YES",NULL
+"public","student_degree","dg_address","text",NULL,NULL,NULL,"YES",NULL
+"public","student_degree","institute_name_dg","character varying",200,NULL,NULL,"YES",NULL
+"public","student_degree","degree_name","character varying",200,NULL,NULL,"YES",NULL
+"public","student_degree","specialisation","character varying",200,NULL,NULL,"YES",NULL
+"public","student_degree","seat_last_exam","character varying",100,NULL,NULL,"YES",NULL
+"public","student_degree","last_exam_month","character varying",NULL,NULL,NULL,"YES",NULL
+"public","student_degree","last_exam_year","integer",NULL,32,0,"YES",NULL
+"public","student_degree","class_obtain","character varying",50,NULL,NULL,"YES",NULL
+"public","student_degree","course_language","character varying",50,NULL,NULL,"YES",NULL
+"public","student_degree","dg_rec_no","character varying",50,NULL,NULL,"YES",NULL
+"public","student_degree","dg_gender","character varying",10,NULL,NULL,"YES",NULL
+"public","student_degree","convocation_no","integer",NULL,32,0,"YES",NULL
+"public","student_degree","search_vector","tsvector",NULL,NULL,NULL,"YES",NULL
+"public","student_degree","dg_contact","character varying",NULL,NULL,NULL,"YES",NULL
+"public","student_fees_ledger","id","bigint",NULL,64,0,"NO",NULL
+"public","student_fees_ledger","receipt_no","character varying",30,NULL,NULL,"YES",NULL
+"public","student_fees_ledger","receipt_date","date",NULL,NULL,NULL,"YES",NULL
+"public","student_fees_ledger","term","character varying",50,NULL,NULL,"NO",NULL
+"public","student_fees_ledger","amount","numeric",NULL,12,2,"YES",NULL
+"public","student_fees_ledger","remark","text",NULL,NULL,NULL,"YES",NULL
+"public","student_fees_ledger","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","student_fees_ledger","created_by_id","integer",NULL,32,0,"YES",NULL
+"public","student_fees_ledger","enrollment_id","integer",NULL,32,0,"YES",NULL
+"public","student_profile","id","bigint",NULL,64,0,"NO",NULL
+"public","student_profile","gender","character varying",20,NULL,NULL,"YES",NULL
+"public","student_profile","birth_date","date",NULL,NULL,NULL,"YES",NULL
+"public","student_profile","address1","character varying",255,NULL,NULL,"YES",NULL
+"public","student_profile","address2","character varying",255,NULL,NULL,"YES",NULL
+"public","student_profile","city1","character varying",100,NULL,NULL,"YES",NULL
+"public","student_profile","city2","character varying",100,NULL,NULL,"YES",NULL
+"public","student_profile","contact_no","character varying",50,NULL,NULL,"YES",NULL
+"public","student_profile","email","character varying",254,NULL,NULL,"YES",NULL
+"public","student_profile","fees","numeric",NULL,12,2,"YES",NULL
+"public","student_profile","hostel_required","boolean",NULL,NULL,NULL,"YES",NULL
+"public","student_profile","aadhar_no","character varying",20,NULL,NULL,"YES",NULL
+"public","student_profile","abc_id","character varying",50,NULL,NULL,"YES",NULL
+"public","student_profile","mobile_adhar","character varying",20,NULL,NULL,"YES",NULL
+"public","student_profile","name_adhar","character varying",255,NULL,NULL,"YES",NULL
+"public","student_profile","mother_name","character varying",255,NULL,NULL,"YES",NULL
+"public","student_profile","category","character varying",50,NULL,NULL,"YES",NULL
+"public","student_profile","photo_uploaded","boolean",NULL,NULL,NULL,"YES",NULL
+"public","student_profile","is_d2d","boolean",NULL,NULL,NULL,"YES",NULL
+"public","student_profile","program_medium","character varying",50,NULL,NULL,"YES",NULL
+"public","student_profile","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","student_profile","updated_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","student_profile","enrollment_no","character varying",50,NULL,NULL,"YES",NULL
+"public","student_profile","updated_by","integer",NULL,32,0,"YES",NULL
+"public","student_profile","temp_enroll_no","character varying",50,NULL,NULL,"YES",NULL
+"public","sub_branch","id","integer",NULL,32,0,"NO",NULL
+"public","sub_branch","subcourse_id","character varying",255,NULL,NULL,"NO",NULL
+"public","sub_branch","subcourse_name","character varying",255,NULL,NULL,"YES",NULL
+"public","sub_branch","createdat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","sub_branch","updatedat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","sub_branch","maincourse_id","character varying",255,NULL,NULL,"NO",NULL
+"public","sub_branch","updatedby","integer",NULL,32,0,"YES",NULL
+"public","transcript_request","id","bigint",NULL,64,0,"NO",NULL
+"public","transcript_request","trn_reqest_date","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","transcript_request","trn_reqest_ref_no","character varying",128,NULL,NULL,"YES",NULL
+"public","transcript_request","enrollment_no","character varying",64,NULL,NULL,"NO",NULL
+"public","transcript_request","student_name","character varying",255,NULL,NULL,"NO",NULL
+"public","transcript_request","institute_name","character varying",255,NULL,NULL,"NO",NULL
+"public","transcript_request","trnscript_receipt","character varying",255,NULL,NULL,"YES",NULL
+"public","transcript_request","transcript_remark","text",NULL,NULL,NULL,"YES",NULL
+"public","transcript_request","submit_mail","character varying",255,NULL,NULL,"YES",NULL
+"public","transcript_request","pdf_generate","character varying",64,NULL,NULL,"YES",NULL
+"public","transcript_request","mail_status","character varying",32,NULL,NULL,"YES",NULL
+"public","transcript_request","raw_row","jsonb",NULL,NULL,NULL,"YES",NULL
+"public","transcript_request","created","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","transcript_request","tr_request_no","bigint",NULL,64,0,"NO",NULL
+"public","transcript_request","search_vector","tsvector",NULL,NULL,NULL,"YES",NULL
+"public","user_activity_log","id","bigint",NULL,64,0,"NO",NULL
+"public","user_activity_log","module","character varying",200,NULL,NULL,"YES",NULL
+"public","user_activity_log","action","character varying",50,NULL,NULL,"YES",NULL
+"public","user_activity_log","path","character varying",1000,NULL,NULL,"YES",NULL
+"public","user_activity_log","method","character varying",10,NULL,NULL,"YES",NULL
+"public","user_activity_log","payload","jsonb",NULL,NULL,NULL,"YES",NULL
+"public","user_activity_log","status_code","integer",NULL,32,0,"YES",NULL
+"public","user_activity_log","note","text",NULL,NULL,NULL,"YES",NULL
+"public","user_activity_log","created_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","user_activity_log","updated_at","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","user_activity_log","user_id","integer",NULL,32,0,"YES",NULL
+"public","user_profiles","profileid","integer",NULL,32,0,"NO",NULL
+"public","user_profiles","phone","character varying",255,NULL,NULL,"YES",NULL
+"public","user_profiles","address","text",NULL,NULL,NULL,"YES",NULL
+"public","user_profiles","city","character varying",255,NULL,NULL,"YES",NULL
+"public","user_profiles","state","character varying",255,NULL,NULL,"YES",NULL
+"public","user_profiles","country","character varying",255,NULL,NULL,"YES",NULL
+"public","user_profiles","profile_picture","character varying",100,NULL,NULL,"YES",NULL
+"public","user_profiles","bio","text",NULL,NULL,NULL,"YES",NULL
+"public","user_profiles","social_links","jsonb",NULL,NULL,NULL,"YES",NULL
+"public","user_profiles","createdat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","user_profiles","updatedat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","user_profiles","id","integer",NULL,32,0,"NO",NULL
+"public","verification","id","bigint",NULL,64,0,"NO",NULL
+"public","verification","student_name","character varying",255,NULL,NULL,"YES",NULL
+"public","verification","no_of_transcript","smallint",NULL,16,0,"YES",NULL
+"public","verification","no_of_marksheet","smallint",NULL,16,0,"YES",NULL
+"public","verification","no_of_degree","smallint",NULL,16,0,"YES",NULL
+"public","verification","no_of_moi","smallint",NULL,16,0,"YES",NULL
+"public","verification","no_of_backlog","smallint",NULL,16,0,"YES",NULL
+"public","verification","pay_rec_no","character varying",255,NULL,NULL,"YES",NULL
+"public","verification","status","character varying",255,NULL,NULL,"YES",NULL
+"public","verification","final_no","character varying",255,NULL,NULL,"YES",NULL
+"public","verification","mail_send_status","character varying",255,NULL,NULL,"YES",NULL
+"public","verification","eca_required","boolean",NULL,NULL,NULL,"YES",NULL
+"public","verification","vr_done_date","date",NULL,NULL,NULL,"YES",NULL
+"public","verification","last_resubmit_date","date",NULL,NULL,NULL,"YES",NULL
+"public","verification","last_resubmit_status","character varying",255,NULL,NULL,"YES",NULL
+"public","verification","createdat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","verification","updatedat","timestamp with time zone",NULL,NULL,NULL,"NO",NULL
+"public","verification","doc_rec_id","character varying",20,NULL,NULL,"NO",NULL
+"public","verification","enrollment_no","character varying",255,NULL,NULL,"YES",NULL
+"public","verification","replaces_verification_id","bigint",NULL,64,0,"YES",NULL
+"public","verification","second_enrollment_id","character varying",255,NULL,NULL,"YES",NULL
+"public","verification","updatedby","integer",NULL,32,0,"YES",NULL
+"public","verification","eca_name","character varying",255,NULL,NULL,"YES",NULL
+"public","verification","eca_ref_no","character varying",255,NULL,NULL,"YES",NULL
+"public","verification","eca_resubmit_date","date",NULL,NULL,NULL,"YES",NULL
+"public","verification","eca_status","character varying",255,NULL,NULL,"YES","'NOT_SENT'::character varying"
+"public","verification","eca_send_date","date",NULL,NULL,NULL,"YES",NULL
+"public","verification","doc_rec_date","date",NULL,NULL,NULL,"NO",NULL
+"public","verification","search_vector","tsvector",NULL,NULL,NULL,"YES",NULL
+"public","verification","doc_remark","text",NULL,NULL,NULL,"YES",NULL

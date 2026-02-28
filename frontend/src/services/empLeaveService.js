@@ -31,8 +31,7 @@ export function normalizeAllocation(a) {
 // GET allocations (supports ?period=ID)
 // ------------------------------------------------------------
 export async function getLeaveAllocations(params = "") {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-  const url = `${API_BASE_URL}/leave-allocations${params}`;
+  const url = `/api/leave-allocations${params}`;
   const res = await API.get(url);
 
   const data = res.data?.results ? res.data.results : res.data || [];
@@ -121,7 +120,7 @@ export async function deleteLeaveAllocation(id) {
 // GET leave periods
 // ------------------------------------------------------------
 export async function getLeavePeriods() {
-  const res = await API.get("/api/leaveperiods/");
+  const res = await API.get("/api/leave-periods/");
   return res.data?.results || res.data || [];
 }
 
@@ -140,6 +139,20 @@ export function buildQuery(obj) {
   return parts.length ? `?${parts.join("&")}` : "";
 }
 
+// ------------------------------------------------------------
+// GET Leave Reports
+// ------------------------------------------------------------
+export async function fetchLeaveReport(endpoint, params) {
+  // endpoint example: 'employee-summary', 'all-employees-balance'
+  const res = await API.get(`/api/leave-report/${endpoint}/`, { params });
+  return res.data;
+}
+
+export async function fetchMyLeaveBalance() {
+  const res = await API.get('/api/my-leave-balance/');
+  return res.data;
+}
+
 export default {
   getLeaveAllocations,
   getLeaveAllocation,
@@ -149,4 +162,6 @@ export default {
   getLeavePeriods,
   buildQuery,
   normalizeAllocation,
+  fetchLeaveReport,
+  fetchMyLeaveBalance,
 };

@@ -1,8 +1,6 @@
-import API from '../components/api/axiosInstance.js';
+import API from '../api/axiosInstance';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-const BASE_PATH = `${API_BASE_URL}/transcript-requests/`;
+const BASE_PATH = '/api/transcript-requests/';
 
 const normalizeResponseArray = (data) => {
   if (!data) return [];
@@ -22,14 +20,7 @@ const extractMessage = (error) => {
   return error.message || 'Unexpected error';
 };
 
-export const fetchTranscriptRequests = async ({
-  status,
-  search,
-  institute,
-  page,
-  pageSize,
-  tr_request_no,
-} = {}) => {
+export const fetchTranscriptRequests = async ({ status, search, institute, page, pageSize, tr_request_no } = {}) => {
   try {
     const params = {};
     if (status) params.mail_status = status;
@@ -83,9 +74,7 @@ export const bulkDeleteTranscriptRequests = async (ids) => {
   try {
     const results = [];
     for (const id of ids) {
-      const r = await API.delete(`${BASE_PATH}${id}/`)
-        .then((res) => res.data)
-        .catch((err) => ({ error: extractMessage(err), id }));
+      const r = await API.delete(`${BASE_PATH}${id}/`).then((res) => res.data).catch((err) => ({ error: extractMessage(err), id }));
       results.push(r);
     }
     return results;
@@ -94,10 +83,7 @@ export const bulkDeleteTranscriptRequests = async (ids) => {
   }
 };
 
-export const syncTranscriptRequestsFromSheet = async ({
-  no_prune = false,
-  force_overwrite_status = false,
-} = {}) => {
+export const syncTranscriptRequestsFromSheet = async ({ no_prune = false, force_overwrite_status = false } = {}) => {
   try {
     const payload = {};
     if (no_prune) payload.no_prune = true;

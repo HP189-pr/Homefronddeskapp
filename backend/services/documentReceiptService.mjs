@@ -1,7 +1,7 @@
 import { Op, fn, col, where as sqlWhere } from 'sequelize';
 import DocRec from '../models/docrec/doc_rec.mjs';
-import Verification from '../models/docrec/verification.mjs';
-import InstVerificationMain from '../models/docrec/inst_verification_main.mjs';
+import Verification from '../models/docrec/transcript.mjs';
+import { InstLetterMain } from '../models/docrec/instLetter.mjs';
 
 // Helper: build a unified pay receipt number string for child rows
 function composePayRecNo(prefix, number) {
@@ -96,11 +96,11 @@ export async function createReceipt(payload) {
       enrollment_no: data.enrollment_id || data.enrollment_no,
       second_enrollment_id: data.second_enrollment_id || null,
       student_name: data.student_name,
-      no_of_transcript: Number(data.no_of_transcript || 0),
-      no_of_marksheet: Number(data.no_of_marksheet || 0),
-      no_of_degree: Number(data.no_of_degree || 0),
-      no_of_moi: Number(data.no_of_moi || 0),
-      no_of_backlog: Number(data.no_of_backlog || 0),
+      tr_count: Number(data.no_of_transcript || data.tr_count || 0),
+      ms_count: Number(data.no_of_marksheet || data.ms_count || 0),
+      dg_count: Number(data.no_of_degree || data.dg_count || 0),
+      moi_count: Number(data.no_of_moi || data.moi_count || 0),
+      backlog_count: Number(data.no_of_backlog || data.backlog_count || 0),
       pay_rec_no: composePayRecNo(rec.pay_rec_no_pre, rec.pay_rec_no),
       status,
       eca_required: !!data.eca_required,
@@ -109,7 +109,7 @@ export async function createReceipt(payload) {
 
   // Create child row for Institutional Verification (IV)
   if (apply === 'IV') {
-    await InstVerificationMain.create({
+    await InstLetterMain.create({
       doc_rec_id: rec.doc_rec_id,
       inst_veri_date: rec.doc_rec_date || null,
       rec_inst_name: data.rec_inst_name || null,

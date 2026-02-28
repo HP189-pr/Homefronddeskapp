@@ -9,23 +9,27 @@ const SERVICES = [
   { key: 'MIGRATION', label: 'Migration' },
   { key: 'VERIFICATION', label: 'Verification' },
   { key: 'PROVISIONAL', label: 'Provisional' },
+  { key: 'STUDENT_FEES', label: 'Student Fees' },
+  { key: 'STUDENT_PROFILE', label: 'Student Profile' },
   { key: 'INSTITUTIONAL_VERIFICATION', label: 'Institutional Verification' },
   { key: 'LEAVE', label: 'Leave Entry' },
   { key: 'EMP_PROFILE', label: 'EMP Profile' },
 ];
 
 export default function AuthUpload() {
-  // We don't expose token in context; read it at call time from localStorage
   const { user } = useAuth();
+
   const [service, setService] = useState('DEGREE');
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState(null); // kept for backward compatibility
   const [sheetName, setSheetName] = useState('');
   const [preview, setPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState(null);
   const [autoCreateDocRec, setAutoCreateDocRec] = useState(false);
 
-  const apiBase = '/api';
+  const apiBase = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || 'http://127.0.0.1:8000/api';
+
+  /* ===================== DOWNLOAD TEMPLATE ===================== */
 
   const downloadTemplate = async () => {
     const token = localStorage.getItem('access_token');
@@ -33,102 +37,119 @@ export default function AuthUpload() {
       alert('You must be logged in to download templates.');
       return;
     }
+
     try {
-      const url = `${apiBase}/bulk-upload/?service=${service}${
-        sheetName ? `&sheet_name=${encodeURIComponent(sheetName)}` : ''
-      }`;
-      const res = await fetch(url, {
+      const query =
+        `${apiBase}/bulk-upload/?service=${service}` +
+        (sheetName ? `&sheet_name=${encodeURIComponent(sheetName)}` : '');
+
+      const res = await fetch(query, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (!res.ok) {
-        // Try to extract server error details
         const ct = res.headers.get('content-type') || '';
         const errMsg = ct.includes('application/json')
           ? JSON.stringify(await res.json())
           : await res.text();
-        throw new Error(`Download failed (${res.status}): ${errMsg}`);
+        throw new Error(errMsg);
       }
+
       const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
       const a = document.createElement('a');
-      const objectUrl = window.URL.createObjectURL(blob);
-      a.href = objectUrl;
-      a.download = `template_${service.toLowerCase()}${
-        sheetName ? `_${sheetName}` : ''
-      }.xlsx`;
+      a.href = url;
+      a.download = `template_${service.toLowerCase()}${sheetName ? `_${sheetName}` : ''}.xlsx`;
+      document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(objectUrl);
-    } catch (e) {
-      alert('Failed to download template: ' + e.message);
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Failed to download template: ' + err.message);
     }
   };
 
+  /* ===================== PREVIEW ===================== */
+
   const onPreview = async () => {
     const token = localStorage.getItem('access_token');
-    if (!token) {
-      alert('You must be logged in to preview uploads.');
-      return;
-    }
+    if (!token) return alert('You must be logged in to preview uploads.');
     if (!file) return alert('Select a file');
+
     const fd = new FormData();
     fd.append('service', service);
     if (sheetName) fd.append('sheet_name', sheetName);
     fd.append('file', file);
+
     try {
       const res = await fetch(`${apiBase}/bulk-upload/?action=preview`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: fd,
       });
+
       if (!res.ok) {
         const ct = res.headers.get('content-type') || '';
         const errMsg = ct.includes('application/json')
           ? JSON.stringify(await res.json())
           : await res.text();
-        throw new Error(`Preview failed (${res.status}): ${errMsg}`);
+        throw new Error(errMsg);
       }
-      const data = await res.json();
-      setPreview(data);
-    } catch (e) {
-      alert(e.message);
+
+      setPreview(await res.json());
+    } catch (err) {
+      alert(err.message);
     }
   };
 
+  /* ===================== CONFIRM UPLOAD ===================== */
+
   const onUpload = async () => {
     const token = localStorage.getItem('access_token');
-    if (!token) {
-      alert('You must be logged in to upload.');
-      return;
-    }
+    if (!token) return alert('You must be logged in to upload.');
     if (!file) return alert('Select a file');
+
     setUploading(true);
     setResult(null);
+
     try {
       const fd = new FormData();
       fd.append('service', service);
       if (sheetName) fd.append('sheet_name', sheetName);
       fd.append('file', file);
-      if (service === 'VERIFICATION' && autoCreateDocRec)
+
+      if ((service === 'VERIFICATION' || service === 'PROVISIONAL') && autoCreateDocRec) {
         fd.append('auto_create_docrec', '1');
+      }
+
       const res = await fetch(`${apiBase}/bulk-upload/?action=confirm`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: fd,
       });
+
       if (!res.ok) {
         const ct = res.headers.get('content-type') || '';
         const errMsg = ct.includes('application/json')
           ? JSON.stringify(await res.json())
           : await res.text();
-        throw new Error(`Upload failed (${res.status}): ${errMsg}`);
+        throw new Error(errMsg);
       }
-      const data = await res.json();
-      setResult(data);
-    } catch (e) {
-      alert('Upload failed: ' + e.message);
+
+      setResult(await res.json());
+    } catch (err) {
+      alert('Upload failed: ' + err.message);
     } finally {
       setUploading(false);
     }
   };
+
+  /* ===================== UI (UNCHANGED) ===================== */
+
+  // Get token from localStorage for passing to AdminBulkUpload
+  const token = localStorage.getItem('access_token');
 
   return (
     <div className="p-4 space-y-4">
@@ -159,13 +180,13 @@ export default function AuthUpload() {
           Download Sample
         </button>
       </div>
-
       <div>
         <AdminBulkUpload
           service={service}
-          uploadApi="/api/bulk-upload/"
+          uploadApi={`${apiBase}/bulk-upload/`}
           sheetName={sheetName}
           onServiceChange={setService}
+          token={token}
         />
       </div>
     </div>

@@ -1,0 +1,249 @@
+import React, { useState, useEffect } from "react";
+import Verification from "./verification";
+import Migration from "./Migration";
+import Provisional from "./Provisional";
+import Enrollment from "./Enrollment";
+import Degree from "./Degree";
+import InstLetter from "./inst-Letter";
+import DocReceive from "./doc-receive";
+import AdminDashboard from "../components/AdminDashboard";
+import ProfileUpdate from "../components/ProfileUpdate";
+import EmpLeavePage from "./emp-leave.jsx";
+import MailRequestPage from "./mail_request";
+import TranscriptRequestPage from "./transcript_request";
+import StudentSearch from "./student-search";
+import AuthInventory from "../hooks/AuthInventory";
+import AuthDocRegister from "../hooks/AuthDocRegister";
+import AuthFees from "../hooks/AuthFees";
+import AuthCCTV from "../hooks/AuthCCTV";
+import Record from "./Record";
+
+
+
+// Pages will render their own topbars; WorkArea only decides which page to show.
+
+const WorkArea = ({ selectedSubmenu, onToggleSidebar, onToggleChatbox, isSidebarOpen, isChatboxOpen, setSelectedMenuItem, selectedMenuItem, setSidebarOpen, DashboardComponent }) => {
+  // Keep a per-page ephemeral action if a page needs it
+  const [selectedTopbarMenu, setSelectedTopbarMenu] = useState(null);
+
+  // Reset the per-page selection when submenu changes
+  useEffect(() => {
+    setSelectedTopbarMenu(null);
+  }, [selectedSubmenu]);
+
+  // Listen for global "go home" events from the topbar Home button
+  useEffect(() => {
+    const handleGoHome = () => {
+      if (typeof setSelectedMenuItem === 'function') {
+        setSelectedMenuItem('Dashboard');
+      }
+    };
+
+    try {
+      window.addEventListener('admindesk_go_home', handleGoHome);
+    } catch (e) {
+      // ignore if window is not available
+    }
+
+    return () => {
+      try {
+        window.removeEventListener('admindesk_go_home', handleGoHome);
+      } catch (e) {}
+    };
+  }, [setSelectedMenuItem]);
+
+  // Small navigation handoff: if other pages set admindesk_navigate and admindesk_docrec in localStorage,
+  // consume them to switch to the appropriate page and clear the keys.
+  useEffect(() => {
+    try {
+      const nav = localStorage.getItem('admindesk_navigate');
+      const docrec = localStorage.getItem('admindesk_docrec');
+      if (nav) {
+        localStorage.removeItem('admindesk_navigate');
+        if (docrec) localStorage.removeItem('admindesk_docrec');
+        // rely on selectedSubmenu mapping below by passing explicit keys
+        // we use window.location to force a re-eval of selectedSubmenu from Sidebar if needed
+        // but instead, when nav exists, programmatically set key mapping by temporarily using selectedSubmenu
+        // Set window.selected_for_nav to be consumed by pages
+        window.__admindesk_initial_nav = { nav, docrec };
+      }
+    } catch (e) {}
+  }, []);
+
+  // Normalize selectedSubmenu to a page key to handle label variations
+  const renderPage = () => {
+    // Check both selectedSubmenu and selectedMenuItem for routing
+    const s = (selectedSubmenu || selectedMenuItem || "").toString();
+    const l = s.toLowerCase();
+    let key = "";
+  if (l.includes("dash")) key = "dashboard";
+  if (l.includes("enroll")) key = "enrollment";
+  // Prefer explicit 'inst' / 'inst-verification' labels so they don't fall through to the generic 'verification' page
+  else if (l.includes("inst") || l.includes("inst-") || l.includes("institution")) key = "inst_ver";
+  else if (l.includes("verification") && !l.includes("inst") && !l.includes("institution")) key = "verification";
+  else if (l.includes("migration")) key = "migration";
+  else if (l.includes("provisional")) key = "provisional";
+  else if (l.includes("degree")) key = "degree";
+  else if ((l.includes("document") || l.includes("doc")) && l.includes("receive")) key = "doc_receive";
+  else if ((l.includes("mail") && l.includes("status")) || l.includes("mail request")) key = "mail_request";
+  else if (l.includes("transcript")) key = "transcript_request";
+  else if (l.includes("student") && l.includes("search")) key = "student_search";
+  else if (l.includes("doc") && l.includes("register")) key = "doc_register";
+  else if (l.includes("cash register") || l.includes("daily register")) key = "cash_register";
+  else if (l.includes("student fees") || l.includes("fees ledger")) key = "student_fees";
+  else if (l.includes("fee type")) key = "fee_type_master";
+  else if (l.includes("inventory")) key = "inventory";
+  else if (l.includes("record")) key = "record";
+  else if (l.includes("cctv")) key = "cctv_monitoring";
+  else if (l.includes("leave management")) key = "emp_leave";
+  else if (l.includes("leave report")) key = "emp_leave_report";
+  else if (l.includes("balance certificate")) key = "emp_balance_certificate";
+  else if (l.includes("admin panel")) key = "admin";
+  else if (l.includes("profile")) key = "profile";
+
+    switch (key) {
+      case "enrollment":
+        return (
+          <Enrollment
+            selectedTopbarMenu={selectedTopbarMenu}
+            setSelectedTopbarMenu={setSelectedTopbarMenu}
+            onToggleSidebar={onToggleSidebar}
+            onToggleChatbox={onToggleChatbox}
+          />
+        );
+      case "verification":
+        return <Verification />;
+      case "migration":
+        return (
+          <Migration
+            onToggleSidebar={onToggleSidebar}
+            onToggleChatbox={onToggleChatbox}
+          />
+        );
+      case "provisional":
+        return (
+          <Provisional
+            onToggleSidebar={onToggleSidebar}
+            onToggleChatbox={onToggleChatbox}
+          />
+        );
+      case "degree":
+        return (
+          <Degree
+            onToggleSidebar={onToggleSidebar}
+            onToggleChatbox={onToggleChatbox}
+          />
+        );
+      case "inst_ver":
+        return (
+          <InstLetter
+            onToggleSidebar={onToggleSidebar}
+            onToggleChatbox={onToggleChatbox}
+          />
+        );
+      case "dashboard":
+        if (DashboardComponent) {
+          return (
+            <DashboardComponent
+              selectedMenuItem={selectedMenuItem}
+              setSelectedMenuItem={setSelectedMenuItem}
+              isSidebarOpen={isSidebarOpen}
+              setSidebarOpen={setSidebarOpen}
+            />
+          );
+        }
+        return (
+          <h1 style={{ padding: "20px", fontSize: "20px", fontWeight: "bold" }}>
+            Select a Menu Item
+          </h1>
+        );
+      case "doc_receive":
+        return (
+          <DocReceive
+            onToggleSidebar={onToggleSidebar}
+            onToggleChatbox={onToggleChatbox}
+          />
+        );
+      case "mail_request":
+        return (
+          <MailRequestPage
+            onToggleSidebar={onToggleSidebar}
+            onToggleChatbox={onToggleChatbox}
+          />
+        );
+      case "transcript_request":
+        return (
+          <TranscriptRequestPage
+            onToggleSidebar={onToggleSidebar}
+            onToggleChatbox={onToggleChatbox}
+          />
+        );
+      case "student_search":
+        return <StudentSearch />;
+      case "doc_register":
+        return (
+          <AuthDocRegister
+            onToggleSidebar={onToggleSidebar}
+            onToggleChatbox={onToggleChatbox}
+          />
+        );
+      case "cash_register":
+        return <AuthFees view="cash-register" />;
+      case "student_fees":
+        return <AuthFees view="student-fees" />;
+      case "fee_type_master":
+        return <AuthFees view="fee-type-master" />;
+      case "inventory":
+        return (
+          <AuthInventory
+            onToggleSidebar={onToggleSidebar}
+            onToggleChatbox={onToggleChatbox}
+          />
+        );
+      case "record":
+        return <Record />;
+      case "cctv_monitoring":
+        return (
+          <AuthCCTV
+            onToggleSidebar={onToggleSidebar}
+            onToggleChatbox={onToggleChatbox}
+          />
+        );
+      case "emp_leave":
+        return <EmpLeavePage />;
+      case "emp_leave_report":
+  // EmpLeaveReport file does not exist; fallback to EmpLeavePage
+  return <EmpLeavePage />;
+      case "emp_balance_certificate":
+        return <EmpBalanceCertificate />;
+      case "admin":
+        return (
+          <AdminDashboard
+            selectedTopbarMenu={selectedTopbarMenu}
+            onToggleSidebar={onToggleSidebar}
+            onToggleChatbox={onToggleChatbox}
+            onSelectTopbar={(a) => setSelectedTopbarMenu(a)}
+          />
+        );
+      case "profile":
+        return <ProfileUpdate />;
+      default:
+        return (
+          <h1 style={{ padding: "20px", fontSize: "20px", fontWeight: "bold" }}>
+            Select a Menu Item
+          </h1>
+        );
+    }
+  };
+
+  // Keep a unified frame so all pages have consistent spacing from sidebar/chat and top edge.
+  return (
+    <div className="h-full flex flex-col overflow-hidden bg-gray-100">
+      <div className="flex-1 overflow-auto px-1 md:px-1 py-1">
+        {renderPage()}
+      </div>
+    </div>
+  );
+};
+
+export default WorkArea;

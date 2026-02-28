@@ -4,11 +4,12 @@
  */
 import axiosInstance from '../api/axiosInstance';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-const RECEIPTS_BASE = `${API_BASE_URL}/receipts/`;
-const CASH_REGISTER_BASE = `${API_BASE_URL}/cash-register/`;
-const CASH_OUTWARD_BASE = `${API_BASE_URL}/cash-outward/`;
-const CASH_ON_HAND_BASE = `${API_BASE_URL}/cash-on-hand/`;
+// axiosInstance baseURL is '/api', so use relative paths here
+// to avoid generating '/api/api/...'.
+const RECEIPTS_BASE = '/api/receipts/';
+const CASH_REGISTER_BASE = '/api/cash-register/';
+const CASH_OUTWARD_BASE = '/api/cash-outward/';
+const CASH_ON_HAND_BASE = '/api/cash-on-hand/';
 
 /* ----------------------------------------------------
    CASH REGISTER (FLATTENED – USED BY MAIN ENTRY PAGE)
@@ -29,9 +30,11 @@ export const fetchCashEntries = async (params = {}) => {
 export const fetchNextReceiptNumber = async ({
   payment_mode = 'CASH',
   date,
+  bank_prefix,
 } = {}) => {
   const params = { payment_mode };
   if (date) params.date = date;
+  if (bank_prefix) params.bank_prefix = bank_prefix;
 
   const response = await axiosInstance.get(
     `${CASH_REGISTER_BASE}next-receipt/`,
@@ -64,6 +67,14 @@ export const updateReceiptWithItems = async (id, payload) => {
 export const deleteCashEntry = async (id) => {
   const response = await axiosInstance.delete(
     `${CASH_REGISTER_BASE}${id}/`
+  );
+  return response.data;
+};
+
+export const cancelCashEntry = async (id, payload) => {
+  const response = await axiosInstance.post(
+    `${CASH_REGISTER_BASE}${id}/cancel/`,
+    payload
   );
   return response.data;
 };
@@ -134,9 +145,9 @@ export const fetchCashOnHandReport = async ({ date }) => {
   }
 
   const response = await axiosInstance.get(
-    '/api/cash-on-hand/report/',
+    `${CASH_ON_HAND_BASE}report/`,
     {
-      params: { date },   // ✅ THIS WAS MISSING
+      params: { date },
     }
   );
 
@@ -162,6 +173,7 @@ export default {
   createCashEntry,
   updateReceiptWithItems,
   deleteCashEntry,
+  cancelCashEntry,
   createReceiptsBulk,
 
   // Reports

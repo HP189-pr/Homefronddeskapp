@@ -1,6 +1,20 @@
 import jwt from 'jsonwebtoken';
 
+// Primary secret plus optional fallback for legacy tokens
 const SECRET = process.env.JWT_SECRET || 'change-me-secret';
+const SECRET_FALLBACK = process.env.JWT_SECRET_FALLBACK || 'change-me-secret';
+
+function verifyWithFallback(token) {
+  try {
+    return jwt.verify(token, SECRET);
+  } catch (err) {
+    try {
+      return jwt.verify(token, SECRET_FALLBACK);
+    } catch (_) {
+      throw err;
+    }
+  }
+}
 
 // Non-blocking middleware: decode/verify token if present, attach req.user; do NOT send 401 here.
 export async function jwtMiddleware(req, res, next) {
@@ -18,7 +32,9 @@ export async function jwtMiddleware(req, res, next) {
     }
 
     try {
-      const payload = jwt.verify(token, SECRET);
+      console.info('jwtMiddleware: verifying token len', token.length, 'path', req.path);
+      const payload = verifyWithFallback(token);
+      console.info('jwtMiddleware: ok payload', { id: payload.id, userid: payload.userid, usertype: payload.usertype });
       // Attach a conservative user object — keep only safe fields
       req.user = {
         id: payload.id ?? payload.userId ?? payload.sub,
@@ -30,12 +46,10 @@ export async function jwtMiddleware(req, res, next) {
     } catch (err) {
       // invalid token: do not block the request here (non-blocking middleware)
       // Optional: enable logging only when explicitly requested
-      if (process.env.LOG_INVALID_JWT === '1') {
-        try {
-          console.warn('Invalid JWT token provided:', err.message, 'path=', req.path);
-        } catch (_) {
-          // ignore
-        }
+      try {
+        console.warn('Invalid JWT token provided:', err.message, 'path=', req.path, 'authHeader=', req.headers?.authorization);
+      } catch (_) {
+        // ignore
       }
       req.user = undefined;
     }

@@ -1,10 +1,13 @@
-/*
-  index.css for Frontdesk App
-  This file is required for Vite/React entrypoint. Add global styles or import Tailwind here if needed.
-*/
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Add any global overrides or custom styles below */
+/* Custom styles */
+
+.label {
+	@apply block text-xs font-medium text-gray-500 mb-1;
+}
+
+.input {
+	@apply w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500;
+}

@@ -140,7 +140,7 @@ export const AuthProvider = ({ children }) => {
    * - wrapper around fetch that attaches Authorization header automatically if token exists
    */
   const authFetch = async (url, opts = {}) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token') || localStorage.getItem('token');
     const headers = { ...(opts.headers || {}) };
     if (token) headers['Authorization'] = `Bearer ${token}`;
     const final = {

@@ -3,15 +3,10 @@ import { DataTypes } from 'sequelize';
 import { sequelize } from '../db.mjs';
 
 export const Institute = sequelize.define('Institute', {
-  id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    primaryKey: true,
-    autoIncrement: true,
-  },
   institute_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    primaryKey: true,
   },
   institute_code: {
     type: DataTypes.STRING,
@@ -43,7 +38,11 @@ export const Institute = sequelize.define('Institute', {
     allowNull: true,
     defaultValue: DataTypes.NOW,
   },
+  updatedby: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
 }, {
-  tableName: 'institutes',
+  tableName: 'institute',
   timestamps: false,
 });

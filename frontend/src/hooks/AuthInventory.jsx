@@ -1,10 +1,11 @@
 /**
  * AuthInventory.jsx
  * Permission checking component for Inventory module
+ * Works in DEV (3000) + PROD (8081)
  */
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import Inventory from '../components/pages/Inventory';
+import API from '../api/axiosInstance';
+import Inventory from '../pages/Inventory';
 
 const AuthInventory = () => {
   const [hasAccess, setHasAccess] = useState(false);
@@ -20,46 +21,30 @@ const AuthInventory = () => {
       const token = localStorage.getItem('access_token');
       if (!token) {
         setError('No authentication token found. Please login.');
-        setLoading(false);
         return;
       }
 
-      // Check if user has inventory module access
-      const API_BASE_URL =
-        import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-      const response = await axios.get(`${API_BASE_URL}/userpermissions/`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      // Check if user has access to 'inventory' module or is admin
+      // 🔹 Fetch navigation rights for the current user
+      const response = await API.get('/api/my-navigation/');
       const data = response.data;
 
-      // Check if user is admin first (admin has access to everything)
+      // 🔹 Admin shortcut
       const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const isAdmin = user.is_admin || false;
+      const isAdmin = user.is_admin || user.is_superuser || false;
 
       if (isAdmin) {
         setHasAccess(true);
-        setLoading(false);
         return;
       }
 
-      // Check module permissions
-      const permissions = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.results)
-        ? data.results
-        : [];
-
-      const hasInventoryAccess =
-        permissions.length > 0 &&
-        permissions.some(
-          (perm) =>
-            perm.module?.module_name?.toLowerCase() === 'inventory' &&
-            perm.has_access,
-        );
+      const modules = Array.isArray(data?.modules) ? data.modules : [];
+      const hasInventoryAccess = modules.some((mod) => {
+        const menus = Array.isArray(mod?.menus) ? mod.menus : [];
+        return menus.some((menu) => {
+          const name = (menu?.name || '').toLowerCase();
+          return name.includes('inventory') && !!menu?.rights?.can_view;
+        });
+      });
 
       if (hasInventoryAccess) {
         setHasAccess(true);
@@ -67,11 +52,14 @@ const AuthInventory = () => {
         setError('You do not have permission to access the Inventory module.');
       }
     } catch (err) {
+      console.error('Error checking Inventory access:', err);
       setError('Failed to verify permissions. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  /* ==================== UI STATES ==================== */
 
   if (loading) {
     return (
@@ -120,11 +108,7 @@ const AuthInventory = () => {
     );
   }
 
-  if (hasAccess) {
-    return <Inventory />;
-  }
-
-  return null;
+  return hasAccess ? <Inventory /> : null;
 };
 
 export default AuthInventory;

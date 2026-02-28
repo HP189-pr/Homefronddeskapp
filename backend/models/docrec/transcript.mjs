@@ -1,78 +1,82 @@
-const { DataTypes } = require("sequelize");
-const { MailStatus, VerificationStatus } = require("../constants/status.constants");
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../../db.mjs';
 
-module.exports = (sequelize) => {
-  const Verification = sequelize.define(
-    "Verification",
-    {
-      id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+// Allowed status values kept permissive to avoid hard crashes if data has legacy values
+const MAIL_STATUSES = ['NOT_SENT', 'SENT', 'FAILED', 'CANCELLED'];
+const VERIFICATION_STATUSES = ['PENDING', 'IN_PROGRESS', 'CORRECTION', 'DONE', 'CANCEL'];
 
-      student_name: DataTypes.STRING,
-      enrollment_no: DataTypes.STRING,
-      second_enrollment_id: DataTypes.STRING,
+export const Verification = sequelize.define(
+  'Transcript',
+  {
+    id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
 
-      tr_count: DataTypes.SMALLINT,
-      ms_count: DataTypes.SMALLINT,
-      dg_count: DataTypes.SMALLINT,
-      moi_count: DataTypes.SMALLINT,
-      backlog_count: DataTypes.SMALLINT,
+    student_name: DataTypes.STRING,
+    enrollment_no: DataTypes.STRING,
+    second_enrollment_id: DataTypes.STRING,
 
-      pay_rec_no: DataTypes.STRING,
+    tr_count: DataTypes.SMALLINT,
+    ms_count: DataTypes.SMALLINT,
+    dg_count: DataTypes.SMALLINT,
+    moi_count: DataTypes.SMALLINT,
+    backlog_count: DataTypes.SMALLINT,
 
-      status: {
-        type: DataTypes.STRING,
-        validate: { isIn: [VerificationStatus] },
-      },
+    pay_rec_no: DataTypes.STRING,
 
-      final_no: DataTypes.STRING,
-
-      mail_status: {
-        type: DataTypes.STRING,
-        defaultValue: "NOT_SENT",
-        validate: { isIn: [MailStatus] },
-      },
-
-      eca_required: DataTypes.BOOLEAN,
-      eca_send_date: DataTypes.DATEONLY,
-      eca_resubmit_date: DataTypes.DATEONLY,
-
-      eca_status: {
-        type: DataTypes.STRING,
-        defaultValue: "NOT_SENT",
-        validate: { isIn: [MailStatus] },
-      },
-
-      doc_remark: DataTypes.TEXT,
-      doc_rec_id: DataTypes.STRING,
-
-      doc_rec_date: { type: DataTypes.DATEONLY, allowNull: false },
+    status: {
+      type: DataTypes.STRING,
+      validate: { isIn: [VERIFICATION_STATUSES] },
     },
-    {
-      tableName: "verification",
-      timestamps: true,
-      createdAt: "createdat",
-      updatedAt: "updatedat",
+
+    final_no: DataTypes.STRING,
+
+    mail_status: {
+      type: DataTypes.STRING,
+      defaultValue: 'NOT_SENT',
+      validate: { isIn: [MAIL_STATUSES] },
+    },
+
+    eca_required: DataTypes.BOOLEAN,
+    eca_send_date: DataTypes.DATEONLY,
+    eca_resubmit_date: DataTypes.DATEONLY,
+
+    eca_status: {
+      type: DataTypes.STRING,
+      defaultValue: 'NOT_SENT',
+      validate: { isIn: [MAIL_STATUSES] },
+    },
+
+    doc_remark: DataTypes.TEXT,
+    doc_rec_id: DataTypes.STRING,
+
+    doc_rec_date: { type: DataTypes.DATEONLY, allowNull: false },
+  },
+  {
+    tableName: 'verification',
+    timestamps: true,
+    createdAt: 'createdat',
+    updatedAt: 'updatedat',
+  }
+);
+
+// Basic sanity hooks mirroring legacy clean()
+Verification.beforeSave((rec) => {
+  const fields = ['tr_count', 'ms_count', 'dg_count', 'moi_count', 'backlog_count'];
+
+  fields.forEach((f) => {
+    if (rec[f] != null && (rec[f] < 0 || rec[f] > 32767)) {
+      throw new Error(`${f} must be between 0 and 32767`);
     }
-  );
-
-  /* Hooks replacing clean() */
-  Verification.beforeSave((rec) => {
-    const fields = ["tr_count","ms_count","dg_count","moi_count","backlog_count"];
-
-    fields.forEach((f) => {
-      if (rec[f] != null && (rec[f] < 0 || rec[f] > 32767))
-        throw new Error(`${f} must be between 0 and 32767`);
-    });
-
-    if (rec.status === "DONE" && !rec.final_no)
-      throw new Error("final_no required when DONE");
-
-    if (["PENDING", "CANCEL"].includes(rec.status) && rec.final_no)
-      throw new Error("final_no must be empty");
-
-    if (rec.eca_send_date && (!rec.eca_status || rec.eca_status === "NOT_SENT"))
-      rec.eca_status = "SENT";
   });
 
-  return Verification;
-};
+  if (rec.status === 'DONE' && !rec.final_no) throw new Error('final_no required when DONE');
+
+  if (['PENDING', 'CANCEL'].includes(rec.status) && rec.final_no) {
+    throw new Error('final_no must be empty');
+  }
+
+  if (rec.eca_send_date && (!rec.eca_status || rec.eca_status === 'NOT_SENT')) {
+    rec.eca_status = 'SENT';
+  }
+});
+
+export default Verification;

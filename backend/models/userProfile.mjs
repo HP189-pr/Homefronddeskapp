@@ -2,17 +2,19 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../db.mjs';
 
+// Mirrors the existing user_profiles table columns. The primary key is profileid.
+// The user foreign key lives in column "id" (not "userid").
 export const UserProfile = sequelize.define('UserProfile', {
-  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  userid: { type: DataTypes.INTEGER, allowNull: false }, // FK to users.id
-  profile_pic: { type: DataTypes.STRING, allowNull: true },
-  first_name: { type: DataTypes.STRING, allowNull: true },
-  middle_name: { type: DataTypes.STRING, allowNull: true },
-  last_name: { type: DataTypes.STRING, allowNull: true },
-  email: { type: DataTypes.STRING, allowNull: true },
+  profileid: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  userId: { type: DataTypes.INTEGER, allowNull: false, field: 'id' },
   phone: { type: DataTypes.STRING, allowNull: true },
-  actual_joining_date: { type: DataTypes.DATEONLY, allowNull: true },
-  institute_joining_date: { type: DataTypes.DATEONLY, allowNull: true },
+  address: { type: DataTypes.TEXT, allowNull: true },
+  city: { type: DataTypes.STRING, allowNull: true },
+  state: { type: DataTypes.STRING, allowNull: true },
+  country: { type: DataTypes.STRING, allowNull: true },
+  profile_pic: { type: DataTypes.STRING, allowNull: true, field: 'profile_picture' },
+  bio: { type: DataTypes.TEXT, allowNull: true },
+  social_links: { type: DataTypes.JSONB, allowNull: true },
   createdat: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   updatedat: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
 }, {

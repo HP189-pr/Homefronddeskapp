@@ -1,43 +1,64 @@
-// frontend/vite.config.js
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
 
-export default defineConfig({
-  plugins: [react()],
-  root: resolve(__dirname, '.'), // frontend is the root for Vite
-  build: {
-    outDir: resolve(__dirname, './Dist'),
-    emptyOutDir: true,
-    rollupOptions: {
-      input: resolve(__dirname, './index.html'),
+export default defineConfig(({ mode }) => {
+  // Load env file based on `mode` in the current working directory.
+  const env = loadEnv(mode, process.cwd(), '');
+  // Default to host:8000 if running preview on 8081, else fall back to local 127.0.0.1:8000
+  let apiBaseUrl = env.VITE_API_BASE_URL;
+  if (!apiBaseUrl) {
+    // Default to Node backend port 5000 if not provided
+    apiBaseUrl = 'http://127.0.0.1:5000';
+    if (env.VITE_HOST) {
+      apiBaseUrl = `http://${env.VITE_HOST}:5000`;
+    }
+  }
+
+  return {
+    plugins: [react()],
+    base: '/',
+    optimizeDeps: {
+      include: ['xlsx', 'jspdf', 'jspdf-autotable'],
     },
-  },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './src'),
-      // Force Emotion + MUI styled engine to resolve from frontend/node_modules
-      '@emotion/styled': resolve(__dirname, './node_modules/@emotion/styled'),
-      '@emotion/react': resolve(__dirname, './node_modules/@emotion/react'),
-      '@mui/styled-engine': resolve(__dirname, './node_modules/@mui/styled-engine'),
+    ssr: {
+      noExternal: ['xlsx', 'jspdf', 'jspdf-autotable'],
     },
-  },
-  server: {
-    host: '0.0.0.0',
-    port: 3000,
-    open: true,
-    fs: {
-      allow: [
-        resolve(__dirname, '.'),   // frontend
-        resolve(__dirname, '..'),  // project root (g:/frontdeskapp)
-      ],
-    },
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
+    server: {
+      port: 3000,
+      strictPort: true,
+      proxy: {
+        '/api': {
+          target: apiBaseUrl,
+          changeOrigin: true,
+        },
+        '/media': {
+          target: apiBaseUrl,
+          changeOrigin: true,
+        },
       },
     },
-  },
+    preview: {
+      port: 8081,
+      strictPort: true,
+      proxy: {
+        '/api': {
+          target: apiBaseUrl,
+          changeOrigin: true,
+        },
+        '/media': {
+          target: apiBaseUrl,
+          changeOrigin: true,
+        },
+      },
+    },
+    build: {
+      outDir: 'dist',
+      sourcemap: false,
+      rollupOptions: {
+        output: {
+          manualChunks: undefined,
+        },
+      },
+    },
+  };
 });

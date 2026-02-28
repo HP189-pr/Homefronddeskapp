@@ -1,41 +1,43 @@
-const { DataTypes } = require("sequelize");
-const { MigrationStatus } = require("../constants/status.constants");
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../../db.mjs';
 
-module.exports = (sequelize) => {
-  return sequelize.define(
-    "MigrationRecord",
-    {
-      id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+const MIGRATION_STATUSES = ['Pending', 'Issued', 'Cancelled', 'Correction'];
 
-      doc_rec_id: DataTypes.STRING,
-      enrollment_no: DataTypes.STRING,
-      student_name: DataTypes.STRING,
+export const MigrationRequest = sequelize.define(
+  'MigrationRequest',
+  {
+    id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
 
-      institute_id: DataTypes.INTEGER,
-      maincourse_id: DataTypes.INTEGER,
-      subcourse_id: DataTypes.INTEGER,
+    doc_rec_id: DataTypes.STRING,
+    enrollment_no: DataTypes.STRING,
+    student_name: DataTypes.STRING,
 
-      mg_number: { type: DataTypes.STRING, unique: true },
-      mg_date: DataTypes.DATEONLY,
-      exam_year: DataTypes.STRING,
-      admission_year: DataTypes.STRING,
+    institute_id: DataTypes.INTEGER,
+    maincourse_id: DataTypes.INTEGER,
+    subcourse_id: DataTypes.INTEGER,
 
-      exam_details: DataTypes.TEXT,
+    mg_number: { type: DataTypes.STRING, unique: true },
+    mg_date: DataTypes.DATEONLY,
+    exam_year: DataTypes.STRING,
+    admission_year: DataTypes.STRING,
 
-      mg_status: {
-        type: DataTypes.STRING,
-        defaultValue: "Pending",
-        validate: { isIn: [MigrationStatus] },
-      },
+    exam_details: DataTypes.TEXT,
 
-      pay_rec_no: DataTypes.STRING,
-      doc_remark: DataTypes.STRING,
+    mg_status: {
+      type: DataTypes.STRING,
+      defaultValue: 'Pending',
+      validate: { isIn: [MIGRATION_STATUSES] },
     },
-    {
-      tableName: "migration",
-      timestamps: true,
-      createdAt: "created_at",
-      updatedAt: "updated_at",
-    }
-  );
-};
+
+    pay_rec_no: DataTypes.STRING,
+    doc_remark: DataTypes.STRING,
+  },
+  {
+    tableName: 'migration',
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+  }
+);
+
+export default MigrationRequest;

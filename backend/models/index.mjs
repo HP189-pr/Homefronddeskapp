@@ -14,12 +14,11 @@ import { Permission } from '../models/permission.mjs';
 import { CourseMain } from '../models/course_main.mjs';
 import { CourseSub } from '../models/course_sub.mjs';
 import { UserProfile } from '../models/userProfile.mjs';
-import { Verification } from './docrec/verification.mjs';
+import { Verification } from './docrec/transcript.mjs';
 import { DocRec } from './docrec/doc_rec.mjs';
-import { Migration as DocrecMigration } from './docrec/migration.mjs';
-import { Provisional as DocrecProvisional } from './docrec/provisional.mjs';
-import { InstVerificationMain } from './docrec/inst_verification_main.mjs';
-import { InstVerificationStudent } from './docrec/inst_verification_student.mjs';
+import MigrationRequest from './docrec/migration.mjs';
+import ProvisionalRequest from './docrec/provisional.mjs';
+import { InstLetterMain, InstLetterStudent } from './docrec/instLetter.mjs';
 import { PayPrefixRule } from './docrec/pay_prefix_rule.mjs';
 import { Degree } from '../models/degree.mjs';
 import { Enrollment } from '../models/enrollment.mjs';
@@ -28,10 +27,15 @@ import { User } from '../models/user.mjs';
 import { Setting } from './path.mjs';
 import { ChatMessage } from './chat_message.mjs';
 import { EmpProfile } from './emp_profile.mjs';
-import { LeaveType } from './leave_type.mjs';
-import { LeavePeriod } from './leave_period.mjs';
-import { LeaveAllocation } from './leave_allocation.mjs';
-import { LeaveEntry } from './leave_entry.mjs';
+import { LeaveType, LeavePeriod, LeaveAllocation, LeaveEntry } from './leave.mjs';
+import { MainBranch } from './main_branch.mjs';
+import { SubBranch } from './sub_branch.mjs';
+import { InstituteCourseOffering } from './institute_course_offering.mjs';
+import { StudentProfile } from './student_profile.mjs';
+import { StudentDegree } from './student_degree.mjs';
+import { AdmissionCancel } from './admission_cancel.mjs';
+import { ConvocationMaster } from './convocation_master.mjs';
+import { TranscriptRequest } from './transcript_request.mjs';
 
 // Optionally define associations (if you want)
 // ECA relations: Eca belongs to DocRec via doc_rec_id string key and User (creator)
@@ -45,21 +49,17 @@ if (DocRec && Verification) {
   Verification.belongsTo(DocRec, { foreignKey: 'doc_rec_id', targetKey: 'doc_rec_id', as: 'docRec' });
 }
 // MG/PR allow multiple entries per doc_rec_id (multiple cancelled, single pending/done) -> hasMany
-if (DocRec && DocrecMigration) {
-  DocRec.hasMany(DocrecMigration, { foreignKey: 'doc_rec_id', sourceKey: 'doc_rec_id', as: 'mg_entries' });
-  DocrecMigration.belongsTo(DocRec, { foreignKey: 'doc_rec_id', targetKey: 'doc_rec_id', as: 'docRec' });
+if (DocRec && MigrationRequest) {
+  DocRec.hasMany(MigrationRequest, { foreignKey: 'doc_rec_id', sourceKey: 'doc_rec_id', as: 'mg_entries' });
+  MigrationRequest.belongsTo(DocRec, { foreignKey: 'doc_rec_id', targetKey: 'doc_rec_id', as: 'docRec' });
 }
-if (DocRec && DocrecProvisional) {
-  DocRec.hasMany(DocrecProvisional, { foreignKey: 'doc_rec_id', sourceKey: 'doc_rec_id', as: 'pr_entries' });
-  DocrecProvisional.belongsTo(DocRec, { foreignKey: 'doc_rec_id', targetKey: 'doc_rec_id', as: 'docRec' });
+if (DocRec && ProvisionalRequest) {
+  DocRec.hasMany(ProvisionalRequest, { foreignKey: 'doc_rec_id', sourceKey: 'doc_rec_id', as: 'pr_entries' });
+  ProvisionalRequest.belongsTo(DocRec, { foreignKey: 'doc_rec_id', targetKey: 'doc_rec_id', as: 'docRec' });
 }
-if (DocRec && InstVerificationMain) {
-  DocRec.hasOne(InstVerificationMain, { foreignKey: 'doc_rec_id', sourceKey: 'doc_rec_id', as: 'ivm' });
-  InstVerificationMain.belongsTo(DocRec, { foreignKey: 'doc_rec_id', targetKey: 'doc_rec_id', as: 'docRec' });
-}
-if (InstVerificationMain && InstVerificationStudent) {
-  InstVerificationMain.hasMany(InstVerificationStudent, { foreignKey: 'doc_rec_id', sourceKey: 'doc_rec_id', as: 'students' });
-  InstVerificationStudent.belongsTo(InstVerificationMain, { foreignKey: 'doc_rec_id', targetKey: 'doc_rec_id', as: 'main' });
+if (DocRec && InstLetterMain) {
+  DocRec.hasOne(InstLetterMain, { foreignKey: 'doc_rec_id', sourceKey: 'doc_rec_id', as: 'inst_letter' });
+  InstLetterMain.belongsTo(DocRec, { foreignKey: 'doc_rec_id', targetKey: 'doc_rec_id', as: 'docRec' });
 }
 if (Eca && User) {
   Eca.belongsTo(User, { foreignKey: 'createdby', as: 'creator' });
@@ -80,10 +80,10 @@ const models = {
   UserProfile,
   Verification,
   DocRec,
-  DocrecMigration,
-  DocrecProvisional,
-  InstVerificationMain,
-  InstVerificationStudent,
+  MigrationRequest,
+  ProvisionalRequest,
+  InstLetterMain,
+  InstLetterStudent,
   Degree,
   Enrollment,
   Eca,
@@ -95,6 +95,14 @@ const models = {
   LeaveAllocation,
   LeaveEntry,
   PayPrefixRule,
+  MainBranch,
+  SubBranch,
+  InstituteCourseOffering,
+  StudentProfile,
+  StudentDegree,
+  AdmissionCancel,
+  ConvocationMaster,
+  TranscriptRequest,
 };
 
 export { sequelize };

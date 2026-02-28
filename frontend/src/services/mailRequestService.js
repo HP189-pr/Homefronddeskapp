@@ -1,8 +1,6 @@
-import API from '../components/api/axiosInstance.js';
+import API from '../api/axiosInstance';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-const BASE_PATH = `${API_BASE_URL}/mail-requests/`;
+const BASE_PATH = '/api/mail-requests/';
 
 const normalizeResponseArray = (data) => {
   if (!data) return [];
@@ -22,12 +20,7 @@ const extractMessage = (error) => {
   return error.message || 'Unexpected error';
 };
 
-export const fetchMailRequests = async ({
-  status,
-  search,
-  page,
-  pageSize,
-} = {}) => {
+export const fetchMailRequests = async ({ status, search, page, pageSize } = {}) => {
   try {
     const params = {};
     if (status) params.mail_status = status;
@@ -72,11 +65,7 @@ export const bulkRefreshMailRequests = async (ids) => {
   }
 };
 
-export const syncMailRequestsFromSheet = async ({
-  serviceAccountFile,
-  sheetUrl,
-  noPrune,
-} = {}) => {
+export const syncMailRequestsFromSheet = async ({ serviceAccountFile, sheetUrl, noPrune } = {}) => {
   try {
     const payload = {};
     if (serviceAccountFile) payload.service_account_file = serviceAccountFile;

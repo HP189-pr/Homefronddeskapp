@@ -5,15 +5,17 @@ import axios from 'axios';
  * Handles API calls for comprehensive student information search
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 const api = axios.create({
-    baseURL: `${API_BASE_URL}/student-search`,
+    baseURL: '/api/student-search',
     headers: { 'Content-Type': 'application/json' }
 });
 
 // Request interceptor to add authentication token
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('access_token');
+    // Try multiple common keys in case the app stored the token differently
+    const token = localStorage.getItem('access_token')
+        || localStorage.getItem('accessToken')
+        || localStorage.getItem('token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }

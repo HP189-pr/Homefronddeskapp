@@ -1,29 +1,28 @@
-const { InstLetterMain, InstLetterStudent } = require("../db");
+import { InstLetterMain, InstLetterStudent } from '../models/docrec/instLetter.mjs';
 
-/* create main letter + students */
-exports.createLetter = async (payload) => {
+export async function createLetter(payload = {}) {
   const { students, ...main } = payload;
 
   const record = await InstLetterMain.create(main);
 
   if (students?.length) {
-    students.forEach((s) => (s.doc_rec_id = main.doc_rec_id));
-    await InstLetterStudent.bulkCreate(students);
+    const rows = students.map((s) => ({ ...s, doc_rec_id: main.doc_rec_id }));
+    await InstLetterStudent.bulkCreate(rows);
   }
 
   return record;
-};
+}
 
-/* get letter with students */
-exports.getLetter = async (docRecId) => {
+export async function getLetter(docRecId) {
   return InstLetterMain.findOne({
     where: { doc_rec_id: docRecId },
-    include: ["students"],
+    include: [{ model: InstLetterStudent, as: 'students' }],
   });
-};
+}
 
-/* delete letter */
-exports.deleteLetter = async (docRecId) => {
+export async function deleteLetter(docRecId) {
   await InstLetterStudent.destroy({ where: { doc_rec_id: docRecId } });
   return InstLetterMain.destroy({ where: { doc_rec_id: docRecId } });
-};
+}
+
+export default { createLetter, getLetter, deleteLetter };

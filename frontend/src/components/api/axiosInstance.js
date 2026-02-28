@@ -6,7 +6,8 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  // Prefer access_token (backend issues it), fall back to legacy token key
+  const token = localStorage.getItem('access_token') || localStorage.getItem('token');
   if (token) {
     config.headers = {
       ...config.headers,

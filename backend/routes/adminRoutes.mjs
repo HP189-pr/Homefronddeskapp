@@ -217,7 +217,10 @@ router.delete('/permissions/:id', async (req, res, next) => {
 router.get('/userprofiles', async (req, res, next) => {
   try {
     const where = {};
-    if (req.query.userid) where.userid = parseInt(req.query.userid, 10);
+    if (req.query.userid || req.query.userId) {
+      const uid = parseInt(req.query.userid || req.query.userId, 10);
+      if (Number.isFinite(uid)) where.userId = uid;
+    }
     const profiles = await UserProfile.findAll({ where, order: [['id','ASC']] });
     res.json({ profiles });
   } catch (e) { next(e); }
@@ -226,26 +229,28 @@ router.post('/userprofiles', async (req, res, next) => {
   try {
     const {
       userid,
+      userId,
       profile_pic,
-      first_name,
-      middle_name,
-      last_name,
-      email,
       phone,
-      actual_joining_date,
-      institute_joining_date,
+      address,
+      city,
+      state,
+      country,
+      bio,
+      social_links,
     } = req.body || {};
-    if (!userid) return res.status(400).json({ error: 'Missing userid' });
+    const resolvedUserId = parseInt(userId ?? userid, 10);
+    if (!Number.isFinite(resolvedUserId)) return res.status(400).json({ error: 'Missing userid' });
     const rec = await UserProfile.create({
-      userid,
+      userId: resolvedUserId,
       profile_pic: profile_pic || null,
-      first_name: first_name || null,
-      middle_name: middle_name || null,
-      last_name: last_name || null,
-      email: email || null,
       phone: phone || null,
-      actual_joining_date: actual_joining_date || null,
-      institute_joining_date: institute_joining_date || null,
+      address: address || null,
+      city: city || null,
+      state: state || null,
+      country: country || null,
+      bio: bio || null,
+      social_links: social_links || null,
     });
     res.json(rec);
   } catch (e) { next(e); }
@@ -255,7 +260,7 @@ router.patch('/userprofiles/:id', async (req, res, next) => {
     const id = parseInt(req.params.id, 10);
     const row = await UserProfile.findByPk(id);
     if (!row) return res.status(404).json({ error: 'Not found' });
-    const allowed = ['profile_pic','first_name','middle_name','last_name','email','phone','actual_joining_date','institute_joining_date'];
+    const allowed = ['profile_pic','phone','address','city','state','country','bio','social_links'];
     const payload = {};
     for (const k of allowed) if (req.body[k] !== undefined) payload[k] = req.body[k];
     await row.update(payload);

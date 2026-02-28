@@ -21,6 +21,9 @@ import mastersRoutes from './routes/mastersRoutes.mjs';
 import enrollmentRoutes from './routes/enrollmentRoutes.mjs';
 import degreeRoutes from './routes/degreeRoutes.mjs';
 import leaveRoutes from './routes/leaveRoutes.mjs';
+import navigationRoutes from './routes/navigationRoutes.mjs';
+import courseMasterRoutes from './routes/courseMasterRoutes.mjs';
+import analyticsRoutes from './routes/analyticsRoutes.mjs';
 
 // Register models so Sequelize sees them (ensure these files exist)
 import './models/index.mjs'; // registers models: user, module, menu, institute, role, permission, etc.
@@ -29,10 +32,10 @@ import './models/index.mjs'; // registers models: user, module, menu, institute,
 import requireAdmin from './middleware/requireAdmin.mjs';
 import adminRoutes from './routes/adminRoutes.mjs';
 import profileRoutes from './routes/profileRoutes.mjs';
-import verificationRoutes from './routes/verificationRoutes.mjs';
+import transcriptRoutes from './routes/transcriptRoutes.mjs';
 import migrationRoutes from './routes/migrationRoutes.mjs';
 import provisionalRoutes from './routes/provisionalRoutes.mjs';
-import institutionalVerificationRoutes from './routes/institutionalVerificationRoutes.mjs';
+import instLetterRoutes from './routes/instLetter.routes.mjs';
 import documentReceiptRoutes from './routes/documentReceiptRoutes.mjs';
 import verificationPublicRoutes from './routes/verificationPublicRoutes.mjs';
 import { normalizeDMYDates } from './utils/dateFormat.mjs';
@@ -69,8 +72,9 @@ app.set('sequelize', sequelize);
 // Non-blocking JWT middleware: if Authorization header present and valid, attach req.user
 app.use(jwtMiddleware);
 
-// Public / auth routes
+// Public / auth routes (also expose legacy /api/backlogin etc.)
 app.use('/api/auth', authRoutes);
+app.use('/api', authRoutes);
 // Serve media (profile pictures, logs, tmp)
 app.use('/media', express.static(path.resolve(__dirname, './media')));
 
@@ -79,16 +83,19 @@ app.use('/api/users', userRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/degrees', degreeRoutes);
 app.use('/api', mastersRoutes);
+app.use('/api', navigationRoutes);
+app.use('/api', courseMasterRoutes);
+app.use('/api', analyticsRoutes);
 app.use('/api', leaveRoutes);
 app.use('/api/profile', profileRoutes);
 
 // --- Admin routes ---
 app.use('/api/admin', requireAdmin, adminRoutes);
-app.use('/api/admin/verifications', requireAdmin, verificationRoutes);
+app.use('/api/admin/verifications', requireAdmin, transcriptRoutes);
 app.use('/api/verifications', verificationPublicRoutes);
 app.use('/api/admin/migrations', requireAdmin, migrationRoutes);
 app.use('/api/admin/provisionals', requireAdmin, provisionalRoutes);
-app.use('/api/admin/institutionals', requireAdmin, institutionalVerificationRoutes);
+app.use('/api/admin/institutionals', requireAdmin, instLetterRoutes);
 app.use('/api/admin/doc-receipts', requireAdmin, documentReceiptRoutes);
 app.use('/api', misctoolRoutes);
 app.use('/api/chat', chatRoutes);

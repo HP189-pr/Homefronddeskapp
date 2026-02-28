@@ -49,10 +49,13 @@ const upload = multer({ storage, limits: { fileSize: MAX_FILE_SIZE }, fileFilter
 // GET /api/profile -> current user's merged profile
 router.get('/', requireAuth, async (req, res, next) => {
   try {
+    if (process.env.NODE_ENV !== 'production') {
+      console.info('GET /api/profile req.user=', req.user, 'auth=', req.headers?.authorization);
+    }
     const me = await User.findByPk(req.user.id, { attributes: { exclude: ['usrpassword'] } });
     if (!me) return res.status(404).json({ error: 'User not found' });
 
-    const profile = await UserProfile.findOne({ where: { userid: me.id } });
+    const profile = await UserProfile.findOne({ where: { userId: me.id } });
     const pic = me.usrpic || profile?.profile_pic || null;
 
     return res.json({
@@ -88,19 +91,19 @@ router.patch('/', requireAuth, upload.single('usrpic'), async (req, res, next) =
     await me.save();
 
     // Upsert into user_profiles
-    let profile = await UserProfile.findOne({ where: { userid: me.id } });
+    let profile = await UserProfile.findOne({ where: { userId: me.id } });
     if (!profile) {
-      profile = await UserProfile.create({ userid: me.id });
+      profile = await UserProfile.create({ userId: me.id });
     }
 
     const allowedProfile = [
-      'first_name',
-      'middle_name',
-      'last_name',
-      'email',
       'phone',
-      'actual_joining_date',
-      'institute_joining_date',
+      'address',
+      'city',
+      'state',
+      'country',
+      'bio',
+      'social_links',
     ];
     for (const k of allowedProfile) {
       if (body[k] !== undefined) profile[k] = body[k];

@@ -1,6 +1,8 @@
-const router = require("express").Router();
-const ctrl = require("../controllers/trasncript.controller");
+import express from 'express';
+import * as ctrl from '../controllers/transcriptController.mjs';
 
-router.post("/:id/resubmit", ctrl.resubmit);
+const router = express.Router();
 
-module.exports = router;
+router.post('/:id/resubmit', ctrl.resubmit);
+
+export default router;

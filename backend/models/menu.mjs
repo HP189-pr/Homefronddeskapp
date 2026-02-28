@@ -7,13 +7,11 @@ export const Menu = sequelize.define('Menu', {
   menuid: { type: DataTypes.INTEGER, primaryKey: true }, // your DB uses specific ids sometimes
   moduleid: { type: DataTypes.INTEGER, allowNull: false },
   name: { type: DataTypes.STRING, allowNull: false },
-  slug: { type: DataTypes.STRING, allowNull: true }, // optional canonical id
-  parentmenuid: { type: DataTypes.INTEGER, allowNull: true },
   createdat: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   updatedat: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   updatedby: { type: DataTypes.INTEGER, allowNull: true },
 }, {
-  tableName: 'menus',
+  tableName: 'api_menu',
   timestamps: false,
 });
 
