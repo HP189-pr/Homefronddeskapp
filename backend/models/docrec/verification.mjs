@@ -1,68 +1,78 @@
-// backend/models/verification.mjs
-import { DataTypes } from 'sequelize';
-import { sequelize } from '../../db.mjs';
+const { DataTypes } = require("sequelize");
+const { MailStatus, VerificationStatus } = require("../constants/status.constants");
 
-export const Verification = sequelize.define('Verification', {
-  id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+module.exports = (sequelize) => {
+  const Verification = sequelize.define(
+    "Verification",
+    {
+      id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
 
-  doc_rec_date: { type: DataTypes.DATEONLY, allowNull: false, defaultValue: DataTypes.NOW },
-  // Align with external schema naming: expose as `enrollment_no` while keeping DB column `enrollment_id`
-  enrollment_no: { type: DataTypes.STRING(100), allowNull: false, field: 'enrollment_id' },
-  second_enrollment_id: { type: DataTypes.STRING(100), allowNull: true },
+      student_name: DataTypes.STRING,
+      enrollment_no: DataTypes.STRING,
+      second_enrollment_id: DataTypes.STRING,
 
-  student_name: { type: DataTypes.STRING(255), allowNull: false },
+      tr_count: DataTypes.SMALLINT,
+      ms_count: DataTypes.SMALLINT,
+      dg_count: DataTypes.SMALLINT,
+      moi_count: DataTypes.SMALLINT,
+      backlog_count: DataTypes.SMALLINT,
 
-  // Keep DB column names the same but align property names if needed in services via mapping
-  no_of_transcript: { type: DataTypes.SMALLINT, allowNull: false, defaultValue: 0 },
-  no_of_marksheet: { type: DataTypes.SMALLINT, allowNull: false, defaultValue: 0 },
-  no_of_degree: { type: DataTypes.SMALLINT, allowNull: false, defaultValue: 0 },
-  no_of_moi: { type: DataTypes.SMALLINT, allowNull: false, defaultValue: 0 },
-  no_of_backlog: { type: DataTypes.SMALLINT, allowNull: false, defaultValue: 0 },
+      pay_rec_no: DataTypes.STRING,
 
-  pay_rec_no: { type: DataTypes.STRING(100), allowNull: true },
+      status: {
+        type: DataTypes.STRING,
+        validate: { isIn: [VerificationStatus] },
+      },
 
-  status: { type: DataTypes.ENUM('IN_PROGRESS','PENDING','CORRECTION','CANCEL','DONE'), allowNull: false, defaultValue: 'IN_PROGRESS' },
+      final_no: DataTypes.STRING,
 
-  final_no: { type: DataTypes.STRING(50), allowNull: true, unique: true },
+      mail_status: {
+        type: DataTypes.STRING,
+        defaultValue: "NOT_SENT",
+        validate: { isIn: [MailStatus] },
+      },
 
-  mail_send_status: { type: DataTypes.ENUM('NOT_SENT','SENT','FAILED'), allowNull: false, defaultValue: 'NOT_SENT' },
+      eca_required: DataTypes.BOOLEAN,
+      eca_send_date: DataTypes.DATEONLY,
+      eca_resubmit_date: DataTypes.DATEONLY,
 
-  eca_required: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-  eca_name: { type: DataTypes.STRING(255), allowNull: true },
-  eca_ref_no: { type: DataTypes.STRING(100), allowNull: true },
-  eca_submit_date: { type: DataTypes.DATEONLY, allowNull: true },
-  eca_status: { type: DataTypes.ENUM('NOT_SENT','SENT','FAILED'), allowNull: false, defaultValue: 'NOT_SENT' },
-  eca_resend_count: { type: DataTypes.SMALLINT, allowNull: false, defaultValue: 0 },
-  eca_last_action_at: { type: DataTypes.DATE, allowNull: true },
-  eca_last_to_email: { type: DataTypes.STRING(255), allowNull: true },
-  eca_history: { type: DataTypes.JSONB, allowNull: true },
+      eca_status: {
+        type: DataTypes.STRING,
+        defaultValue: "NOT_SENT",
+        validate: { isIn: [MailStatus] },
+      },
 
-  replaces_verification_id: { type: DataTypes.BIGINT, allowNull: true },
+      doc_remark: DataTypes.TEXT,
+      doc_rec_id: DataTypes.STRING,
 
-  vr_remark: { type: DataTypes.TEXT, allowNull: true },
-  vr_done_date: { type: DataTypes.DATEONLY, allowNull: true },
+      doc_rec_date: { type: DataTypes.DATEONLY, allowNull: false },
+    },
+    {
+      tableName: "verification",
+      timestamps: true,
+      createdAt: "createdat",
+      updatedAt: "updatedat",
+    }
+  );
 
-  doc_rec_id: { type: DataTypes.STRING(20), allowNull: true },
+  /* Hooks replacing clean() */
+  Verification.beforeSave((rec) => {
+    const fields = ["tr_count","ms_count","dg_count","moi_count","backlog_count"];
 
-  last_resubmit_date: { type: DataTypes.DATEONLY, allowNull: true },
-  last_resubmit_status: { type: DataTypes.STRING(20), allowNull: true },
+    fields.forEach((f) => {
+      if (rec[f] != null && (rec[f] < 0 || rec[f] > 32767))
+        throw new Error(`${f} must be between 0 and 32767`);
+    });
 
-  createdat: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
-  updatedat: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+    if (rec.status === "DONE" && !rec.final_no)
+      throw new Error("final_no required when DONE");
 
-  updatedby: { type: DataTypes.BIGINT, allowNull: true },
-}, {
-  tableName: 'verification',
-  timestamps: false,
-  indexes: [
-    // Index still refers to the underlying DB column name
-    { fields: ['enrollment_id'], name: 'idx_verification_enrollment' },
-    { fields: ['second_enrollment_id'], name: 'idx_verif_sec_enroll' },
-    { fields: ['status'], name: 'idx_verification_status' },
-    { fields: ['final_no'], name: 'idx_verification_final_no' },
-    { fields: ['pay_rec_no'], name: 'idx_verification_pay_rec_no' },
-    { fields: ['doc_rec_id'], name: 'idx_verification_doc_rec' }
-  ]
-});
+    if (["PENDING", "CANCEL"].includes(rec.status) && rec.final_no)
+      throw new Error("final_no must be empty");
 
-export default Verification;
+    if (rec.eca_send_date && (!rec.eca_status || rec.eca_status === "NOT_SENT"))
+      rec.eca_status = "SENT";
+  });
+
+  return Verification;
+};
