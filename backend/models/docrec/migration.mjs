@@ -1,39 +1,41 @@
-// backend/models/migration.mjs
-import { DataTypes } from 'sequelize';
-import { sequelize } from '../../db.mjs';
+const { DataTypes } = require("sequelize");
+const { MigrationStatus } = require("../constants/status.constants");
 
-export const Migration = sequelize.define('Migration', {
-  id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+module.exports = (sequelize) => {
+  return sequelize.define(
+    "MigrationRecord",
+    {
+      id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
 
-  doc_rec_id: { type: DataTypes.STRING(20), allowNull: false },
-  enrollment_no: { type: DataTypes.STRING(100), allowNull: true },
-  student_name: { type: DataTypes.STRING(255), allowNull: true },
+      doc_rec_id: DataTypes.STRING,
+      enrollment_no: DataTypes.STRING,
+      student_name: DataTypes.STRING,
 
-  institute_id: { type: DataTypes.BIGINT, allowNull: true },
-  subcourse_id: { type: DataTypes.STRING(255), allowNull: true }, // string to match course_sub.subcourse_id
-  maincourse_id: { type: DataTypes.STRING(255), allowNull: true }, // string to match course_main.maincourse_id
+      institute_id: DataTypes.INTEGER,
+      maincourse_id: DataTypes.INTEGER,
+      subcourse_id: DataTypes.INTEGER,
 
-  mg_number: { type: DataTypes.STRING(50), allowNull: false, unique: true },
-  mg_date: { type: DataTypes.DATEONLY, allowNull: true },
-  exam_year: { type: DataTypes.STRING(20), allowNull: true },
-  admission_year: { type: DataTypes.STRING(20), allowNull: true },
-  exam_details: { type: DataTypes.TEXT, allowNull: true },
+      mg_number: { type: DataTypes.STRING, unique: true },
+      mg_date: DataTypes.DATEONLY,
+      exam_year: DataTypes.STRING,
+      admission_year: DataTypes.STRING,
 
-  mg_status: { type: DataTypes.ENUM('Pending','Issued','Cancelled'), allowNull: false, defaultValue: 'Pending' },
-  pay_rec_no: { type: DataTypes.STRING(50), allowNull: true },
+      exam_details: DataTypes.TEXT,
 
-  createdby: { type: DataTypes.BIGINT, allowNull: true },
-  created_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
-  updated_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
-}, {
-  tableName: 'migration',
-  timestamps: false,
-  indexes: [
-    { fields: ['doc_rec_id'], name: 'idx_mg_doc_rec' },
-    { fields: ['enrollment_no'], name: 'idx_mg_enrollment' },
-    { fields: ['institute_id'], name: 'idx_mg_institute' },
-    { fields: ['mg_number'], name: 'idx_mg_number' }
-  ]
-});
+      mg_status: {
+        type: DataTypes.STRING,
+        defaultValue: "Pending",
+        validate: { isIn: [MigrationStatus] },
+      },
 
-export default Migration;
+      pay_rec_no: DataTypes.STRING,
+      doc_remark: DataTypes.STRING,
+    },
+    {
+      tableName: "migration",
+      timestamps: true,
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    }
+  );
+};
