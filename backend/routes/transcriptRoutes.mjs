@@ -1,9 +1,6 @@
-const service = require("../services/transcriptservice");
+const router = require("express").Router();
+const ctrl = require("../controllers/trasncript.controller");
 
-exports.resubmit = async (req, res) => {
-  const data = await service.recordResubmit(
-    req.params.id,
-    req.body.note
-  );
-  res.json(data);
-};
+router.post("/:id/resubmit", ctrl.resubmit);
+
+module.exports = router;
