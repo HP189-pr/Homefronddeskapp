@@ -43,11 +43,13 @@ export const Enrollment = sequelize.define('Enrollment', {
   createdat: {
     type: DataTypes.DATE,
     allowNull: true,
+    field: 'created_at',
     defaultValue: DataTypes.NOW,
   },
   updatedat: {
     type: DataTypes.DATE,
     allowNull: true,
+    field: 'updated_at',
     defaultValue: DataTypes.NOW,
   },
 }, {

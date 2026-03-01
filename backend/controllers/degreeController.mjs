@@ -1,14 +1,22 @@
 import { Op } from 'sequelize';
 import { Degree } from '../models/degree.mjs';
+import { StudentDegree } from '../models/student_degree.mjs';
 
 const parseQuery = (q) => (q || '').trim().toLowerCase();
 
 const buildWhere = (req) => {
-  const { q, enrollment_no, degree_name, year, convocation_no } = req.query || {};
+  const {
+    q,
+    enrollment_no,
+    degree_name,
+    year,
+    last_exam_year,
+    convocation_no,
+  } = req.query || {};
   const where = {};
   if (enrollment_no) where.enrollment_no = enrollment_no;
   if (degree_name) where.degree_name = degree_name;
-  if (year) where.last_exam_year = year;
+  if (year || last_exam_year) where.last_exam_year = year || last_exam_year;
   if (convocation_no) where.convocation_no = convocation_no;
   if (q) {
     const v = `%${parseQuery(q)}%`;
@@ -22,12 +30,54 @@ const buildWhere = (req) => {
   return where;
 };
 
+const getPageInfo = (query = {}) => {
+  const page = Math.max(1, Number(query.page || 1) || 1);
+  const pageSize = Math.min(
+    1000,
+    Math.max(1, Number(query.page_size || query.limit || 200) || 200),
+  );
+  const offset = (page - 1) * pageSize;
+  return { page, pageSize, offset };
+};
+
+const isMissingRelationError = (err) => {
+  const msg = String(err?.message || '').toLowerCase();
+  return msg.includes('relation') && msg.includes('does not exist');
+};
+
+async function findAndCountDegree(Model, where, pageSize, offset) {
+  const rows = await Model.findAll({
+    where,
+    order: [['id', 'DESC']],
+    limit: pageSize,
+    offset,
+  });
+  const count = await Model.count({ where });
+  return { rows, count };
+}
+
 const search = async (req, res) => {
   try {
-    const limit = Math.min(Number(req.query.limit || 200), 1000);
+    const { page, pageSize, offset } = getPageInfo(req.query || {});
     const where = buildWhere(req);
-    const rows = await Degree.findAll({ where, order: [['id', 'DESC']], limit });
-    res.json({ rows, count: rows.length });
+
+    let out;
+    try {
+      out = await findAndCountDegree(Degree, where, pageSize, offset);
+    } catch (err) {
+      if (!isMissingRelationError(err)) throw err;
+      out = await findAndCountDegree(StudentDegree, where, pageSize, offset);
+    }
+
+    const numPages = Math.max(1, Math.ceil((out.count || 0) / pageSize));
+    res.json({
+      results: out.rows,
+      rows: out.rows,
+      count: out.count || 0,
+      page,
+      page_size: pageSize,
+      num_pages: numPages,
+    });
   } catch (err) {
     console.error('Degree.search error', err);
     res.status(500).json({ error: 'Failed to fetch degrees' });

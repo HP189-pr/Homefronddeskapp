@@ -15,7 +15,9 @@ export default {
       // unified quick search by enrollment_no (exact, case-insensitive) or student_name (contains, case-insensitive)
       if (req.query.q) {
         const result = await searchFlexible(String(req.query.q));
-        return res.json(result);
+        const rows = result?.rows || [];
+        const count = result?.count ?? rows.length;
+        return res.json({ count, total: count, results: rows, items: rows, rows });
       }
 
       const { enrollment_no } = req.query;
@@ -36,7 +38,9 @@ export default {
       const limit = Math.min(200, parseInt(req.query.limit || 25));
 
       const result = await advancedSearch(filters, page, limit);
-      return res.json(result);
+      const rows = result?.rows || [];
+      const count = result?.count ?? rows.length;
+      return res.json({ count, total: count, results: rows, items: rows, rows });
     } catch (err) { next(err); }
   },
 

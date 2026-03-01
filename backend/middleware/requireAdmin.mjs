@@ -30,7 +30,7 @@ export default async function requireAdmin(req, res, next) {
     }
 
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    if (req.user.usertype && req.user.usertype === 'admin') return next();
+    if (req.user.usertype && (req.user.usertype === 'admin' || req.user.usertype === 'staff')) return next();
 
     const assignments = await RoleAssignment.findAll({ where: { userid: req.user.id } });
     const roleIds = assignments.map((r) => r.roleid);

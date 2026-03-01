@@ -1,19 +1,19 @@
 import jwt from 'jsonwebtoken';
-
-// Primary secret plus optional fallback for legacy tokens
-const SECRET = process.env.JWT_SECRET || 'change-me-secret';
-const SECRET_FALLBACK = process.env.JWT_SECRET_FALLBACK || 'change-me-secret';
+import { getJwtSecrets } from '../utils/jwtSecret.mjs';
 
 function verifyWithFallback(token) {
-  try {
-    return jwt.verify(token, SECRET);
-  } catch (err) {
+  const secrets = getJwtSecrets();
+  let firstError = null;
+
+  for (const secret of secrets) {
     try {
-      return jwt.verify(token, SECRET_FALLBACK);
-    } catch (_) {
-      throw err;
+      return jwt.verify(token, secret);
+    } catch (err) {
+      if (!firstError) firstError = err;
     }
   }
+
+  throw firstError || new Error('Invalid token');
 }
 
 // Non-blocking middleware: decode/verify token if present, attach req.user; do NOT send 401 here.

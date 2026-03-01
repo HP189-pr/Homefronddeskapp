@@ -20,16 +20,30 @@ async function _generateNextMigrationNumber() {
 }
 
 export async function listMigrations(params = {}) {
-  const { q, status, enrollment_no, pryearautonumber, limit = 50, offset = 0 } = params;
+  const {
+    q,
+    search,
+    status,
+    enrollment_no,
+    student_no,
+    temp_enroll_no,
+    pryearautonumber,
+    doc_rec,
+    limit = 50,
+    offset = 0,
+  } = params;
   const where = {};
   if (status) {
     const map = { pending: 'Pending', done: 'Issued', cancel: 'Cancelled', correction: 'Pending' };
     where.mg_status = map[String(status).toLowerCase()] || status;
   }
-  if (enrollment_no) where.enrollment_no = enrollment_no;
-  if (pryearautonumber) where.doc_rec_id = pryearautonumber;
-  if (q) {
-    const like = `%${q.toString().toLowerCase()}%`;
+  const token = String(student_no || enrollment_no || temp_enroll_no || '').trim();
+  if (token) where.enrollment_no = { [Op.iLike]: `%${token}%` };
+  if (pryearautonumber || doc_rec) where.doc_rec_id = pryearautonumber || doc_rec;
+
+  const searchText = String(search || q || '').trim();
+  if (searchText) {
+    const like = `%${searchText.toString().toLowerCase()}%`;
     where[Op.or] = [
       sqlWhere(fn('LOWER', col('mg_number')), { [Op.like]: like }),
       sqlWhere(fn('LOWER', col('enrollment_no')), { [Op.like]: like }),
@@ -37,7 +51,12 @@ export async function listMigrations(params = {}) {
       sqlWhere(fn('LOWER', col('doc_rec_id')), { [Op.like]: like }),
     ];
   }
-  const rows = await MigrationRequest.findAll({ where, limit, offset, order: [['id','DESC']] });
+  const rows = await MigrationRequest.findAll({
+    where,
+    limit: Number(limit) || 50,
+    offset: Number(offset) || 0,
+    order: [['id', 'DESC']],
+  });
   return rows.map((r) => {
     const o = r.toJSON();
     return {

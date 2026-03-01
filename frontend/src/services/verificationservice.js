@@ -2,13 +2,17 @@
 // All API and data logic for Verification page
 
 import { isoToDMY, dmyToISO } from "../utils/date";
+import { API_BASE_URL } from "../api/axiosInstance";
+
+const BACKEND_BASE = (API_BASE_URL || 'http://127.0.0.1:5000').replace(/\/$/, '');
+const apiUrl = (path) => `${BACKEND_BASE}${path}`;
 
 // Resolve enrollment number to enrollment object (for auto name fetch)
 export const resolveEnrollment = async (enrollmentNo) => {
   if (!enrollmentNo) return null;
   try {
     const res = await fetch(
-      `/api/enrollments/?search=${encodeURIComponent(enrollmentNo)}&limit=1`,
+      apiUrl(`/api/enrollments/?search=${encodeURIComponent(enrollmentNo)}&limit=1`),
       { headers: { ...authHeaders() } }
     );
     if (!res.ok) return null;
@@ -35,7 +39,7 @@ export const resolveDocRecIdentifier = async (form) => {
   if (/^(vr_|iv_|pr_|mg_|gt_)/i.test(idVal)) return idVal;
   if (/^\d+$/.test(idVal)) {
     try {
-      const res = await fetch(`/api/docrec/${idVal}/`, { headers: { ...authHeaders() } });
+      const res = await fetch(apiUrl(`/api/docrec/${idVal}/`), { headers: { ...authHeaders() } });
       if (res.ok) {
         const data = await res.json();
         if (data && data.doc_rec_id) return data.doc_rec_id;
@@ -56,7 +60,7 @@ export const syncDocRecRemark = async (form, remarkValue) => {
       doc_rec_data: { doc_remark: remarkValue || null },
       verification_data: { doc_remark: remarkValue || null },
     };
-    const res = await fetch('/api/docrec/update-with-verification/', {
+    const res = await fetch(apiUrl('/api/docrec/update-with-verification/'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(payload),
@@ -80,9 +84,9 @@ export const loadRecords = async (q, setLoading, setErrorMsg, setRecords) => {
     } else if (q) {
       url = `/api/verification/?search=${encodeURIComponent(q)}&limit=50`;
     } else {
-      url = `/api/verification/?limit=200&include_pending=true`;
+      url = `/api/verification/?limit=200`;
     }
-    const res = await fetch(url, { headers: { ...authHeaders() } });
+    const res = await fetch(apiUrl(url), { headers: { ...authHeaders() } });
     if (!res.ok) {
       let txt = '';
       try { txt = await res.text(); } catch (e) { txt = res.statusText || String(res.status); }
@@ -92,7 +96,13 @@ export const loadRecords = async (q, setLoading, setErrorMsg, setRecords) => {
       return;
     }
     const data = await res.json();
-    const rows = Array.isArray(data) ? data : (data && Array.isArray(data.results) ? data.results : []);
+    const rows = Array.isArray(data)
+      ? data
+      : (Array.isArray(data?.results)
+        ? data.results
+        : (Array.isArray(data?.items)
+          ? data.items
+          : (Array.isArray(data?.rows) ? data.rows : [])));
     const mapped = rows.map((r) => ({
       id: r.id,
       date: isoToDMY(
@@ -172,7 +182,7 @@ export const createRecord = async (form, syncDocRecRemark, loadRecords) => {
   const resolveDocRecPk = async (key) => {
     if (!key) return null;
     try {
-      const res = await fetch(`/api/docrec/?doc_rec_id=${encodeURIComponent(key)}`, { headers: { ...authHeaders() } });
+      const res = await fetch(apiUrl(`/api/docrec/?doc_rec_id=${encodeURIComponent(key)}`), { headers: { ...authHeaders() } });
       if (!res.ok) return null;
       const data = await res.json();
       const rows = Array.isArray(data) ? data : (data && Array.isArray(data.results) ? data.results : []);
@@ -216,7 +226,7 @@ export const createRecord = async (form, syncDocRecRemark, loadRecords) => {
     doc_remark: form.doc_remark || null,
     pay_rec_no: form.pay_rec_no || null,
   };
-  const res = await fetch(`/api/verification`, {
+  const res = await fetch(apiUrl(`/api/verification`), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(body),
@@ -259,7 +269,7 @@ export const updateRecord = async (id, form, syncDocRecRemark) => {
     doc_remark: form.doc_remark || null,
     pay_rec_no: form.pay_rec_no || null,
   };
-  const res = await fetch(`/api/verification/${id}/`, {
+  const res = await fetch(apiUrl(`/api/verification/${id}/`), {
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(body),

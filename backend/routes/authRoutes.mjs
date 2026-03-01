@@ -4,24 +4,26 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { Op } from 'sequelize';
 import { User } from '../models/user.mjs';
+import { getJwtSecrets, getPrimaryJwtSecret } from '../utils/jwtSecret.mjs';
 
 const router = express.Router();
 
 const ACCESS_EXP = process.env.ACCESS_TOKEN_EXPIRES_IN || '8h';
 const REFRESH_EXP = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d';
-const SECRET = process.env.JWT_SECRET || 'change-me-secret';
-const SECRET_FALLBACK = process.env.JWT_SECRET_FALLBACK || 'change-me-secret';
 
 function verifyWithFallback(token) {
-  try {
-    return jwt.verify(token, SECRET);
-  } catch (err) {
+  const secrets = getJwtSecrets();
+  let firstError = null;
+
+  for (const secret of secrets) {
     try {
-      return jwt.verify(token, SECRET_FALLBACK);
-    } catch (_) {
-      throw err;
+      return jwt.verify(token, secret);
+    } catch (err) {
+      if (!firstError) firstError = err;
     }
   }
+
+  throw firstError || new Error('Invalid token');
 }
 
 function verifyDjangoPassword(password, encoded) {
@@ -56,8 +58,9 @@ async function comparePassword(plain, hashed) {
 
 function issueTokens(user) {
   const payload = { id: user.id, userid: user.userid, usertype: user.usertype };
-  const access = jwt.sign(payload, SECRET, { expiresIn: ACCESS_EXP });
-  const refresh = jwt.sign(payload, SECRET, { expiresIn: REFRESH_EXP });
+  const secret = getPrimaryJwtSecret();
+  const access = jwt.sign(payload, secret, { expiresIn: ACCESS_EXP });
+  const refresh = jwt.sign(payload, secret, { expiresIn: REFRESH_EXP });
   return { access, refresh };
 }
 
@@ -127,7 +130,7 @@ router.post('/dev-login', async (req, res, next) => {
 
     const token = jwt.sign(
       { id: safeUser.id, userid: safeUser.userid, usertype: safeUser.usertype },
-      process.env.JWT_SECRET || 'change-me-secret',
+      getPrimaryJwtSecret(),
       { expiresIn: process.env.DEV_TOKEN_EXPIRES_IN || '7d' },
     );
 
@@ -160,7 +163,7 @@ router.post('/login', async (req, res, next) => {
     if (!user) {
       // Fallback: preserve original simple admin check for quick local setups
       if (id === 'admin' && (pw === process.env.ADMIN_PW || pw === 'ChangeMe123')) {
-        const token = jwt.sign({ id: 1, userid: 'admin', usertype: 'admin' }, process.env.JWT_SECRET || 'change-me-secret', { expiresIn: '8h' });
+        const token = jwt.sign({ id: 1, userid: 'admin', usertype: 'admin' }, getPrimaryJwtSecret(), { expiresIn: '8h' });
         return res.json({ token, user: { userid: 'admin', usertype: 'admin' } });
       }
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -174,7 +177,7 @@ router.post('/login', async (req, res, next) => {
     const safe = { ...user.get() };
     delete safe.usrpassword;
 
-    const token = jwt.sign({ id: safe.id, userid: safe.userid, usertype: safe.usertype }, process.env.JWT_SECRET || 'change-me-secret', { expiresIn: '8h' });
+    const token = jwt.sign({ id: safe.id, userid: safe.userid, usertype: safe.usertype }, getPrimaryJwtSecret(), { expiresIn: '8h' });
     return res.json({ token, user: safe });
   } catch (err) {
     return next(err);
@@ -200,7 +203,7 @@ router.post('/verify-password', async (req, res, next) => {
       try {
         const authHeader = req.headers.authorization;
         const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : authHeader;
-        const payload = jwt.verify(token, process.env.JWT_SECRET || 'change-me-secret');
+        const payload = verifyWithFallback(token);
         current = {
           id: payload.id ?? payload.userId ?? payload.sub,
           userid: payload.userid ?? payload.user,

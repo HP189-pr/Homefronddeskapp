@@ -158,13 +158,14 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
   }, [user]);
 
   const displayModules = useMemo(() => {
-    if (!user) return staticModules;
+    // If no user or nav fetch failed/empty, show all static modules
+    if (!user || !navModules.length) return staticModules;
 
     const navByName = new Map(
       navModules.map((m) => [String(m.name || '').toLowerCase(), m])
     );
 
-    return staticModules
+    const computed = staticModules
       .map((mod) => {
         const navMod = navByName.get(String(mod.name || '').toLowerCase());
         if (!navMod) {
@@ -183,6 +184,9 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
         return { ...mod, menu: visibleMenus };
       })
       .filter((mod) => mod.menu && mod.menu.length > 0);
+
+    // If rights filtering removed everything, fall back to static modules
+    return computed.length ? computed : staticModules;
   }, [navModules, user]);
 
   useEffect(() => {

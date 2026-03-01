@@ -2,6 +2,7 @@
 // Works in DEV (3000) + PROD (8081)
 
 import { dmyToISO } from '../utils/date';
+import { API_BASE_URL } from '../api/axiosInstance';
 
 /* ==================== API PATHS ==================== */
 /* IMPORTANT:
@@ -12,6 +13,8 @@ const API_BASE = '/api/provisional/';
 const INST_API = '/api/institutes/';
 const MAIN_API = '/api/mainbranch/';
 const SUB_API  = '/api/subbranch/';
+const BACKEND_BASE = (API_BASE_URL || 'http://127.0.0.1:5000').replace(/\/$/, '');
+const apiUrl = (path) => `${BACKEND_BASE}${path}`;
 
 /* ==================== HELPERS ==================== */
 
@@ -21,7 +24,7 @@ function authHeaders() {
 }
 
 async function fetchJson(url) {
-  const res = await fetch(url, { headers: authHeaders() });
+  const res = await fetch(apiUrl(url), { headers: authHeaders() });
 
   if (!res.ok) {
     const text = await res.text();
@@ -35,7 +38,11 @@ async function fetchJson(url) {
   }
 
   const data = await res.json();
-  return Array.isArray(data) ? data : data.results || [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.results)) return data.results;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.rows)) return data.rows;
+  return [];
 }
 
 /* ==================== READ ==================== */
@@ -80,7 +87,7 @@ export async function saveProvisional(form) {
   const payload = mapFormToPayload(form);
 
   const res = await fetch(
-    form.id ? `${API_BASE}${form.id}/` : API_BASE,
+    apiUrl(form.id ? `${API_BASE}${form.id}/` : API_BASE),
     {
       method: form.id ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
@@ -116,7 +123,7 @@ export async function addProvisionalEntry(entry, list, form) {
 
   const payload = mapFormToPayload({ ...form, ...entry });
 
-  const res = await fetch(API_BASE, {
+  const res = await fetch(apiUrl(API_BASE), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(payload),

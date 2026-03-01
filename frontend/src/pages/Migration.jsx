@@ -3,6 +3,7 @@ import { dmyToISO, isoToDMY } from "../utils/date";
 import { useNavigate } from 'react-router-dom';
 import PageTopbar from "../components/PageTopbar";
 import useEnrollmentLookup from '../hooks/useEnrollmentLookup';
+import { API_BASE_URL } from "../api/axiosInstance";
 
 const ACTIONS = ["➕", "✏️ Edit", "🔍", "📄 Report"];
 
@@ -50,17 +51,26 @@ const Migration = ({ onToggleSidebar, onToggleChatbox }) => {
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
+  const apiUrl = (path) => `${(API_BASE_URL || 'http://127.0.0.1:5000').replace(/\/$/, '')}${path}`;
+  const unwrapList = (payload) => {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.results)) return payload.results;
+    if (Array.isArray(payload?.items)) return payload.items;
+    if (Array.isArray(payload?.rows)) return payload.rows;
+    return [];
+  };
+
   const loadList = async () => {
     setLoading(true);
     setError(null);
     try {
       const url = q ? `/api/migration/?search=${encodeURIComponent(q)}` : `/api/migration/`;
-      const res = await fetch(url, { headers: { ...authHeaders() } });
+      const res = await fetch(apiUrl(url), { headers: { ...authHeaders() } });
       if (!res.ok) {
         throw new Error(`Server error: ${res.status} ${res.statusText}`);
       }
       const data = await res.json();
-      setList(Array.isArray(data) ? data : data.results || []);
+      setList(unwrapList(data));
     } catch (e) {
       console.error(e);
       setError("Failed to load records. Please check the server logs.");
@@ -113,10 +123,10 @@ const Migration = ({ onToggleSidebar, onToggleChatbox }) => {
       doc_remark: form.doc_remark || null,
     };
     if (form.id) {
-      const res = await fetch(`/api/migration/${form.id}/`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(payload) });
+      const res = await fetch(apiUrl(`/api/migration/${form.id}/`), { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error(await res.text());
     } else {
-      const res = await fetch(`/api/migration/`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(payload) });
+      const res = await fetch(apiUrl(`/api/migration/`), { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error(await res.text());
     }
     await loadList();
@@ -125,9 +135,9 @@ const Migration = ({ onToggleSidebar, onToggleChatbox }) => {
   const loadByDocRec = async (docRecKey) => {
     if (!docRecKey) return;
     try {
-      const res = await fetch(`/api/migration/?doc_rec=${encodeURIComponent(docRecKey)}`, { headers: { ...authHeaders() } });
+      const res = await fetch(apiUrl(`/api/migration/?doc_rec=${encodeURIComponent(docRecKey)}`), { headers: { ...authHeaders() } });
       const data = await res.json();
-      setList(Array.isArray(data) ? data : data.results || []);
+      setList(unwrapList(data));
     } catch (e) { console.error(e); }
   };
 
@@ -165,7 +175,7 @@ const Migration = ({ onToggleSidebar, onToggleChatbox }) => {
       pay_rec_no: entry.pay_rec_no || null,
       doc_remark: entry.doc_remark || form.doc_remark || null,
     };
-    const res = await fetch(`/api/migration/`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(payload) });
+    const res = await fetch(apiUrl(`/api/migration/`), { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error(await res.text());
     await loadByDocRec(form.doc_rec || form.doc_rec_key);
   };

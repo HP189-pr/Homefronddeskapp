@@ -58,14 +58,43 @@ router.get('/', requireAuth, async (req, res, next) => {
     const profile = await UserProfile.findOne({ where: { userId: me.id } });
     const pic = me.usrpic || profile?.profile_pic || null;
 
-    return res.json({
-      user: me,
-      profile: profile || null,
+    // Flatten response for frontend expectations and include is_admin
+    const safeUser = me.get({ plain: true });
+    const merged = {
+      // top-level aliases
+      username: safeUser.userid,
+      userid: safeUser.userid,
+      usercode: safeUser.usercode,
+      first_name: safeUser.first_name,
+      last_name: safeUser.last_name,
+      email: safeUser.email,
+      is_admin: !!(safeUser.is_superuser || safeUser.is_staff),
+      is_superuser: !!safeUser.is_superuser,
+      is_staff: !!safeUser.is_staff,
+      // profile fallbacks
+      phone: profile?.phone || null,
+      address: profile?.address || null,
+      city: profile?.city || null,
+      state: profile?.state || null,
+      country: profile?.country || null,
+      bio: profile?.bio || null,
+      social_links: profile?.social_links || {},
+      profile_picture: profile?.profile_pic || pic || null,
       photoUrl: pic ? `/media/Profpic/${pic}` : null,
-    });
+      user: safeUser,
+      profile: profile || null,
+    };
+
+    return res.json(merged);
   } catch (err) {
     next(err);
   }
+});
+
+// GET /api/check-admin-access -> simple role check
+router.get('/check-admin-access', requireAuth, (req, res) => {
+  const isAdmin = !!(req.user?.usertype === 'admin' || req.user?.usertype === 'staff');
+  return res.json({ is_admin: isAdmin });
 });
 
 // PATCH /api/profile -> update user basic fields + profile + optional photo upload

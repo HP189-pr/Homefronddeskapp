@@ -1,6 +1,5 @@
 // backend/server.mjs
-import dotenv from 'dotenv';
-dotenv.config();
+import 'dotenv/config';
 
 import app from './app.mjs';
 import { syncDb } from './db.mjs';

@@ -219,7 +219,7 @@ export function AuthProvider({ children }) {
     const verifyAdminPanelPassword = async (password) => {
         try {
             const res = await API.post(
-                "/api/verify-admin-panel-password/",
+                "/api/verify-admin-panel-password",
                 { password },
                 { headers: authHeader(), validateStatus: () => true }
             );
@@ -248,7 +248,7 @@ export function AuthProvider({ children }) {
     const isAdminPanelVerified = async () => {
         try {
             const { data } = await API.get(
-                "/api/verify-admin-panel-password/",
+                "/api/verify-admin-panel-password",
                 { headers: authHeader() }
             );
             return !!data?.verified;

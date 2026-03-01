@@ -1,5 +1,8 @@
 // inst-letterservice.js
 // Consolidated helpers for Institutional Letter/Verification APIs
+import { API_BASE_URL } from '../api/axiosInstance';
+
+const BACKEND_BASE = (API_BASE_URL || 'http://127.0.0.1:5000').replace(/\/$/, '');
 
 const defaultHeaders = () => {
   const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
@@ -22,7 +25,8 @@ const jsonFetch = async (path, { method = "GET", body, apiBase = "/api", headers
     ...headersFn(),
   };
 
-  const res = await fetch(`${apiBase}${path}`, {
+  const base = apiBase === '/api' ? `${BACKEND_BASE}/api` : apiBase;
+  const res = await fetch(`${base}${path}`, {
     method,
     headers,
     credentials: "include",

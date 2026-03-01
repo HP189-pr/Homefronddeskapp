@@ -12,6 +12,7 @@ import {
 	saveInstLetterStudent,
 	suggestInstLetterDocRec,
 } from "../services/inst-letterservice";
+import { API_BASE_URL } from "../api/axiosInstance";
 
 const ACTIONS = ["➕", "✏️ Edit", "🔍", "📄 Report"];
 const IV_STATUS_OPTIONS = ["", "Pending", "Done", "Correction", "Post", "Mail"];
@@ -72,7 +73,21 @@ const SEARCH_FIELDS = [
 
 const DEFAULT_RIGHTS = { can_view: true, can_create: true, can_edit: true, can_delete: true };
 
-const apiBase = "/api";
+const apiBase = (() => {
+	const base = (API_BASE_URL || import.meta.env?.VITE_API_BASE_URL || "").trim();
+	if (!base) return "/api";
+	const normalized = base.replace(/\/$/, "");
+	return /\/api$/i.test(normalized) ? normalized : `${normalized}/api`;
+})();
+
+const unwrapList = (data) => {
+	if (!data) return [];
+	if (Array.isArray(data)) return data;
+	if (Array.isArray(data.items)) return data.items;
+	if (Array.isArray(data.results)) return data.results;
+	if (Array.isArray(data.objects)) return data.objects;
+	return [];
+};
 
 const createMainForm = () => ({
 	id: null,
@@ -324,11 +339,8 @@ const InstitutionalLetter = ({ rights = DEFAULT_RIGHTS, onToggleSidebar, onToggl
 			if (!key) return null;
 			const headers = { Accept: "application/json", ...authHeaders() };
 			const parseDate = (payload) => {
-				const first = Array.isArray(payload)
-					? payload[0]
-					: Array.isArray(payload?.results)
-						? payload.results[0]
-						: payload;
+				const rows = unwrapList(payload);
+				const first = rows[0] || payload;
 				const rawDate = first?.doc_rec_date || first?.date || first?.docRecDate;
 				return rawDate ? isoToDMY(rawDate) : null;
 			};
@@ -380,9 +392,8 @@ const InstitutionalLetter = ({ rights = DEFAULT_RIGHTS, onToggleSidebar, onToggl
 				if (!res.ok) return null;
 				const data = await res.json();
 				const lower = trimmed.toLowerCase();
-				const exact = Array.isArray(data)
-					? data.find((item) => (item?.name || "").toLowerCase() === lower && item.address)
-					: null;
+				const rows = unwrapList(data);
+				const exact = rows.find((item) => (item?.name || "").toLowerCase() === lower && item.address);
 				return exact?.address || null;
 			} catch (err) {
 				if (controller.signal.aborted) return null;
@@ -726,17 +737,14 @@ const InstitutionalLetter = ({ rights = DEFAULT_RIGHTS, onToggleSidebar, onToggl
 				});
 				if (!res.ok) throw new Error("Unable to search institutes");
 				const data = await res.json();
-				const shaped = Array.isArray(data)
-					? data
-							.map((item) => ({
-								institute_name: item.name || item.rec_inst_name || value,
-								institute_city: item.address?.rec_inst_city || item.city || item.rec_inst_city || "",
-								rec_inst_address_1: item.address?.rec_inst_address_1 || "",
-								rec_inst_address_2: item.address?.rec_inst_address_2 || "",
-								rec_inst_location: item.address?.rec_inst_location || "",
-								rec_inst_pin: item.address?.rec_inst_pin || "",
-							}))
-					: [];
+				const shaped = unwrapList(data).map((item) => ({
+					institute_name: item.name || item.rec_inst_name || value,
+					institute_city: item.address?.rec_inst_city || item.city || item.rec_inst_city || "",
+					rec_inst_address_1: item.address?.rec_inst_address_1 || "",
+					rec_inst_address_2: item.address?.rec_inst_address_2 || "",
+					rec_inst_location: item.address?.rec_inst_location || "",
+					rec_inst_pin: item.address?.rec_inst_pin || "",
+				}));
 				setRecInstSuggestions(shaped);
 			} catch (err) {
 				console.warn("rec inst search", err);

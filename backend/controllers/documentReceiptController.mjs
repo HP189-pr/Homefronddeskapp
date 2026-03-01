@@ -14,4 +14,50 @@ export async function nextId(req, res, next) {
 	}
 }
 
-export default { list, getById, create, update, nextId };
+export async function updateWithVerification(req, res, next) {
+	try {
+		const out = await svc.updateWithVerification(req.body || {}, req.user || null);
+		res.json(out);
+	} catch (e) {
+		next(e);
+	}
+}
+
+export async function deleteWithVerification(req, res, next) {
+	try {
+		const out = await svc.deleteWithVerification(req.body || {});
+		res.json(out);
+	} catch (e) {
+		next(e);
+	}
+}
+
+export async function unifiedUpdate(req, res, next) {
+	try {
+		const out = await svc.unifiedUpdate(req.body || {}, req.user || null);
+		res.json(out);
+	} catch (e) {
+		next(e);
+	}
+}
+
+export async function unifiedDelete(req, res, next) {
+	try {
+		const out = await svc.unifiedDelete(req.body || {});
+		res.json(out);
+	} catch (e) {
+		next(e);
+	}
+}
+
+export default {
+	list,
+	getById,
+	create,
+	update,
+	nextId,
+	updateWithVerification,
+	deleteWithVerification,
+	unifiedUpdate,
+	unifiedDelete,
+};

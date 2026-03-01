@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Sidebar from "../Menu/Sidebar.jsx";
 import WorkArea from "./WorkArea.jsx";
 import ChatBox from "../components/ChatBox.jsx";
@@ -6,7 +6,7 @@ import Clock from "../components/Clock.jsx";
 import { useAuth } from "../hooks/AuthContext";
 
 const INSTITUTION_NAME = "Kadi Sarva Vishwavidyalaya";
-const LOGO_PATH = "/media/logo/ksv.png";
+const LOGO_PATH = "/logo.png";
 const LOGO_URL = LOGO_PATH;
 
 const MODULES = [
@@ -14,7 +14,7 @@ const MODULES = [
         key: "verification",
         label: "📜 Verification",
         openMenuLabel: "Verification",
-        endpoint: "/api/verification/",
+        endpoint: "/api/verifications",
         statuses: ["All", "IN_PROGRESS", "PENDING", "CORRECTION", "CANCEL", "DONE", "DONE_WITH_REMARKS"],
         fields: (row) => {
             const docDate = row.doc_rec_date || row.date || "-";
@@ -28,23 +28,27 @@ const MODULES = [
         key: "migration",
         label: "🚀 Migration",
         openMenuLabel: "Migration",
-        endpoint: "/api/migration/",
+        endpoint: "/api/admin/migrations",
+        requiresAdmin: true,
         statuses: ["pending", "done", "cancel", "correction"],
-        fields: (row) => `${row.student_name || "-"} - ${row.migration_no || "—"} - ${row.status || ""}`,
+        fields: (row) => `${row.student_name || "-"} - ${row.migration_number || row.migration_no || row.mg_number || "—"} - ${row.status || ""}`,
     },
     {
         key: "provisional",
         label: "📄 Provisional",
         openMenuLabel: "Provisional",
-        endpoint: "/api/provisional/",
+        endpoint: "/api/admin/provisionals",
+        requiresAdmin: true,
         statuses: ["pending", "done", "cancel", "correction"],
-        fields: (row) => `${row.student_name || "-"} - ${row.provisional_no || "—"} - ${row.status || ""}`,
+        fields: (row) => `${row.student_name || "-"} - ${row.provisional_number || row.prv_number || "—"} - ${row.status || ""}`,
     },
     {
         key: "institutional",
         label: "🏛️ Institutional Verification",
         openMenuLabel: "Inst-Verification",
-        endpoint: "/api/inst-verification-main/",
+        endpoint: null,
+        requiresAdmin: true,
+        disabledReason: "List API not available yet",
         statuses: ["pending", "done", "cancel", "correction", "fake"],
         fields: (row) => `${row.student_name || "-"} - ${row.enrollment_no || "—"} - ${row.verification_status || row.status || ""}`,
     },
@@ -52,7 +56,9 @@ const MODULES = [
         key: "mailrequests",
         label: "📧 Mail Requests",
         openMenuLabel: "Official Mail Status",
-        endpoint: "/api/mail-requests/",
+        endpoint: null,
+        requiresAdmin: true,
+        disabledReason: "Endpoint not implemented",
         statuses: ["pending", "progress", "done"],
         fields: (row) => `${row.mail_req_no || row.id || "-"} • ${row.mail_status || ""} • ${row.enrollment_no || "—"} • ${row.student_name || "-"}`,
     },
@@ -60,7 +66,9 @@ const MODULES = [
         key: "transcript_pdf",
         label: "📄 Transcript Requests",
         openMenuLabel: "Transcript Requests",
-        endpoint: "/api/transcript-requests/",
+        endpoint: null,
+        requiresAdmin: true,
+        disabledReason: "Endpoint not implemented",
         statuses: ["pending", "progress", "done"],
         fields: (row) => `${row.tr_request_no || row.request_ref_no || "-"} • ${row.enrollment_no || "—"} • ${row.student_name || "-"} • ${row.pdf_generate || ""} • ${row.mail_status || ""}`,
     },
@@ -102,6 +110,12 @@ const ModuleCard = ({ mod, authFetch, onOpen }) => {
     const load = async () => {
         setLoading(true);
         setError("");
+        if (!mod.endpoint) {
+            setItems([]);
+            setError(mod.disabledReason || "Endpoint not available");
+            setLoading(false);
+            return;
+        }
         try {
             const params = new URLSearchParams();
             if (statusFilter && statusFilter !== "All") params.set("status", statusFilter);
@@ -212,7 +226,7 @@ const ModuleCard = ({ mod, authFetch, onOpen }) => {
     );
 };
 
-const ModuleSelector = ({ selected, setSelected }) => {
+const ModuleSelector = ({ selected, setSelected, modules }) => {
     const toggle = (key) => {
         setSelected((prev) => {
             const exists = prev.includes(key);
@@ -223,7 +237,7 @@ const ModuleSelector = ({ selected, setSelected }) => {
     };
     return (
         <div className="flex flex-wrap gap-2">
-            {MODULES.map((m) => {
+            {modules.map((m) => {
                 const isOn = selected.includes(m.key);
                 return (
                     <button
@@ -240,14 +254,19 @@ const ModuleSelector = ({ selected, setSelected }) => {
 };
 
 export const CustomDashboard = ({ selectedMenuItem, setSelectedMenuItem, isSidebarOpen, setSidebarOpen }) => {
-    const { user } = useAuth();
+    const { user, isAdmin } = useAuth();
 
     if (!setSelectedMenuItem) {
         console.error("CustomDashboard: setSelectedMenuItem prop is missing!");
     }
 
     const STORAGE_KEY = "selected_dashboard_modules";
-    const DEFAULT_SELECTED = ["verification", "migration", "provisional", "institutional", "mailrequests", "transcript_pdf"];
+    const DEFAULT_SELECTED = ["verification", "migration", "provisional", "student_search"];
+
+    const availableModules = useMemo(
+        () => MODULES.filter((m) => !m.requiresAdmin || isAdmin),
+        [isAdmin]
+    );
 
     const authFetch = async (url, opts = {}) => {
         const token = localStorage.getItem("access_token");
@@ -295,6 +314,16 @@ export const CustomDashboard = ({ selectedMenuItem, setSelectedMenuItem, isSideb
             cancelled = true;
         };
     }, []);
+
+    useEffect(() => {
+        const allowed = new Set(availableModules.map((m) => m.key));
+        setSelectedModuleKeys((prev) => {
+            const filtered = prev.filter((k) => allowed.has(k));
+            const fallback = DEFAULT_SELECTED.filter((k) => allowed.has(k));
+            const next = (filtered.length ? filtered : fallback).slice(0, 4);
+            return next;
+        });
+    }, [availableModules]);
 
     useEffect(() => {
         const savePrefs = async () => {
@@ -348,11 +377,11 @@ export const CustomDashboard = ({ selectedMenuItem, setSelectedMenuItem, isSideb
                         <h2 className="text-lg font-semibold text-gray-800">Quick Status</h2>
                         <div className="text-sm text-gray-500">Select up to 4 modules</div>
                     </div>
-                    <ModuleSelector selected={selectedModuleKeys} setSelected={setSelectedModuleKeys} />
+                    <ModuleSelector selected={selectedModuleKeys} setSelected={setSelectedModuleKeys} modules={availableModules} />
                 </div>
 
                 <div className={`${gridClass} gap-4 pb-2`}>
-                    {MODULES.filter((m) => selectedModuleKeys.includes(m.key)).map((mod) => (
+                    {availableModules.filter((m) => selectedModuleKeys.includes(m.key)).map((mod) => (
                         <ModuleCard key={mod.key} mod={mod} authFetch={authFetch} onOpen={() => handleOpenModule(mod.openMenuLabel)} />
                     ))}
                 </div>
