@@ -320,7 +320,7 @@ const Provisional = ({ onToggleSidebar, onToggleChatbox }) => {
                   <td className="py-2 px-3">{r.class_obtain || '-'}</td>
                   <td className="py-2 px-3">{r.prv_degree_name || '-'}</td>
                   <td className="py-2 px-3">{r.prv_number || '-'}</td>
-                  <td className="py-2 px-3">{r.prv_date || '-'}</td>
+                  <td className="py-2 px-3">{isoToDMY(r.prv_date) || '-'}</td>
                   <td className="py-2 px-3">{r.passing_year || '-'}</td>
                   <td className="py-2 px-3">{r.prv_status || '-'}</td>
                   <td className="py-2 px-3">{r.pay_rec_no || '-'}</td>

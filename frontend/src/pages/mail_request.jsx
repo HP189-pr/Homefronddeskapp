@@ -354,7 +354,10 @@ const MailRequestPage = ({ onToggleSidebar, onToggleChatbox }) => {
       const parts = String(value).split(/\s+/);
       return parts[0] || value;
     }
-    return dt.toLocaleDateString('en-GB'); // dd/mm/yyyy
+    const day = String(dt.getDate()).padStart(2, '0');
+    const month = String(dt.getMonth() + 1).padStart(2, '0');
+    const year = dt.getFullYear();
+    return `${day}-${month}-${year}`;
   };
 
   return (

@@ -433,7 +433,10 @@ const TranscriptRequestPage = ({ onToggleSidebar, onToggleChatbox }) => {
     if (!value) return 'N/A';
     const dt = new Date(value);
     if (Number.isNaN(dt.getTime())) return value;
-    return `${dt.toLocaleDateString()} ${dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const day = String(dt.getDate()).padStart(2, '0');
+    const month = String(dt.getMonth() + 1).padStart(2, '0');
+    const year = dt.getFullYear();
+    return `${day}-${month}-${year} ${dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   };
 
   const formatStatus = (value) => {

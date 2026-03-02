@@ -24,6 +24,7 @@ import DegreeReport from '../report/DegreeReport';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import useEnrollmentLookup from '../hooks/useEnrollmentLookup';
+import { isoToDMY } from '../utils/date';
 
 const Degree = ({ onToggleSidebar, onToggleChatbox }) => {
     const navigate = useNavigate();
@@ -836,7 +837,7 @@ DG002,2023002,Jane Smith,456 Park Ave Delhi,+91 9876543211,XYZ College,Master of
                                         >
                                             <td className="p-3 font-semibold text-gray-900">{conv.convocation_no}</td>
                                             <td className="p-3">{conv.convocation_title || '-'}</td>
-                                            <td className="p-3">{conv.convocation_date || '-'}</td>
+                                            <td className="p-3">{isoToDMY(conv.convocation_date) || '-'}</td>
                                             <td className="p-3">{conv.month_year || '-'}</td>
                                             <td className="p-3">
                                                 <div className="flex items-center gap-2">
@@ -1009,6 +1010,7 @@ DG002,2023002,Jane Smith,456 Park Ave Delhi,+91 9876543211,XYZ College,Master of
                                 </label>
                                 <input
                                     type="date"
+                                    lang="en-GB"
                                     name="convocation_date"
                                     value={convocationFormData.convocation_date || ''}
                                     onChange={handleConvocationFormChange}

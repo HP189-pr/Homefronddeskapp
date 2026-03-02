@@ -4,31 +4,16 @@ import autoTable from "jspdf-autotable";
 import PageTopbar from "../components/PageTopbar";
 import { printElement } from "../utils/print";
 import { getStudentFees } from "../services/studentFeesService";
+import { normalizeIsoDate, isoToDMY } from "../utils/date";
 
 const BATCH_OPTIONS = [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-const normalizeIsoDate = (value) => {
-  if (!value) return "";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-  if (/^\d{2}-\d{2}-\d{4}$/.test(value)) {
-    const [day, month, year] = value.split("-");
-    return `${year}-${month}-${day}`;
-  }
-  return value;
-};
-
 const formatDate = (value) => {
   if (!value) return "-";
   const normalized = normalizeIsoDate(value);
-  const date = new Date(normalized);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return isoToDMY(normalized) || "-";
 };
 
 const formatCurrency = (amount) =>
@@ -152,7 +137,7 @@ const StudentFeesReport = ({ onBack }) => {
     if (reportMode === "batch") {
       doc.text(`Batch: ${batch || "All"}`, 14, 18);
     } else {
-      doc.text(`Date: ${dateFrom} to ${dateTo}`, 14, 18);
+      doc.text(`Date: ${formatDate(dateFrom)} to ${formatDate(dateTo)}`, 14, 18);
     }
 
     const head = [["BATCH", "ENROLLMENT", "NAME", "LAST PAID", "TERM", "AMOUNT", "REC NO"]];
@@ -249,6 +234,7 @@ const StudentFeesReport = ({ onBack }) => {
             <label className="block text-sm font-medium mb-1">From</label>
             <input
               type="date"
+              lang="en-GB"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
               className="border rounded px-3 py-2"
@@ -259,6 +245,7 @@ const StudentFeesReport = ({ onBack }) => {
             <label className="block text-sm font-medium mb-1">To</label>
             <input
               type="date"
+              lang="en-GB"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
               className="border rounded px-3 py-2"

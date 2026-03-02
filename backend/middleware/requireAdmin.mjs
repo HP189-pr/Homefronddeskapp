@@ -2,8 +2,22 @@
 import { RoleAssignment } from '../models/roleAssignment.mjs';
 import { Permission } from '../models/permission.mjs';
 import jwt from 'jsonwebtoken';
+import { getJwtSecrets } from '../utils/jwtSecret.mjs';
 
-const SECRET = process.env.JWT_SECRET || 'change-me-secret';
+function verifyWithFallback(token) {
+  const secrets = getJwtSecrets();
+  let firstError = null;
+
+  for (const secret of secrets) {
+    try {
+      return jwt.verify(token, secret);
+    } catch (err) {
+      if (!firstError) firstError = err;
+    }
+  }
+
+  throw firstError || new Error('Invalid token');
+}
 
 export default async function requireAdmin(req, res, next) {
   try {
@@ -17,7 +31,7 @@ export default async function requireAdmin(req, res, next) {
           else token = auth;
         }
         if (token) {
-          const payload = jwt.verify(token, SECRET);
+          const payload = verifyWithFallback(token);
           req.user = {
             id: payload.id ?? payload.userId ?? payload.sub,
             userid: payload.userid ?? payload.user,

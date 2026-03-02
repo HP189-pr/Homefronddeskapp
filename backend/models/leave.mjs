@@ -2,10 +2,15 @@ import { DataTypes, Op } from 'sequelize';
 import { sequelize } from '../db.mjs';
 
 export const LeaveType = sequelize.define('LeaveType', {
-  leave_code: { type: DataTypes.STRING, primaryKey: true },
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  leave_code: { type: DataTypes.STRING, allowNull: false },
   leave_name: DataTypes.STRING,
-  day_value: { type: DataTypes.DECIMAL(4, 2), defaultValue: 1 },
+  main_type: { type: DataTypes.STRING, field: 'parent_leave' },
+  day_value: { type: DataTypes.DECIMAL(4, 2), defaultValue: 1, field: 'leave_unit' },
+  session: { type: DataTypes.STRING, field: 'leave_mode' },
+  annual_allocation: { type: DataTypes.INTEGER, field: 'annual_limit' },
   is_half: DataTypes.BOOLEAN,
+  is_active: DataTypes.BOOLEAN,
 }, {
   tableName: 'api_leavetype',
   timestamps: false,
@@ -38,10 +43,13 @@ export const LeavePeriod = sequelize.define('LeavePeriod', {
 });
 
 export const LeaveAllocation = sequelize.define('LeaveAllocation', {
+  id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
   leave_code: DataTypes.STRING,
   emp_id: DataTypes.STRING,
   allocated: DataTypes.DECIMAL(6, 2),
   period_id: DataTypes.INTEGER,
+  allocated_start_date: DataTypes.DATEONLY,
+  allocated_end_date: DataTypes.DATEONLY,
 }, {
   tableName: 'api_leaveallocation',
   timestamps: false,

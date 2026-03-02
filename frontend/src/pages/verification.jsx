@@ -393,6 +393,7 @@ export default function Verification({ selectedTopbarMenu, setSelectedTopbarMenu
                   <label className="block text-sm mb-1">Date</label>
                   <input
                     type="date"
+                    lang="en-GB"
                     className="w-full border rounded-lg p-2"
                     value={form.date}
                     onChange={(e) => handleChange("date", e.target.value)}
@@ -463,6 +464,7 @@ export default function Verification({ selectedTopbarMenu, setSelectedTopbarMenu
                   <label className="block text-sm mb-1">Done Date</label>
                   <input
                     type="date"
+                    lang="en-GB"
                     className="w-full border rounded-lg p-2"
                     value={form.vr_done_date}
                     onChange={(e) => handleChange("vr_done_date", e.target.value)}
@@ -539,6 +541,7 @@ export default function Verification({ selectedTopbarMenu, setSelectedTopbarMenu
                       <label className="block text-sm mb-1">ECA Send Date</label>
                       <input
                         type="date"
+                        lang="en-GB"
                         className="w-full border rounded-lg p-2"
                         value={form.eca_send_date}
                         onChange={(e) => handleChange("eca_send_date", e.target.value)}
@@ -562,6 +565,7 @@ export default function Verification({ selectedTopbarMenu, setSelectedTopbarMenu
                       <label className="block text-sm mb-1">ECA Resubmit Date</label>
                       <input
                         type="date"
+                        lang="en-GB"
                         className="w-full border rounded-lg p-2"
                         value={form.eca_resubmit_date}
                         onChange={(e) => handleChange("eca_resubmit_date", e.target.value)}
@@ -694,6 +698,7 @@ export default function Verification({ selectedTopbarMenu, setSelectedTopbarMenu
               <label className="text-xs font-semibold mr-1">Date:</label>
               <input
                 type="date"
+                lang="en-GB"
                 className="border rounded p-1 text-sm"
                 value={searchDate}
                 onChange={(e) => setSearchDate(e.target.value)}
@@ -783,7 +788,7 @@ export default function Verification({ selectedTopbarMenu, setSelectedTopbarMenu
                         formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
                       }
                     }}>
-                      <td className="py-2 px-3 whitespace-nowrap text-xs w-28" style={{ minWidth: 90, maxWidth: 120 }}>{r.date || "-"}</td>
+                      <td className="py-2 px-3 whitespace-nowrap text-xs w-28" style={{ minWidth: 90, maxWidth: 120 }}>{isoToDMY(r.date) || "-"}</td>
                       <td className="py-2 px-3">{r.enrollment_no || r.enrollment?.enrollment_no || "-"}</td>
                       <td className="py-2 px-3">{r.second_enrollment_no || r.second_enrollment?.enrollment_no || "-"}</td>
                       <td className="py-2 px-3">{r.student_name || "-"}</td>
@@ -798,7 +803,7 @@ export default function Verification({ selectedTopbarMenu, setSelectedTopbarMenu
                       >
                         <Badge text={r.status} />
                       </td>
-                      <td className="py-2 px-3 whitespace-nowrap text-xs w-28" style={{ minWidth: 90, maxWidth: 120 }}>{r.vr_done_date || "-"}</td>
+                      <td className="py-2 px-3 whitespace-nowrap text-xs w-28" style={{ minWidth: 90, maxWidth: 120 }}>{isoToDMY(r.vr_done_date) || "-"}</td>
                       <td className="py-2 px-3">{r.final_no || "-"}</td>
                       <td className={highlightMail ? "py-2 px-3 bg-orange-50" : "py-2 px-3"}><MailBadge text={r.mail_status} /></td>
                       <td className="py-2 px-3">{r.doc_rec_key || r.doc_rec_id || (r.doc_rec && r.doc_rec.doc_rec_id) || '-'}</td>
@@ -819,7 +824,7 @@ export default function Verification({ selectedTopbarMenu, setSelectedTopbarMenu
                       >
                         {r.eca_required ? formatEcaStatus(r) : ""}
                       </td>
-                      <td className="py-2 px-3">{r.eca?.eca_resubmit_date || r.eca_resubmit_date || "-"}</td>
+                      <td className="py-2 px-3">{isoToDMY(r.eca?.eca_resubmit_date || r.eca_resubmit_date) || "-"}</td>
                     </tr>
                   );
                 })}

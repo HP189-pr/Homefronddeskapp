@@ -16,6 +16,7 @@ import {
     updateFeeEntry,
     deleteFeeEntry,
 } from '../services/studentFeesService';
+import { normalizeIsoDate, isoToDMY } from '../utils/date';
 
 const TERM_OPTIONS = [
     'Term-1', 'Term-2', 'Term-3', 'Term-4', 'Term-5',
@@ -27,15 +28,6 @@ const TERM_OPTIONS = [
 const BATCH_OPTIONS = [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
 
 const todayISO = () => new Date().toISOString().split('T')[0];
-const normalizeIsoDate = (value) => {
-    if (!value) return '';
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-    if (/^\d{2}-\d{2}-\d{4}$/.test(value)) {
-        const [day, month, year] = value.split('-');
-        return `${year}-${month}-${day}`;
-    }
-    return value;
-};
 
 const StudentFees = ({ onToggleSidebar, onToggleChatbox, rights = { can_view: true, can_create: true, can_edit: true, can_delete: true } }) => {
     // Action panel state
@@ -302,9 +294,7 @@ const StudentFees = ({ onToggleSidebar, onToggleChatbox, rights = { can_view: tr
     const formatDate = (dateString) => {
         if (!dateString) return '';
         const normalized = normalizeIsoDate(dateString);
-        const date = new Date(normalized);
-        if (Number.isNaN(date.getTime())) return '-';
-        return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        return isoToDMY(normalized) || '-';
     };
 
     // Initial focus on entry panel
@@ -337,6 +327,7 @@ const StudentFees = ({ onToggleSidebar, onToggleChatbox, rights = { can_view: tr
                     <label className="block text-sm font-medium mb-1">Date *</label>
                     <input
                         type="date"
+                        lang="en-GB"
                         value={formData.receipt_date}
                         onChange={(e) => handleFormChange('receipt_date', e.target.value)}
                         className="w-full border rounded px-3 py-2"
@@ -493,6 +484,7 @@ const StudentFees = ({ onToggleSidebar, onToggleChatbox, rights = { can_view: tr
                         </select>
                         <input
                             type="date"
+                            lang="en-GB"
                             value={fromDate}
                             onChange={(e) => setFromDate(e.target.value)}
                             className="border rounded px-2 py-1"
@@ -500,6 +492,7 @@ const StudentFees = ({ onToggleSidebar, onToggleChatbox, rights = { can_view: tr
                         <span className="text-gray-500">to</span>
                         <input
                             type="date"
+                            lang="en-GB"
                             value={toDate}
                             onChange={(e) => setToDate(e.target.value)}
                             className="border rounded px-2 py-1"

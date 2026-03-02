@@ -1,42 +1,9 @@
-import axios from 'axios';
+import API from '../api/axiosInstance';
 
 /**
  * Student Search Service
  * Handles API calls for comprehensive student information search
  */
-
-const api = axios.create({
-    baseURL: '/api/student-search',
-    headers: { 'Content-Type': 'application/json' }
-});
-
-// Request interceptor to add authentication token
-api.interceptors.request.use((config) => {
-    // Try multiple common keys in case the app stored the token differently
-    const token = localStorage.getItem('access_token')
-        || localStorage.getItem('accessToken')
-        || localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
-
-// Response interceptor for error handling
-api.interceptors.response.use(
-    response => response,
-    error => {
-        if (error.response) {
-            const errorMessage = error.response.data?.error ||
-                                 error.response.data?.message ||
-                                 `Server error (${error.response.status})`;
-            return Promise.reject(new Error(errorMessage));
-        } else if (error.request) {
-            return Promise.reject(new Error('No response from server'));
-        }
-        return Promise.reject(error);
-    }
-);
 
 /**
  * Search student by enrollment number
@@ -45,13 +12,16 @@ api.interceptors.response.use(
  */
 export const searchStudent = async (enrollmentNo) => {
     try {
-        const response = await api.get('/search/', {
+        const response = await API.get('/api/student-search/search/', {
             params: { enrollment: enrollmentNo.trim() }
         });
         return response.data;
     } catch (error) {
-        console.error('Student search error:', error.message);
-        throw error;
+        const message = error?.response?.data?.error
+            || error?.response?.data?.message
+            || error?.message
+            || 'Student search failed';
+        throw new Error(message);
     }
 };
 

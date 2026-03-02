@@ -332,7 +332,7 @@ const Migration = ({ onToggleSidebar, onToggleChatbox }) => {
                   <td className="py-2 px-3">{r.maincourse || r.maincourse_id || '-'}</td>
                   <td className="py-2 px-3">{r.subcourse || r.subcourse_id || '-'}</td>
                   <td className="py-2 px-3">{r.mg_number || '-'}</td>
-                  <td className="py-2 px-3">{r.mg_date || '-'}</td>
+                  <td className="py-2 px-3">{isoToDMY(r.mg_date) || '-'}</td>
                   <td className="py-2 px-3">{r.exam_year || '-'}</td>
                   <td className="py-2 px-3">{r.admission_year || '-'}</td>
                   <td className="py-2 px-3">{r.mg_status || '-'}</td>

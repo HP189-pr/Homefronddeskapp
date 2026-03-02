@@ -19,6 +19,8 @@ import {
   deleteOutward,
   getStockSummary,
 } from '../services/inventoryService';
+import { normalizeApiList } from '../utils/response';
+import { isoToDMY } from '../utils/date';
 
 const Inventory = () => {
   const [activeTab, setActiveTab] = useState('stock');
@@ -57,18 +59,18 @@ const Inventory = () => {
     try {
       if (activeTab === 'stock') {
         const data = await getStockSummary();
-        setStockSummary(Array.isArray(data) ? data : []);
+        setStockSummary(normalizeApiList(data));
       } else if (activeTab === 'inward') {
         const [itemsData, inwardData] = await Promise.all([getItems(), getInward()]);
-        setItems(Array.isArray(itemsData) ? itemsData : (itemsData?.results || []));
-        setInwardEntries(Array.isArray(inwardData) ? inwardData : (inwardData?.results || []));
+        setItems(normalizeApiList(itemsData));
+        setInwardEntries(normalizeApiList(inwardData));
       } else if (activeTab === 'outward') {
         const [itemsData, outwardData] = await Promise.all([getItems(), getOutward()]);
-        setItems(Array.isArray(itemsData) ? itemsData : (itemsData?.results || []));
-        setOutwardEntries(Array.isArray(outwardData) ? outwardData : (outwardData?.results || []));
+        setItems(normalizeApiList(itemsData));
+        setOutwardEntries(normalizeApiList(outwardData));
       } else if (activeTab === 'item') {
         const data = await getItems();
-        setItems(Array.isArray(data) ? data : (data?.results || []));
+        setItems(normalizeApiList(data));
       }
     } catch (error) {
       showAlert('error', 'Failed to load data: ' + (error.response?.data?.detail || error.message));
@@ -334,6 +336,7 @@ const Inventory = () => {
             <label className="block text-sm font-medium mb-1">Inward Date <span className="text-red-500">*</span></label>
             <input
               type="date"
+              lang="en-GB"
               value={inwardForm.inward_date}
               onChange={(e) => setInwardForm({ ...inwardForm, inward_date: e.target.value })}
               className="w-full border px-3 py-2 rounded"
@@ -421,7 +424,7 @@ const Inventory = () => {
               ) : (
                 inwardEntries.map((entry) => (
                   <tr key={entry.id} className="hover:bg-gray-50">
-                    <td className="border px-4 py-2">{entry.inward_date}</td>
+                    <td className="border px-4 py-2">{isoToDMY(entry.inward_date) || '-'}</td>
                     <td className="border px-4 py-2">{entry.item_name}</td>
                     <td className="border px-4 py-2 text-right">{entry.qty}</td>
                     <td className="border px-4 py-2">{entry.details || '—'}</td>
@@ -458,6 +461,7 @@ const Inventory = () => {
             <label className="block text-sm font-medium mb-1">Outward Date <span className="text-red-500">*</span></label>
             <input
               type="date"
+              lang="en-GB"
               value={outwardForm.outward_date}
               onChange={(e) => setOutwardForm({ ...outwardForm, outward_date: e.target.value })}
               className="w-full border px-3 py-2 rounded"
@@ -568,7 +572,7 @@ const Inventory = () => {
               ) : (
                 outwardEntries.map((entry) => (
                   <tr key={entry.id} className="hover:bg-gray-50">
-                    <td className="border px-4 py-2">{entry.outward_date}</td>
+                    <td className="border px-4 py-2">{isoToDMY(entry.outward_date) || '-'}</td>
                     <td className="border px-4 py-2">{entry.item_name}</td>
                     <td className="border px-4 py-2 text-right">{entry.qty}</td>
                     <td className="border px-4 py-2">{entry.receiver}</td>

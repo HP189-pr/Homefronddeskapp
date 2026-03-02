@@ -13,6 +13,7 @@ import {
   syncCctvExamsFromSheet,
   syncCctvFromSheet,
 } from "../services/cctvservice";
+import { isoToDMY } from "../utils/date";
 
 const ACTIONS = ["CCTV Monitoring", "CCTV-Outward"];
 const EXAM_SESSIONS = ["2026-1", "2026-2", "2027-1", "2027-2", "2028-1", "2028-2"];
@@ -466,7 +467,7 @@ const CCTVMonitoring = ({
                         <tr className="bg-blue-50 text-sm font-semibold border-t">
                         <td colSpan={placeColumns.length + 12} className="px-3 py-2">
                           <div className="flex flex-wrap gap-4">
-                            <span>{group.exam_date}</span>
+                            <span>{isoToDMY(group.exam_date) || group.exam_date}</span>
                             <span>{group.course}</span>
                             {group.times.map((time) => (
                               <span key={time} className="text-sm text-gray-700">
@@ -769,7 +770,7 @@ const CCTVMonitoring = ({
                     .join(" - ");
                   return (
                     <tr key={row.id} className="border-b last:border-b-0">
-                      <td className="px-3 py-2 align-top">{row.outward_date || "—"}</td>
+                      <td className="px-3 py-2 align-top">{isoToDMY(row.outward_date) || "—"}</td>
                       <td className="px-3 py-2 align-top">{row.cctv_record_no || "—"}</td>
                       <td className="px-3 py-2 align-top">{row.outward_no || "—"}</td>
                       <td className="px-3 py-2 align-top">{row.college_name || "—"}</td>
@@ -822,6 +823,7 @@ const CCTVMonitoring = ({
             <form onSubmit={handleOutwardSubmit} className="grid md:grid-cols-2 gap-4">
               <input
                 type="date"
+                lang="en-GB"
                 value={outwardForm.outward_date}
                 onChange={(e) =>
                   setOutwardForm({ ...outwardForm, outward_date: e.target.value })
@@ -864,6 +866,7 @@ const CCTVMonitoring = ({
 
               <input
                 type="date"
+                lang="en-GB"
                 value={outwardForm.last_date || ""}
                 onChange={(e) =>
                   setOutwardForm({ ...outwardForm, last_date: e.target.value })

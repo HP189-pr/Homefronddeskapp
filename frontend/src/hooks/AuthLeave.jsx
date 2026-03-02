@@ -11,6 +11,23 @@ import axios from '../api/axiosInstance';
 
 const API = '/api';
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function getWithRetry(url, options = {}, retries = 3, delayMs = 900) {
+  let lastError = null;
+  for (let attempt = 0; attempt < retries; attempt += 1) {
+    try {
+      return await axios.get(url, options);
+    } catch (err) {
+      lastError = err;
+      const isNetworkError = !err?.response;
+      if (!isNetworkError || attempt === retries - 1) break;
+      await sleep(delayMs * (attempt + 1));
+    }
+  }
+  throw lastError;
+}
+
 export default function AuthLeave() {
   const [tab, setTab] = useState('allocations');
 
@@ -72,10 +89,10 @@ export default function AuthLeave() {
 
   async function loadTypes() {
     try {
-      const res = await axios.get(`${API}/leavetype/`);
+      const res = await getWithRetry(`${API}/leavetype/`);
       const data = Array.isArray(res.data)
         ? res.data
-        : res.data?.results || [];
+        : res.data?.items || res.data?.results || [];
       setTypes(data);
     } catch (err) {
       console.error('loadTypes error:', err.response?.status, err.response?.data || err.message);
@@ -87,10 +104,10 @@ export default function AuthLeave() {
 
   async function loadPeriods() {
     try {
-      const res = await axios.get(`${API}/leave-periods/`);
+      const res = await getWithRetry(`${API}/leave-periods/`);
       const data = Array.isArray(res.data)
         ? res.data
-        : res.data?.results || [];
+        : res.data?.items || res.data?.results || [];
       const sorted = data.slice().sort(
         (a, b) => new Date(b.start_date) - new Date(a.start_date)
       );
@@ -112,10 +129,10 @@ export default function AuthLeave() {
     try {
       let url = `${API}/leave-allocations/`;
       if (periodId) url += `?period=${encodeURIComponent(periodId)}`;
-      const res = await axios.get(url);
+      const res = await getWithRetry(url);
       const data = Array.isArray(res.data)
         ? res.data
-        : res.data?.results || [];
+        : res.data?.items || res.data?.results || [];
       setAllocs(data.map(normalizeAlloc));
     } catch (err) {
       console.error('loadAllocations error:', err.response?.status, err.response?.data || err.message);
@@ -127,13 +144,17 @@ export default function AuthLeave() {
   }
 
   function normalizeAlloc(a) {
+    const periodId = a.period_id ?? a.period?.id ?? a.period ?? null;
+    const periodObj = periods.find((p) => String(p.id) === String(periodId));
+    const leaveCode = a.leave_code || a.leave_type?.leave_code || '';
+    const leaveName = a.leave_type?.leave_name || types.find((t) => String(t.leave_code) === String(leaveCode))?.leave_name || '';
     return {
       id: a.id,
       emp_id: a.emp_id ?? null,
-      leave_code: a.leave_code || a.leave_type?.leave_code,
-      leave_name: a.leave_type?.leave_name || '',
-      period_id: a.period?.id || a.period,
-      period_name: a.period?.period_name || '',
+      leave_code: leaveCode,
+      leave_name: leaveName,
+      period_id: periodId,
+      period_name: a.period?.period_name || periodObj?.period_name || '',
       allocated: a.allocated ?? 0,
       allocated_start_date: a.allocated_start_date,
       allocated_end_date: a.allocated_end_date,
@@ -142,8 +163,8 @@ export default function AuthLeave() {
       balance: a.balance ?? '',
       // Display fields for table rendering
       emp_display: a.emp_id || 'All Employees',
-      leave_display: `${a.leave_type?.leave_name || ''} (${a.leave_code || a.leave_type?.leave_code || ''})`,
-      period_display: a.period?.period_name || '',
+      leave_display: `${leaveName || leaveCode || 'N/A'}${leaveCode ? ` (${leaveCode})` : ''}`,
+      period_display: a.period?.period_name || periodObj?.period_name || (periodId ? `Period ${periodId}` : ''),
     };
   }
 

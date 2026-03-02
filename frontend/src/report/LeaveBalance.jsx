@@ -251,11 +251,11 @@ const LeaveBalance = ({ user, selectedPeriod: controlledPeriod, setSelectedPerio
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">From Date *</label>
-              <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full p-2 border rounded" />
+              <input type="date" lang="en-GB" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full p-2 border rounded" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">To Date *</label>
-              <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full p-2 border rounded" />
+              <input type="date" lang="en-GB" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full p-2 border rounded" />
             </div>
           </div>
         )}

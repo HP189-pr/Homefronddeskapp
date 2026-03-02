@@ -36,6 +36,8 @@ import { StudentDegree } from './student_degree.mjs';
 import { AdmissionCancel } from './admission_cancel.mjs';
 import { ConvocationMaster } from './convocation_master.mjs';
 import { TranscriptRequest } from './transcript_request.mjs';
+import { GoogleFormSubmission } from './mail_request.mjs';
+import { registerModelSignalHooks } from '../services/modelSignalService.mjs';
 
 // Optionally define associations (if you want)
 // ECA relations: Eca belongs to DocRec via doc_rec_id string key and User (creator)
@@ -103,7 +105,10 @@ const models = {
   AdmissionCancel,
   ConvocationMaster,
   TranscriptRequest,
+  GoogleFormSubmission,
 };
+
+registerModelSignalHooks(models);
 
 export { sequelize };
 export default models;

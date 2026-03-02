@@ -355,6 +355,7 @@ const CashReport = ({ onBack }) => {
                     <label className="text-sm">From</label>
                     <input
                       type="date"
+                      lang="en-GB"
                       value={dateFrom}
                       onChange={e => setDateFrom(e.target.value)}
                       className="border px-3 py-2 rounded"
@@ -365,6 +366,7 @@ const CashReport = ({ onBack }) => {
                     <label className="text-sm">To</label>
                     <input
                       type="date"
+                      lang="en-GB"
                       value={dateTo}
                       onChange={e => setDateTo(e.target.value)}
                       className="border px-3 py-2 rounded"
@@ -375,6 +377,7 @@ const CashReport = ({ onBack }) => {
                     <label className="text-sm">Count From</label>
                     <input
                       type="date"
+                      lang="en-GB"
                       value={countFrom}
                       onChange={e => setCountFrom(e.target.value)}
                       className="border px-3 py-2 rounded"
@@ -416,6 +419,7 @@ const CashReport = ({ onBack }) => {
                     <div>
                       <input
                         type="date"
+                        lang="en-GB"
                         value={dateTo}
                         onChange={e => setDateTo(e.target.value)}
                         className="border px-3 py-2 rounded"

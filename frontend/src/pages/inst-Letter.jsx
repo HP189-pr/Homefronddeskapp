@@ -1082,6 +1082,7 @@ const InstitutionalLetter = ({ rights = DEFAULT_RIGHTS, onToggleSidebar, onToggl
 							<label className="label">Doc Rec Date</label>
 							<input
 								type="date"
+								lang="en-GB"
 								className="input"
 								value={mform.doc_rec_date ? dmyToISO(mform.doc_rec_date) : ""}
 								onChange={(e) =>
@@ -1108,6 +1109,7 @@ const InstitutionalLetter = ({ rights = DEFAULT_RIGHTS, onToggleSidebar, onToggl
 							<label className="label">Inst Veri Date</label>
 							<input
 								type="date"
+								lang="en-GB"
 								className="input"
 								value={mform.inst_veri_date ? dmyToISO(mform.inst_veri_date) : ""}
 								onChange={(e) => setMForm((prev) => ({ ...prev, inst_veri_date: isoToDMY(e.target.value) }))}
@@ -1190,6 +1192,7 @@ const InstitutionalLetter = ({ rights = DEFAULT_RIGHTS, onToggleSidebar, onToggl
 							<label className="label">Reference Date</label>
 							<input
 								type="date"
+								lang="en-GB"
 								className="input"
 								value={mform.ref_date ? dmyToISO(mform.ref_date) : ""}
 								onChange={(e) => setMForm((prev) => ({ ...prev, ref_date: isoToDMY(e.target.value) }))}

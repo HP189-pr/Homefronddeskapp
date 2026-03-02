@@ -1,12 +1,14 @@
 import * as svc from '../services/instLetterService.mjs';
+import { mapDateKeysToDMY } from '../utils/dateFormat.mjs';
 
 function mapMain(row) {
   if (!row) return row;
   const out = row.toJSON ? row.toJSON() : { ...row };
-  return {
+  const mapped = {
     ...out,
     doc_rec: out.doc_rec_id,
   };
+  return mapDateKeysToDMY(mapped, ['doc_rec_date', 'inst_veri_date', 'ref_date']);
 }
 
 function mapStudent(row) {
@@ -113,6 +115,20 @@ export async function deleteStudent(req, res, next) {
   }
 }
 
+export async function generatePdf(req, res, next) {
+  try {
+    const out = await svc.generateInstLetterPdf(req.body || {});
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${out.filename}"`);
+    res.status(200).send(out.buffer);
+  } catch (e) {
+    if (e?.statusCode) {
+      return res.status(e.statusCode).json({ error: e.message, detail: e.message });
+    }
+    next(e);
+  }
+}
+
 export default {
   listMains,
   getMain,
@@ -124,4 +140,5 @@ export default {
   createStudent,
   updateStudent,
   deleteStudent,
+  generatePdf,
 };

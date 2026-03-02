@@ -33,9 +33,24 @@ const PRESENCE_TTL_MS = 30 * 1000; // 30s considered online
 const presence = new Map(); // userId -> lastSeen epoch ms
 
 function nowMs() { return Date.now(); }
-function markOnline(userId) { if (userId) presence.set(userId, nowMs()); }
-function isOnline(userId) { const ts = presence.get(userId); return !!(ts && nowMs() - ts < PRESENCE_TTL_MS); }
+function prunePresence() {
+  const cutoff = nowMs() - PRESENCE_TTL_MS;
+  for (const [uid, ts] of presence.entries()) {
+    if (!ts || ts < cutoff) presence.delete(uid);
+  }
+}
+function markOnline(userId) {
+  if (!userId) return;
+  prunePresence();
+  presence.set(userId, nowMs());
+}
+function isOnline(userId) {
+  prunePresence();
+  const ts = presence.get(userId);
+  return !!(ts && nowMs() - ts < PRESENCE_TTL_MS);
+}
 function getPresenceList() {
+  prunePresence();
   const out = [];
   for (const [uid, ts] of presence.entries()) {
     out.push({ userid: uid, last_seen: ts, online: nowMs() - ts < PRESENCE_TTL_MS });
@@ -50,6 +65,7 @@ router.post('/ping', requireAuth, async (req, res) => {
 
 // Presence list (lightweight)
 router.get('/presence', requireAuth, async (req, res) => {
+  markOnline(req.user?.id);
   try { return res.json({ presence: getPresenceList() }); } catch (e) { return res.json({ presence: [] }); }
 });
 
@@ -107,7 +123,34 @@ router.get('/history/:userid', requireAuth, async (req, res, next) => {
       return o;
     });
     res.json({ messages: out });
-  } catch (e) { next(e); }
+  } catch (e) {
+    try {
+      const [rows] = await ChatMessage.sequelize.query(
+        `
+          SELECT *
+          FROM chat_messages
+          WHERE (
+            (from_user_id = :me AND to_user_id = :other AND COALESCE(hide_for_sender, false) = false)
+            OR
+            (from_user_id = :other AND to_user_id = :me AND COALESCE(hide_for_receiver, false) = false)
+          )
+          ORDER BY createdat ASC
+          LIMIT :limit OFFSET :offset
+        `,
+        {
+          replacements: { me, other, limit, offset },
+        },
+      );
+      const out = (rows || []).map((o) => {
+        const row = { ...o, from_userid: o.from_user_id, to_userid: o.to_user_id };
+        if (row && typeof row.text === 'string') row.text = decryptText(row.text);
+        return row;
+      });
+      return res.json({ messages: out });
+    } catch (fallbackErr) {
+      return next(fallbackErr);
+    }
+  }
 });
 
 // List file history with another user (sent and received)
@@ -128,7 +171,30 @@ router.get('/files/:userid', requireAuth, async (req, res, next) => {
     });
     // No need to decrypt files; only filenames may be present
     res.json({ files: rows });
-  } catch (e) { next(e); }
+  } catch (e) {
+    try {
+      const [rows] = await ChatMessage.sequelize.query(
+        `
+          SELECT *
+          FROM chat_messages
+          WHERE (
+            (from_user_id = :me AND to_user_id = :other AND COALESCE(hide_for_sender, false) = false)
+            OR
+            (from_user_id = :other AND to_user_id = :me AND COALESCE(hide_for_receiver, false) = false)
+          )
+          AND file_path IS NOT NULL
+          ORDER BY createdat DESC
+        `,
+        {
+          replacements: { me, other },
+        },
+      );
+      const out = (rows || []).map((o) => ({ ...o, from_userid: o.from_user_id, to_userid: o.to_user_id }));
+      return res.json({ files: out });
+    } catch (fallbackErr) {
+      return next(fallbackErr);
+    }
+  }
 });
 
 // Clear chat history (soft hide) - type: all | sent | received | files | messages

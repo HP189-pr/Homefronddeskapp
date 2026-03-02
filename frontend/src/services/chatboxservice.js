@@ -1,6 +1,7 @@
 import API from '../api/axiosInstance';
 
 const ChatBoxService = {
+  users: () => API.get('/api/users/'),
   ping: () => API.post('/api/chat/ping/'),
   presence: () => API.get('/api/chat/presence/'),
   history: (userId, limit = 200) => API.get(`/api/chat/history/${userId}/`, { params: { limit } }),

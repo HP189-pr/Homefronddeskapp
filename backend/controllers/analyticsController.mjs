@@ -12,7 +12,10 @@ export async function enrollmentStats(req, res, next) {
     }
 
     res.json({ columns, data });
-  } catch (e) { next(e); }
+  } catch (e) {
+    console.error('enrollmentStats fallback:', e?.message || e);
+    res.json({ columns: ['subcourse_name'], data: [] });
+  }
 }
 
 export default { enrollmentStats };

@@ -4,6 +4,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import PageTopbar from "../components/PageTopbar";
 import { fetchFeesAggregate, fetchRecRange } from "../services/cashRegisterService";
+import { isoToDMY } from "../utils/date";
 
 /**
  * PAYMENT REPORT (AUDIT SAFE)
@@ -119,7 +120,7 @@ const PaymentReport = ({ onBack }) => {
     doc.setFontSize(12);
     doc.text(REPORT_META[reportBy].title, 14, 10);
     doc.setFontSize(9);
-    doc.text(`Period: ${dateFrom} to ${dateTo}`, 14, 16);
+    doc.text(`Period: ${isoToDMY(dateFrom) || dateFrom} to ${isoToDMY(dateTo) || dateTo}`, 14, 16);
 
     const head = [[
       REPORT_META[reportBy].column,
@@ -173,7 +174,7 @@ const PaymentReport = ({ onBack }) => {
     }
     // Default: Daily
     const day = d.getDate().toString().padStart(2, '0');
-    const month = d.toLocaleString('en-US', { month: 'short' });
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
     const year = d.getFullYear();
     return `${day}-${month}-${year}`;
   };
@@ -237,6 +238,7 @@ const PaymentReport = ({ onBack }) => {
             </label>
             <input
               type="date"
+              lang="en-GB"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
               className="rounded-md border border-gray-300 px-3 py-2 text-sm min-w-[150px]"
@@ -249,6 +251,7 @@ const PaymentReport = ({ onBack }) => {
             </label>
             <input
               type="date"
+              lang="en-GB"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
               className="rounded-md border border-gray-300 px-3 py-2 text-sm min-w-[150px]"

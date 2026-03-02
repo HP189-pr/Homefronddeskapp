@@ -266,6 +266,10 @@ const Sidebar = ({ isOpen, setSidebarOpen, setSelectedMenuItem }) => {
           src={profilePic}
           alt="Profile"
           className="w-14 h-14 rounded-full object-cover border-2 border-white"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            setProfilePic(DEFAULT_PROFILE_PIC);
+          }}
         />
 
         {isOpen && (

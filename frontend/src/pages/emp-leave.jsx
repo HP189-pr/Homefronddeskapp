@@ -5,18 +5,14 @@ import { useAuth } from '../hooks/AuthContext';
 import { FaUserTie, FaChevronUp, FaChevronDown } from 'react-icons/fa';
 import { parseDMY, fmtDate, toISO } from '../report/utils';
 import PageTopbar from "../components/PageTopbar";
+import { normalizeApiList } from '../utils/response';
 
 // Lazy load the report page (keeps main bundle smaller)
 const LeaveReport = React.lazy(() => import('../report/LeaveReport'));
 const LeaveBalance = React.lazy(() => import('../report/LeaveBalance'));
 const LeaveCalendar = React.lazy(() => import('../report/LeaveCalendar'));
 
-const normalize = (data) => {
-  if (!data) return [];
-  if (Array.isArray(data)) return data;
-  if (data.results && Array.isArray(data.results)) return data.results;
-  return [];
-};
+const normalize = normalizeApiList;
 
 // Removed duplicate local definition of parseDMY. Using imported version from '../report/utils'.
 

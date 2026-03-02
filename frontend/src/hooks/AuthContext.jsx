@@ -28,7 +28,7 @@ export function AuthProvider({ children }) {
     });
 
     const [token, setToken] = useState(() =>
-        localStorage.getItem("access_token")
+        localStorage.getItem("access_token") || localStorage.getItem("token")
     );
 
     const [profilePicture, setProfilePicture] = useState(DEFAULT_PROFILE_PIC);
@@ -39,13 +39,13 @@ export function AuthProvider({ children }) {
     /* ==================== HELPERS ==================== */
 
     const authHeader = () => ({
-        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        Authorization: `Bearer ${localStorage.getItem("access_token") || localStorage.getItem("token") || ""}`,
     });
 
     /* ==================== FETCH USER PROFILE ==================== */
 
     const fetchUserProfile = async () => {
-        const storedToken = localStorage.getItem("access_token");
+        const storedToken = localStorage.getItem("access_token") || localStorage.getItem("token");
         if (!storedToken) {
             setLoading(false);
             return;
@@ -130,7 +130,7 @@ export function AuthProvider({ children }) {
 
     useEffect(() => {
         const initAuth = async () => {
-            if (localStorage.getItem("access_token")) {
+            if (localStorage.getItem("access_token") || localStorage.getItem("token")) {
                 await fetchUserProfile();
             } else {
                 setUser(null);
@@ -153,6 +153,7 @@ export function AuthProvider({ children }) {
 
             if (data.access) {
                 localStorage.setItem("access_token", data.access);
+                localStorage.setItem("token", data.access);
                 localStorage.setItem("refresh_token", data.refresh);
                 setToken(data.access);
                 await fetchUserProfile();
@@ -189,6 +190,7 @@ export function AuthProvider({ children }) {
                 refresh,
             });
             localStorage.setItem("access_token", data.access);
+            localStorage.setItem("token", data.access);
             setToken(data.access);
             return true;
         } catch (err) {
@@ -264,7 +266,12 @@ export function AuthProvider({ children }) {
             const { data } = await API.get("/api/users/", {
                 headers: authHeader(),
             });
-            return data;
+            if (Array.isArray(data)) return data;
+            if (Array.isArray(data?.users)) return data.users;
+            if (Array.isArray(data?.results)) return data.results;
+            if (Array.isArray(data?.items)) return data.items;
+            if (Array.isArray(data?.data)) return data.data;
+            return [];
         } catch {
             return [];
         }
@@ -308,7 +315,10 @@ export function AuthProvider({ children }) {
     /* ==================== LOGOUT ==================== */
 
     const logout = (navigate) => {
-        localStorage.clear();
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
         setUser(null);
         setToken(null);
         setIsAdmin(false);

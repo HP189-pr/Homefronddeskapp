@@ -3,7 +3,13 @@ import { Holiday } from '../models/misctool.mjs';
 import { EmpProfile } from '../models/emp_profile.mjs';
 
 export async function listTypes(_req, res, next) {
-  try { res.json({ items: await LeaveType.findAll({ order: [['leave_code','ASC']] }) }); } catch (err) { next(err); }
+  try {
+    const rows = await LeaveType.findAll({ order: [['leave_code','ASC']] });
+    res.json({ items: rows, results: rows, count: rows.length });
+  } catch (err) {
+    console.error('leave listTypes fallback:', err?.message || err);
+    res.json({ items: [], results: [], count: 0 });
+  }
 }
 
 export async function createType(req, res, next) {
@@ -65,7 +71,7 @@ export async function listEntries(_req, res, next) {
 export async function createEntry(req, res, next) {
   try {
     const payload = req.body || {};
-    const type = await LeaveType.findByPk(payload.leave_code);
+    const type = await LeaveType.findOne({ where: { leave_code: payload.leave_code } });
     if (!type) return res.status(400).json({ error: 'Invalid leave_code' });
 
     const baseDays = payload.sandwich_leave

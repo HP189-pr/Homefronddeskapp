@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useRef } from "react";
 import { dmyToISO, isoToDMY, pad2 } from "../utils/date";
 import PageTopbar from "../components/PageTopbar";
 import useEnrollmentLookup from '../hooks/useEnrollmentLookup';
+import { normalizeApiList } from '../utils/response';
 
 const ACTIONS = ["➕", "🔍", "📄 Report"];
 
@@ -133,7 +134,7 @@ export default function DocReceive({ onToggleSidebar, onToggleChatbox }) {
       const im = imRes.ok ? await imRes.json() : (await imRes.text());
       const ists = isRes.ok ? await isRes.json() : (await isRes.text());
       // Depending on list endpoints, data may be paginated {results:[]}
-      const unwrap = (d) => (d && d.results ? d.results : Array.isArray(d) ? d : (d && d.objects ? d.objects : []));
+      const unwrap = (d) => normalizeApiList(d);
       setRelated({ migration: unwrap(mg), provisional: unwrap(pr), verification: unwrap(vr), inst_verification_main: unwrap(im), inst_verification_students: unwrap(ists) });
     }catch(e){ console.warn('fetchRelatedForDocRec error', e); }
   };
@@ -149,7 +150,8 @@ export default function DocReceive({ onToggleSidebar, onToggleChatbox }) {
       const res = await fetch(url, { headers });
       if (!res.ok) return;
       const data = await res.json();
-      const row = Array.isArray(data) ? (data[0] || null) : (data.results ? (data.results[0] || null) : data);
+      const list = normalizeApiList(data);
+      const row = list.length ? list[0] : (data && typeof data === 'object' ? data : null);
       if (row && typeof row === 'object') {
         setForm((f) => ({
           ...f,
@@ -312,7 +314,7 @@ export default function DocReceive({ onToggleSidebar, onToggleChatbox }) {
       }
       const data = await res.json();
       // support paginated results with `results`
-      const list = data && data.results ? data.results : Array.isArray(data) ? data : (data && data.objects ? data.objects : []);
+      const list = normalizeApiList(data);
       // Normalize entries to a common shape with a `type` key
       const normalized = list.map(item => {
         // Heuristics to detect type
@@ -497,7 +499,7 @@ export default function DocReceive({ onToggleSidebar, onToggleChatbox }) {
               const res = await fetch(`/api/verification/?doc_rec=${encodeURIComponent(docId)}`, { headers });
               if (!res.ok) return null;
               const data = await res.json();
-              const items = data && data.results ? data.results : (Array.isArray(data) ? data : (data && data.objects ? data.objects : []));
+              const items = normalizeApiList(data);
               return items;
             } catch (e) { return null; }
           };
@@ -540,7 +542,7 @@ export default function DocReceive({ onToggleSidebar, onToggleChatbox }) {
         const vrRes = await fetch(`/api/verification/?doc_rec=${encodeURIComponent(rec.doc_rec_id || rec.id)}&limit=1`, { headers: authHeaders() });
         if (vrRes.ok) {
           const vrData = await vrRes.json();
-          const vrList = vrData.results || vrData || [];
+          const vrList = normalizeApiList(vrData);
           if (vrList.length > 0) {
             const vr = vrList[0];
             // Update the signal-created verification with user's form data
@@ -735,7 +737,7 @@ export default function DocReceive({ onToggleSidebar, onToggleChatbox }) {
             {/* doc_rec_date */}
             <div>
               <label className="text-sm">Doc Rec Date</label>
-              <input type="date" className="w-full border rounded-lg p-2" value={(form.doc_rec_date && dmyToISO(form.doc_rec_date)) || ''} onChange={(e)=>handleChange("doc_rec_date", e.target.value ? isoToDMY(e.target.value) : todayDMY())} />
+              <input type="date" lang="en-GB" className="w-full border rounded-lg p-2" value={(form.doc_rec_date && dmyToISO(form.doc_rec_date)) || ''} onChange={(e)=>handleChange("doc_rec_date", e.target.value ? isoToDMY(e.target.value) : todayDMY())} />
             </div>
 
             {/* apply_for */}

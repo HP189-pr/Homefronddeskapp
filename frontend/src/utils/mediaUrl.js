@@ -21,12 +21,16 @@ export const normalizeMediaUrl = (value) => {
     return `${API_BASE_URL}${value}`;
   }
 
+  if (value.startsWith("/api/profile/photo/")) {
+    return `${API_BASE_URL}${value}`;
+  }
+
   if (value.startsWith("media/")) {
     return `${API_BASE_URL}/${value}`;
   }
 
   if (value.startsWith("profile_pictures/")) {
-    return `${API_BASE_URL}/media/${value}`;
+    return null;
   }
 
   return value;
@@ -34,7 +38,7 @@ export const normalizeMediaUrl = (value) => {
 
 export const DEFAULT_PROFILE_PIC = "/profilepic/default-profile.png";
 
-export const resolveProfilePicture = (source) => {
+export const resolveProfilePictureOrNull = (source) => {
   const raw =
     source?.profile_picture ||
     source?.profile_picture_url ||
@@ -47,5 +51,9 @@ export const resolveProfilePicture = (source) => {
     source?.profilePicture ||
     "";
 
-  return normalizeMediaUrl(raw) || DEFAULT_PROFILE_PIC;
+  return normalizeMediaUrl(raw) || null;
+};
+
+export const resolveProfilePicture = (source) => {
+  return resolveProfilePictureOrNull(source) || DEFAULT_PROFILE_PIC;
 };

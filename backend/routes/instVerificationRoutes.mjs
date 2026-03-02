@@ -11,6 +11,10 @@ router.put('/inst-verification-main/:id', ctrl.updateMain);
 
 router.get('/inst-verification/suggest-doc-rec', ctrl.suggestDocRec);
 router.get('/inst-letter/suggest-doc-rec', ctrl.suggestDocRec);
+router.post('/inst-letter/generate-pdf', ctrl.generatePdf);
+router.post('/inst-letter/generate-pdf/', ctrl.generatePdf);
+router.post('/inst-verification/generate-pdf', ctrl.generatePdf);
+router.post('/inst-verification/generate-pdf/', ctrl.generatePdf);
 
 router.get('/inst-verification-student', ctrl.listStudents);
 router.post('/inst-verification-student', ctrl.createStudent);

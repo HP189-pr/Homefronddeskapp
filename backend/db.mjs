@@ -18,6 +18,13 @@ export const sequelize = new Sequelize(
     port: process.env.DATABASE_PORT ? parseInt(process.env.DATABASE_PORT, 10) : 5432,
     dialect: 'postgres',
     logging: false,
+    pool: {
+      max: Number(process.env.DB_POOL_MAX || 20),
+      min: Number(process.env.DB_POOL_MIN || 2),
+      acquire: Number(process.env.DB_POOL_ACQUIRE_MS || 30000),
+      idle: Number(process.env.DB_POOL_IDLE_MS || 10000),
+      evict: Number(process.env.DB_POOL_EVICT_MS || 1000),
+    },
   }
 );
 

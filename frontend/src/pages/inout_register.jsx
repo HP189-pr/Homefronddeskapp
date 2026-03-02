@@ -16,6 +16,7 @@ import {
   getNextInwardNumber,
   getNextOutwardNumber,
 } from '../services/inoutService';
+import { isoToDMY } from '../utils/date';
 
 const InOutRegister = () => {
   const [activeTab, setActiveTab] = useState('inward');
@@ -339,6 +340,7 @@ const InOutRegister = () => {
           </select>
           <input
             type="date"
+            lang="en-GB"
             placeholder="From Date"
             value={inwardFilters.date_from}
             onChange={(e) => setInwardFilters({ ...inwardFilters, date_from: e.target.value })}
@@ -346,6 +348,7 @@ const InOutRegister = () => {
           />
           <input
             type="date"
+            lang="en-GB"
             placeholder="To Date"
             value={inwardFilters.date_to}
             onChange={(e) => setInwardFilters({ ...inwardFilters, date_to: e.target.value })}
@@ -378,6 +381,7 @@ const InOutRegister = () => {
             <label className="block text-sm font-medium mb-1">Date <span className="text-red-500">*</span></label>
             <input
               type="date"
+              lang="en-GB"
               value={inwardForm.inward_date}
               onChange={(e) => setInwardForm({ ...inwardForm, inward_date: e.target.value })}
               className="w-full border px-3 py-2 rounded"
@@ -488,7 +492,7 @@ const InOutRegister = () => {
                 inwardData.map((record) => (
                   <tr key={record.id} className="hover:bg-gray-50">
                     <td className="border px-4 py-2 font-semibold">{record.inward_no}</td>
-                    <td className="border px-4 py-2">{record.inward_date}</td>
+                    <td className="border px-4 py-2">{isoToDMY(record.inward_date) || '-'}</td>
                     <td className="border px-4 py-2">{record.inward_type}</td>
                     <td className="border px-4 py-2">{record.inward_from}</td>
                     <td className="border px-4 py-2">{record.rec_type}</td>
@@ -542,6 +546,7 @@ const InOutRegister = () => {
           </select>
           <input
             type="date"
+            lang="en-GB"
             placeholder="From Date"
             value={outwardFilters.date_from}
             onChange={(e) => setOutwardFilters({ ...outwardFilters, date_from: e.target.value })}
@@ -549,6 +554,7 @@ const InOutRegister = () => {
           />
           <input
             type="date"
+            lang="en-GB"
             placeholder="To Date"
             value={outwardFilters.date_to}
             onChange={(e) => setOutwardFilters({ ...outwardFilters, date_to: e.target.value })}
@@ -581,6 +587,7 @@ const InOutRegister = () => {
             <label className="block text-sm font-medium mb-1">Date <span className="text-red-500">*</span></label>
             <input
               type="date"
+              lang="en-GB"
               value={outwardForm.outward_date}
               onChange={(e) => setOutwardForm({ ...outwardForm, outward_date: e.target.value })}
               className="w-full border px-3 py-2 rounded"
@@ -691,7 +698,7 @@ const InOutRegister = () => {
                 outwardData.map((record) => (
                   <tr key={record.id} className="hover:bg-gray-50">
                     <td className="border px-4 py-2 font-semibold">{record.outward_no}</td>
-                    <td className="border px-4 py-2">{record.outward_date}</td>
+                    <td className="border px-4 py-2">{isoToDMY(record.outward_date) || '-'}</td>
                     <td className="border px-4 py-2">{record.outward_type}</td>
                     <td className="border px-4 py-2">{record.outward_to}</td>
                     <td className="border px-4 py-2">{record.send_type}</td>

@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { getJwtSecrets } from '../utils/jwtSecret.mjs';
 
+const JWT_DEBUG = ['1', 'true', 'yes', 'on'].includes(String(process.env.JWT_DEBUG || '').toLowerCase());
+
 function verifyWithFallback(token) {
   const secrets = getJwtSecrets();
   let firstError = null;
@@ -32,9 +34,13 @@ export async function jwtMiddleware(req, res, next) {
     }
 
     try {
-      console.info('jwtMiddleware: verifying token len', token.length, 'path', req.path);
+      if (JWT_DEBUG) {
+        console.info('jwtMiddleware: verifying token len', token.length, 'path', req.path);
+      }
       const payload = verifyWithFallback(token);
-      console.info('jwtMiddleware: ok payload', { id: payload.id, userid: payload.userid, usertype: payload.usertype });
+      if (JWT_DEBUG) {
+        console.info('jwtMiddleware: ok payload', { id: payload.id, userid: payload.userid, usertype: payload.usertype });
+      }
       // Attach a conservative user object — keep only safe fields
       req.user = {
         id: payload.id ?? payload.userId ?? payload.sub,
@@ -46,10 +52,12 @@ export async function jwtMiddleware(req, res, next) {
     } catch (err) {
       // invalid token: do not block the request here (non-blocking middleware)
       // Optional: enable logging only when explicitly requested
-      try {
-        console.warn('Invalid JWT token provided:', err.message, 'path=', req.path, 'authHeader=', req.headers?.authorization);
-      } catch (_) {
-        // ignore
+      if (JWT_DEBUG) {
+        try {
+          console.warn('Invalid JWT token provided:', err.message, 'path=', req.path);
+        } catch (_) {
+          // ignore
+        }
       }
       req.user = undefined;
     }

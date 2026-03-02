@@ -1,14 +1,7 @@
 import API from '../api/axiosInstance';
+import { normalizeApiList } from '../utils/response';
 
 const BASE_PATH = '/api/transcript-requests/';
-
-const normalizeResponseArray = (data) => {
-  if (!data) return [];
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.results)) return data.results;
-  if (Array.isArray(data?.items)) return data.items;
-  return [];
-};
 
 const extractMessage = (error) => {
   if (!error) return 'Unexpected error';
@@ -32,7 +25,7 @@ export const fetchTranscriptRequests = async ({ status, search, institute, page,
     const response = await API.get(BASE_PATH, { params });
     return {
       raw: response.data,
-      rows: normalizeResponseArray(response.data),
+      rows: normalizeApiList(response.data),
       count: response.data?.count || response.data?.total || undefined,
     };
   } catch (error) {

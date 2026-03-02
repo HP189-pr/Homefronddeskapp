@@ -15,7 +15,7 @@ router.get(['/leave-allocations', '/leave-allocations/'], requireAuth, leaveCtrl
 
 // Admin management endpoints
 router.post(['/leavetype', '/leavetype/'], requireAdmin, leaveCtrl.createType);
-router.get(['/leave-periods', '/leave-periods/'], requireAdmin, leaveCtrl.listPeriods);
+router.get(['/leave-periods', '/leave-periods/'], requireAuth, leaveCtrl.listPeriods);
 router.post(['/leave-periods', '/leave-periods/'], requireAdmin, leaveCtrl.savePeriod);
 router.put(['/leave-periods/:id', '/leave-periods/:id/'], requireAdmin, leaveCtrl.savePeriod);
 router.post(['/empprofile', '/empprofile/'], requireAdmin, leaveCtrl.upsertProfile);

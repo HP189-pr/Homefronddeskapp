@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../hooks/AuthContext';
 import ChatBoxService from '../services/chatboxservice';
 import { API_BASE_URL } from '../api/axiosInstance';
+import { resolveProfilePictureOrNull } from '../utils/mediaUrl';
 
 const decodeUserId = () => {
   try {
@@ -86,6 +87,7 @@ const ChatBox = ({ isOpen: controlledIsOpen, onToggle }) => {
   const [file, setFile] = useState(null);
   const [userQuery, setUserQuery] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [failedAvatars, setFailedAvatars] = useState({});
   const [downloadDirHandle, setDownloadDirHandle] = useState(null);
   const [downloadDirLabel, setDownloadDirLabel] = useState('Not set');
   const [autoDownload, setAutoDownload] = useState(false);
@@ -143,40 +145,27 @@ const ChatBox = ({ isOpen: controlledIsOpen, onToggle }) => {
     return single.slice(0, 2).toUpperCase() || 'U';
   };
   const userAvatar = (u) => {
-    const raw =
-      u?.profile_picture ||
-      u?.profile_picture_url ||
-      u?.profilePic ||
-      u?.avatar ||
-      u?.avatar_url ||
-      u?.photo ||
-      u?.image ||
-      u?.user_profile?.profile_picture ||
-      u?.profile?.profile_picture ||
-      null;
-    if (!raw) return null;
-    const value = String(raw).trim();
-    if (!value) return null;
-    if (/^data:image\//i.test(value)) return value;
-    if (/^https?:\/\//i.test(value)) return value;
-    if (value.startsWith('/media/')) return `${API_BASE_URL}${value}`;
-    if (value.startsWith('media/')) return `${API_BASE_URL}/${value}`;
-    if (value.startsWith('/')) return `${API_BASE_URL}${value}`;
-    if (/^(profile_pictures|profilepics|uploads|user_photos)\//i.test(value)) {
-      return `${API_BASE_URL}/media/${value}`;
-    }
-    return `${API_BASE_URL}/media/${value}`;
+    const out = resolveProfilePictureOrNull(u);
+    return out || null;
   };
 
   /* =================== DATA LOADERS =================== */
   const loadUsers = async () => {
     if (!isAuthenticated) return;
     try {
-      const list = await fetchUsers();
+      let list = await fetchUsers();
+      if (!list || (typeof list === 'object' && !Array.isArray(list) && !Array.isArray(list?.users) && !Array.isArray(list?.results) && !Array.isArray(list?.items) && !Array.isArray(list?.data))) {
+        const resp = await ChatBoxService.users();
+        list = resp?.data;
+      }
       const arr = Array.isArray(list)
         ? list
+        : Array.isArray(list?.users)
+        ? list.users
         : Array.isArray(list?.results)
         ? list.results
+        : Array.isArray(list?.items)
+        ? list.items
         : Array.isArray(list?.data)
         ? list.data
         : [];
@@ -197,7 +186,6 @@ const ChatBox = ({ isOpen: controlledIsOpen, onToggle }) => {
   const loadPresence = async () => {
     if (!isAuthenticated) return;
     try {
-      await ChatBoxService.ping();
       const res = await ChatBoxService.presence();
       const map = {};
       for (const row of res.data?.presence || []) {
@@ -254,7 +242,7 @@ const ChatBox = ({ isOpen: controlledIsOpen, onToggle }) => {
   useEffect(() => {
     if (!isAuthenticated) return undefined;
     loadUsers();
-    usersTimer.current = setInterval(loadUsers, 10000);
+    usersTimer.current = setInterval(loadUsers, 45000);
     return () => {
       if (usersTimer.current) clearInterval(usersTimer.current);
     };
@@ -263,7 +251,7 @@ const ChatBox = ({ isOpen: controlledIsOpen, onToggle }) => {
   useEffect(() => {
     if (!isAuthenticated) return undefined;
     loadPresence();
-    presenceTimer.current = setInterval(loadPresence, 12000);
+    presenceTimer.current = setInterval(loadPresence, 20000);
     return () => {
       if (presenceTimer.current) clearInterval(presenceTimer.current);
     };
@@ -278,7 +266,7 @@ const ChatBox = ({ isOpen: controlledIsOpen, onToggle }) => {
       await loadHistory(selectedUser);
       await loadFiles(selectedUser);
     };
-    historyTimer.current = setInterval(tick, 8000);
+    historyTimer.current = setInterval(tick, 10000);
     return () => {
       if (historyTimer.current) clearInterval(historyTimer.current);
     };
@@ -289,11 +277,11 @@ const ChatBox = ({ isOpen: controlledIsOpen, onToggle }) => {
 
     let cancelled = false;
     const tick = async () => {
-      const subset = users.slice(0, 40);
+      const subset = users.slice(0, 15);
       const results = await Promise.all(
         subset.map(async (u) => {
           try {
-            const r = await ChatBoxService.history(u.id, 200);
+            const r = await ChatBoxService.history(u.id, 30);
             const list = r?.data?.messages || [];
             const latest = list[list.length - 1];
             return { uid: u.id, latest };
@@ -343,7 +331,7 @@ const ChatBox = ({ isOpen: controlledIsOpen, onToggle }) => {
     };
 
     tick();
-    latestUsersPollRef.current = setInterval(tick, 12000);
+    latestUsersPollRef.current = setInterval(tick, 30000);
     return () => {
       cancelled = true;
       if (latestUsersPollRef.current) clearInterval(latestUsersPollRef.current);
@@ -722,6 +710,7 @@ const ChatBox = ({ isOpen: controlledIsOpen, onToggle }) => {
               const code = formatName(u);
               const uid = userKey(u);
               const avatar = userAvatar(u);
+              const broken = !!failedAvatars[String(uid)];
               return (
                 <button
                   key={uid}
@@ -733,7 +722,7 @@ const ChatBox = ({ isOpen: controlledIsOpen, onToggle }) => {
                   className="relative rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-400"
                   aria-label={`Open chat with ${code}`}
                 >
-                  {avatar ? (
+                  {avatar && !broken ? (
                     <img src={avatar} alt={code} className="w-10 h-10 rounded-full object-cover border border-gray-500" />
                   ) : (
                     <div className="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center text-sm font-semibold">
@@ -781,6 +770,7 @@ const ChatBox = ({ isOpen: controlledIsOpen, onToggle }) => {
                     const uid = userKey(u);
                     const code = formatName(u);
                     const avatar = userAvatar(u);
+                    const broken = !!failedAvatars[String(uid)];
                     const isOnline = !!onlineMap[uid];
                     const hasUnread = (unreadCounts[uid] || 0) > 0;
                     return (
@@ -795,13 +785,14 @@ const ChatBox = ({ isOpen: controlledIsOpen, onToggle }) => {
                         }`}
                       >
                         <div className="relative">
-                          {avatar ? (
+                          {avatar && !broken ? (
                             <img
                               src={avatar}
                               alt={code}
                               className={`w-10 h-10 rounded-full object-cover border-2 ${
                                 isOnline ? 'border-sky-400' : 'border-gray-500'
                               }`}
+                              onError={() => setFailedAvatars((prev) => ({ ...prev, [String(uid)]: true }))}
                             />
                           ) : (
                             <div
@@ -875,11 +866,17 @@ const ChatBox = ({ isOpen: controlledIsOpen, onToggle }) => {
                     <FiChevronLeft />
                   </button>
 
-                  {userAvatar(selectedUser) ? (
+                  {userAvatar(selectedUser) && !failedAvatars[String(userKey(selectedUser))] ? (
                     <img
                       src={userAvatar(selectedUser)}
                       alt={formatName(selectedUser)}
                       className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                      onError={() =>
+                        setFailedAvatars((prev) => ({
+                          ...prev,
+                          [String(userKey(selectedUser))]: true,
+                        }))
+                      }
                     />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-gray-500 flex items-center justify-center font-semibold">

@@ -1,6 +1,7 @@
 // inst-letterservice.js
 // Consolidated helpers for Institutional Letter/Verification APIs
 import { API_BASE_URL } from '../api/axiosInstance';
+import { toApiDate, toDisplayDate } from '../utils/date';
 
 const BACKEND_BASE = (API_BASE_URL || 'http://127.0.0.1:5000').replace(/\/$/, '');
 
@@ -16,6 +17,28 @@ const unwrap = (data) => {
   if (Array.isArray(data.items)) return data.items;
   if (Array.isArray(data.objects)) return data.objects;
   return [];
+};
+
+const MAIN_DATE_FIELDS = ['doc_rec_date', 'inst_veri_date', 'ref_date'];
+
+const mapMainDateOut = (row) => {
+  if (!row || typeof row !== 'object') return row;
+  const out = { ...row };
+  for (const key of MAIN_DATE_FIELDS) {
+    if (!Object.prototype.hasOwnProperty.call(out, key)) continue;
+    out[key] = toDisplayDate(out[key]) || out[key] || '';
+  }
+  return out;
+};
+
+const mapMainDateIn = (payload = {}) => {
+  const out = { ...payload };
+  for (const key of MAIN_DATE_FIELDS) {
+    if (!Object.prototype.hasOwnProperty.call(out, key)) continue;
+    const converted = toApiDate(out[key]);
+    out[key] = converted || null;
+  }
+  return out;
 };
 
 const jsonFetch = async (path, { method = "GET", body, apiBase = "/api", headersFn = defaultHeaders } = {}) => {
@@ -57,18 +80,21 @@ export const fetchInstLetterMains = async ({ search = "", docRec = "", ivRecordN
   if (search) params.set("search", search);
   if (limit) params.set("limit", String(limit));
   const data = await jsonFetch(`/inst-verification-main/?${params.toString()}`, { apiBase, headersFn });
-  return unwrap(data);
+  return unwrap(data).map(mapMainDateOut);
 };
 
 export const fetchInstLetterMainDetail = async (id, { apiBase = "/api", headersFn = defaultHeaders } = {}) => {
   if (!id) throw new Error("Main record id is required");
-  return jsonFetch(`/inst-verification-main/${id}/`, { apiBase, headersFn });
+  const data = await jsonFetch(`/inst-verification-main/${id}/`, { apiBase, headersFn });
+  return mapMainDateOut(data);
 };
 
 export const saveInstLetterMain = async (payload, { id = null, apiBase = "/api", headersFn = defaultHeaders } = {}) => {
   const path = id ? `/inst-verification-main/${id}/` : `/inst-verification-main/`;
   const method = id ? "PUT" : "POST";
-  return jsonFetch(path, { method, body: payload, apiBase, headersFn });
+  const normalizedPayload = mapMainDateIn(payload || {});
+  const out = await jsonFetch(path, { method, body: normalizedPayload, apiBase, headersFn });
+  return mapMainDateOut(out);
 };
 
 export const fetchInstLetterStudents = async ({ docRec, apiBase = "/api", headersFn = defaultHeaders } = {}) => {

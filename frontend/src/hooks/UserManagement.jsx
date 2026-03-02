@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import axios from "../api/axiosInstance";
-import { DEFAULT_PROFILE_PIC, resolveProfilePicture } from "../utils/mediaUrl";
+import { resolveProfilePictureOrNull } from "../utils/mediaUrl";
 
 const UserManagement = ({ selectedTopbarMenu }) => {
   const { fetchUsers, fetchUserDetail } = useAuth();
@@ -13,12 +13,24 @@ const UserManagement = ({ selectedTopbarMenu }) => {
   const [changeUserId, setChangeUserId] = useState(null);
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [failedImages, setFailedImages] = useState({});
+
+  const getInitials = (user) => {
+    const first = String(user?.first_name || '').trim();
+    const last = String(user?.last_name || '').trim();
+    const username = String(user?.username || user?.userid || '').trim();
+    const full = `${first} ${last}`.trim() || username;
+    if (!full) return 'U';
+    const words = full.split(/\s+/).filter(Boolean);
+    if (words.length >= 2) return `${words[0][0] || ''}${words[words.length - 1][0] || ''}`.toUpperCase();
+    return words[0].slice(0, 2).toUpperCase();
+  };
 
   // 🔹 Fetch Users from API
   useEffect(() => {
     async function loadUsers() {
       const userList = await fetchUsers();
-      setUsers(userList);
+      setUsers(Array.isArray(userList) ? userList : []);
     }
     loadUsers();
   }, [fetchUsers]); 
@@ -75,7 +87,7 @@ const UserManagement = ({ selectedTopbarMenu }) => {
     }
     // refresh list
     const userList = await fetchUsers();
-    setUsers(userList);
+    setUsers(Array.isArray(userList) ? userList : []);
     setIsAddingUser(false);
     setSelectedUser(null);
   };
@@ -111,16 +123,26 @@ const UserManagement = ({ selectedTopbarMenu }) => {
                     {users.map((user) => (
                       <tr key={(user.id ?? user.username ?? user.usercode)} className="text-center">
                         <td className="px-4 py-2 border">
-                          <img
-                            src={resolveProfilePicture(user)}
-                            alt="Profile"
-                            className="w-14 h-14 rounded-full object-cover"
-                            onError={(e) => {
-                              if (e.target.src !== window.location.origin + DEFAULT_PROFILE_PIC) {
-                                e.target.src = DEFAULT_PROFILE_PIC;
-                              }
-                            }}
-                          />
+                          {(() => {
+                            const uid = user.id ?? user.username ?? user.usercode;
+                            const pic = resolveProfilePictureOrNull(user);
+                            const broken = !!failedImages[String(uid)];
+                            if (pic && !broken) {
+                              return (
+                                <img
+                                  src={pic}
+                                  alt="Profile"
+                                  className="w-14 h-14 rounded-full object-cover"
+                                  onError={() => setFailedImages((prev) => ({ ...prev, [String(uid)]: true }))}
+                                />
+                              );
+                            }
+                            return (
+                              <div className="w-14 h-14 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-semibold mx-auto">
+                                {getInitials(user)}
+                              </div>
+                            );
+                          })()}
                         </td>
                           <td className="px-4 py-2 border">{user.username}</td>
                         <td className="px-4 py-2 border">{user.first_name}</td>

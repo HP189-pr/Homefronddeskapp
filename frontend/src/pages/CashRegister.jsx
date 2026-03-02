@@ -728,6 +728,7 @@ const CashRegister = ({ rights = DEFAULT_RIGHTS, onToggleSidebar, onToggleChatbo
               <span>Date</span>
               <input
                 type="date"
+                lang="en-GB"
                 value={filters.date || ''}
                 onChange={(e) => handleFilterChange('date', e.target.value)}
                 className="mt-1 min-w-[170px] rounded border border-gray-300 px-3 py-2"
@@ -794,6 +795,7 @@ const CashRegister = ({ rights = DEFAULT_RIGHTS, onToggleSidebar, onToggleChatbo
               Date
               <input
                 type="date"
+                lang="en-GB"
                 value={formState.date}
                 onChange={(e) => handleFormChange('date', e.target.value)}
                 className="mt-1 w-full rounded border border-gray-300 px-3 py-2"

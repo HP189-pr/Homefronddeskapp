@@ -863,6 +863,7 @@ const Enrollment = ({ selectedTopbarMenu, setSelectedTopbarMenu, onToggleSidebar
         <label className="block mb-1">Cancel Date</label>
         <input
           type="date"
+          lang="en-GB"
           value={cancelForm.cancel_date}
           onChange={(e) =>
             handleCancelFormChange('cancel_date', e.target.value)
@@ -887,6 +888,7 @@ const Enrollment = ({ selectedTopbarMenu, setSelectedTopbarMenu, onToggleSidebar
         <label className="block mb-1">Inward Date</label>
         <input
           type="date"
+          lang="en-GB"
           value={cancelForm.inward_date}
           onChange={(e) =>
             handleCancelFormChange('inward_date', e.target.value)
@@ -911,6 +913,7 @@ const Enrollment = ({ selectedTopbarMenu, setSelectedTopbarMenu, onToggleSidebar
         <label className="block mb-1">Outward Date</label>
         <input
           type="date"
+          lang="en-GB"
           value={cancelForm.outward_date}
           onChange={(e) =>
             handleCancelFormChange('outward_date', e.target.value)

@@ -54,7 +54,10 @@ API.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       console.warn('401 detected — logging out');
-      localStorage.clear();
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
       window.location.href = '/login';
     }
     return Promise.reject(error);
