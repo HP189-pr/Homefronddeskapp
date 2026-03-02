@@ -43,6 +43,8 @@ export default function AuthEmp() {
       const data = r.data;
       if (Array.isArray(data)) {
         setProfiles(data);
+      } else if (data && Array.isArray(data.items)) {
+        setProfiles(data.items);
       } else if (data && Array.isArray(data.results)) {
         setProfiles(data.results);
       } else {
@@ -64,7 +66,7 @@ export default function AuthEmp() {
   const openProfile = async (profile, editable) => {
     try {
       if (profile?.id) {
-        const resp = await axios.get(`/empprofile/${profile.id}/`);
+        const resp = await axios.get(`/api/empprofile/${profile.id}/`);
         setEditing(resp.data);
       } else {
         setEditing(profile || {});
@@ -137,9 +139,9 @@ export default function AuthEmp() {
 
               try {
                 if (editing.id) {
-                  await axios.put(`/empprofile/${editing.id}/`, payload);
+                  await axios.put(`/api/empprofile/${editing.id}/`, payload);
                 } else {
-                  await axios.post('/empprofile/', payload);
+                  await axios.post('/api/empprofile/', payload);
                 }
                 setEditing(null);
                 setReadOnly(false);

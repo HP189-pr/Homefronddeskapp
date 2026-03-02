@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import multer from 'multer';
 import { fileURLToPath } from 'url';
+import { fn, col, where as sqlWhere } from 'sequelize';
 import { requireAuth } from '../middleware/auth.mjs';
 import { User } from '../models/user.mjs';
 import UserProfile from '../models/userProfile.mjs';
@@ -72,7 +73,9 @@ router.get('/photo/:userid', async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized profile photo access' });
     }
 
-    const me = await User.findOne({ where: { userid: requestedUser } });
+    const me = await User.findOne({
+      where: sqlWhere(fn('LOWER', col('username')), requestedUser),
+    });
     if (!me) return res.status(404).json({ error: 'User not found' });
 
     const profile = await UserProfile.findOne({ where: { userId: me.id } });

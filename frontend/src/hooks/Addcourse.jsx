@@ -35,25 +35,49 @@ const Addcourse = () => {
   // Load all required data
   // =========================
   const loadData = async () => {
-    try {
-      const [mainRes, subRes, instRes, offRes] = await Promise.all([
-        API.get("/api/mainbranch/"),
-        API.get("/api/subbranch/?page_size=5000"),
-        API.get("/api/institutes/"),
-        API.get("/api/institute-course-offerings/"),
-      ]);
+    const toArray = (data) => {
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.results)) return data.results;
+      if (Array.isArray(data?.items)) return data.items;
+      return [];
+    };
 
-      const toArray = (d) =>
-        Array.isArray(d?.results) ? d.results : d || [];
+    const [mainRes, subRes, instRes, offRes] = await Promise.allSettled([
+      API.get("/api/mainbranch/"),
+      API.get("/api/subbranch/?page_size=5000"),
+      API.get("/api/institutes/"),
+      API.get("/api/institute-course-offerings/"),
+    ]);
 
-      setMainCourses(toArray(mainRes.data));
-      const subList = toArray(subRes.data);
+    if (mainRes.status === "fulfilled") {
+      setMainCourses(toArray(mainRes.value?.data));
+    } else {
+      setMainCourses([]);
+      console.error("❌ Failed to load main courses:", mainRes.reason);
+    }
+
+    if (subRes.status === "fulfilled") {
+      const subList = toArray(subRes.value?.data);
       setSubCourses(subList);
       setAllSubCourses(subList);
-      setInstitutes(toArray(instRes.data));
-      setOfferings(toArray(offRes.data));
-    } catch (err) {
-      console.error("❌ Failed to load course data:", err);
+    } else {
+      setSubCourses([]);
+      setAllSubCourses([]);
+      console.error("❌ Failed to load sub courses:", subRes.reason);
+    }
+
+    if (instRes.status === "fulfilled") {
+      setInstitutes(toArray(instRes.value?.data));
+    } else {
+      setInstitutes([]);
+      console.error("❌ Failed to load institutes:", instRes.reason);
+    }
+
+    if (offRes.status === "fulfilled") {
+      setOfferings(toArray(offRes.value?.data));
+    } else {
+      setOfferings([]);
+      console.error("❌ Failed to load offerings:", offRes.reason);
     }
   };
 
@@ -84,6 +108,42 @@ const Addcourse = () => {
       .map((v) => String(v).trim());
 
     return candidates.some((v) => targetSet.has(v));
+  };
+
+  const resolveInstituteName = (off) => {
+    if (off?.institute?.institute_name) return off.institute.institute_name;
+    const match = institutes.find(
+      (inst) => String(inst?.institute_id) === String(off?.institute_id)
+    );
+    return match?.institute_name || String(off?.institute_id || "-");
+  };
+
+  const resolveMainCourseName = (off) => {
+    if (off?.mainCourse?.course_name) return off.mainCourse.course_name;
+    if (off?.maincourse?.course_name) return off.maincourse.course_name;
+    const match = mainCourses.find((mc) => {
+      const target = String(off?.maincourse_id ?? "").trim();
+      return (
+        String(mc?.maincourse_id ?? "").trim() === target ||
+        String(mc?.id ?? "").trim() === target ||
+        String(mc?.course_code ?? "").trim() === target
+      );
+    });
+    return match?.course_name || match?.maincourse_id || String(off?.maincourse_id || "-");
+  };
+
+  const resolveSubCourseName = (off) => {
+    if (off?.subCourse?.subcourse_name) return off.subCourse.subcourse_name;
+    if (off?.subcourse?.subcourse_name) return off.subcourse.subcourse_name;
+    if (!off?.subcourse_id) return "-";
+    const match = allSubCourses.find((sc) => {
+      const target = String(off?.subcourse_id ?? "").trim();
+      return (
+        String(sc?.subcourse_id ?? "").trim() === target ||
+        String(sc?.id ?? "").trim() === target
+      );
+    });
+    return match?.subcourse_name || String(off?.subcourse_id || "-");
   };
 
   const loadSubCoursesForMain = async (selectedMain) => {
@@ -189,9 +249,10 @@ const Addcourse = () => {
 
       const payload = {
         ...offerForm,
-        maincourse_id: selectedMain?.id ?? offerForm.maincourse_id,
+        maincourse_id:
+          selectedMain?.maincourse_id ?? selectedMain?.id ?? offerForm.maincourse_id,
         subcourse_id: offerForm.subcourse_id
-          ? (selectedSub?.id ?? offerForm.subcourse_id)
+          ? (selectedSub?.subcourse_id ?? selectedSub?.id ?? offerForm.subcourse_id)
           : "",
       };
       if (!payload.end_date) delete payload.end_date;
@@ -509,11 +570,9 @@ const Addcourse = () => {
                 <tbody>
                   {offerings.map((off) => (
                     <tr key={off.id}>
-                      <td className="border p-2">{off.institute?.name}</td>
-                      <td className="border p-2">
-                        {off.maincourse?.name || off.maincourse?.maincourse_id}
-                      </td>
-                      <td className="border p-2">{off.subcourse?.name || "-"}</td>
+                      <td className="border p-2">{resolveInstituteName(off)}</td>
+                      <td className="border p-2">{resolveMainCourseName(off)}</td>
+                      <td className="border p-2">{resolveSubCourseName(off)}</td>
                       <td className="border p-2">{off.campus || "-"}</td>
                       <td className="border p-2">{off.start_date}</td>
                       <td className="border p-2">{off.end_date || "Running"}</td>

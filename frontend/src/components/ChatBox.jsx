@@ -723,7 +723,12 @@ const ChatBox = ({ isOpen: controlledIsOpen, onToggle }) => {
                   aria-label={`Open chat with ${code}`}
                 >
                   {avatar && !broken ? (
-                    <img src={avatar} alt={code} className="w-10 h-10 rounded-full object-cover border border-gray-500" />
+                    <img
+                      src={avatar}
+                      alt={code}
+                      className="w-10 h-10 rounded-full object-cover border border-gray-500"
+                      onError={() => setFailedAvatars((prev) => ({ ...prev, [String(uid)]: true }))}
+                    />
                   ) : (
                     <div className="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center text-sm font-semibold">
                       {getInitials(code)}

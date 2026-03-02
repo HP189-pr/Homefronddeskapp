@@ -141,10 +141,6 @@ app.use(jwtMiddleware);
 app.use('/api/auth', authRoutes);
 app.use('/api', authRoutes);
 
-// Early compatibility stubs to stop legacy frontend screens from 500ing while data wiring is pending
-app.get('/api/institutes', requireAuth, (_req, res) => res.json([]));
-app.get('/api/mainbranch', requireAuth, (_req, res) => res.json([]));
-app.get('/api/subbranch', requireAuth, (_req, res) => res.json([]));
 // Serve media (logs, chat files, tmp). Block direct public access to profile pictures.
 app.use('/media', (req, res, next) => {
   const p = String(req.path || '').toLowerCase();
@@ -227,11 +223,6 @@ app.get('/api/provisional', requireAuth, async (req, res) => {
 });
 
 app.use('/api', requireAuth, instVerificationRoutes);
-
-// Institutes / branches stubs for dropdowns
-app.get('/api/institutes', requireAuth, (_req, res) => res.json([]));
-app.get('/api/mainbranch', requireAuth, (_req, res) => res.json([]));
-app.get('/api/subbranch', requireAuth, (_req, res) => res.json([]));
 
 // Convocations stub
 app.get('/api/convocations/list_all', requireAuth, (_req, res) => res.json([]));

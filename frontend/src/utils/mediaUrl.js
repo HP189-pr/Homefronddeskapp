@@ -40,10 +40,10 @@ export const DEFAULT_PROFILE_PIC = "/profilepic/default-profile.png";
 
 export const resolveProfilePictureOrNull = (source) => {
   const raw =
-    source?.profile_picture ||
     source?.profile_picture_url ||
-    source?.usrpic ||
     source?.photoUrl ||
+    source?.profile_picture ||
+    source?.usrpic ||
     source?.avatar ||
     source?.avatar_url ||
     source?.user_profile?.profile_picture ||
@@ -51,7 +51,17 @@ export const resolveProfilePictureOrNull = (source) => {
     source?.profilePicture ||
     "";
 
-  return normalizeMediaUrl(raw) || null;
+  const normalized = normalizeMediaUrl(raw);
+  if (!normalized) return null;
+
+  const value = String(normalized).trim();
+  if (!value) return null;
+
+  // Prevent broken relative filename paths like "hpadmin.jpg"; require full/known media paths
+  const looksLikeBareFile = !value.includes('/') && /\.(png|jpg|jpeg|webp|gif)$/i.test(value);
+  if (looksLikeBareFile) return null;
+
+  return value;
 };
 
 export const resolveProfilePicture = (source) => {

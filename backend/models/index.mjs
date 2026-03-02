@@ -28,8 +28,6 @@ import { Setting } from './path.mjs';
 import { ChatMessage } from './chat_message.mjs';
 import { EmpProfile } from './emp_profile.mjs';
 import { LeaveType, LeavePeriod, LeaveAllocation, LeaveEntry } from './leave.mjs';
-import { MainBranch } from './main_branch.mjs';
-import { SubBranch } from './sub_branch.mjs';
 import { InstituteCourseOffering } from './institute_course_offering.mjs';
 import { StudentProfile } from './student_profile.mjs';
 import { StudentDegree } from './student_degree.mjs';
@@ -70,6 +68,113 @@ if (Eca && User) {
     User.hasMany(Eca, { foreignKey: 'createdby', as: 'createdEcas' });
   }
 }
+
+// Course + institute + enrollment relations
+if (CourseMain && CourseSub) {
+  CourseMain.hasMany(CourseSub, {
+    foreignKey: 'maincourse_id',
+    sourceKey: 'maincourse_id',
+    as: 'subCourses',
+    constraints: false,
+  });
+  CourseSub.belongsTo(CourseMain, {
+    foreignKey: 'maincourse_id',
+    targetKey: 'maincourse_id',
+    as: 'mainCourse',
+    constraints: false,
+  });
+}
+
+if (Institute && Enrollment) {
+  Institute.hasMany(Enrollment, {
+    foreignKey: 'institute_id',
+    sourceKey: 'institute_id',
+    as: 'enrollments',
+    constraints: false,
+  });
+  Enrollment.belongsTo(Institute, {
+    foreignKey: 'institute_id',
+    targetKey: 'institute_id',
+    as: 'institute',
+    constraints: false,
+  });
+}
+
+if (CourseMain && Enrollment) {
+  CourseMain.hasMany(Enrollment, {
+    foreignKey: 'maincourse_id',
+    sourceKey: 'maincourse_id',
+    as: 'enrollments',
+    constraints: false,
+  });
+  Enrollment.belongsTo(CourseMain, {
+    foreignKey: 'maincourse_id',
+    targetKey: 'maincourse_id',
+    as: 'mainCourse',
+    constraints: false,
+  });
+}
+
+if (CourseSub && Enrollment) {
+  CourseSub.hasMany(Enrollment, {
+    foreignKey: 'subcourse_id',
+    sourceKey: 'subcourse_id',
+    as: 'enrollments',
+    constraints: false,
+  });
+  Enrollment.belongsTo(CourseSub, {
+    foreignKey: 'subcourse_id',
+    targetKey: 'subcourse_id',
+    as: 'subCourse',
+    constraints: false,
+  });
+}
+
+if (Institute && InstituteCourseOffering) {
+  Institute.hasMany(InstituteCourseOffering, {
+    foreignKey: 'institute_id',
+    sourceKey: 'institute_id',
+    as: 'courseOfferings',
+    constraints: false,
+  });
+  InstituteCourseOffering.belongsTo(Institute, {
+    foreignKey: 'institute_id',
+    targetKey: 'institute_id',
+    as: 'institute',
+    constraints: false,
+  });
+}
+
+if (CourseMain && InstituteCourseOffering) {
+  CourseMain.hasMany(InstituteCourseOffering, {
+    foreignKey: 'maincourse_id',
+    sourceKey: 'maincourse_id',
+    as: 'offerings',
+    constraints: false,
+  });
+  InstituteCourseOffering.belongsTo(CourseMain, {
+    foreignKey: 'maincourse_id',
+    targetKey: 'maincourse_id',
+    as: 'mainCourse',
+    constraints: false,
+  });
+}
+
+if (CourseSub && InstituteCourseOffering) {
+  CourseSub.hasMany(InstituteCourseOffering, {
+    foreignKey: 'subcourse_id',
+    sourceKey: 'subcourse_id',
+    as: 'offerings',
+    constraints: false,
+  });
+  InstituteCourseOffering.belongsTo(CourseSub, {
+    foreignKey: 'subcourse_id',
+    targetKey: 'subcourse_id',
+    as: 'subCourse',
+    constraints: false,
+  });
+}
+
 const models = {
   sequelize,
   User,
@@ -97,8 +202,6 @@ const models = {
   LeaveAllocation,
   LeaveEntry,
   PayPrefixRule,
-  MainBranch,
-  SubBranch,
   InstituteCourseOffering,
   StudentProfile,
   StudentDegree,

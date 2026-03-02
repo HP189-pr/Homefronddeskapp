@@ -30,7 +30,14 @@ const UserManagement = ({ selectedTopbarMenu }) => {
   useEffect(() => {
     async function loadUsers() {
       const userList = await fetchUsers();
-      setUsers(Array.isArray(userList) ? userList : []);
+      const normalized = Array.isArray(userList)
+        ? userList.map((user) => ({
+            ...user,
+            username: user?.username || user?.userid || '',
+            usercode: user?.usercode || user?.user_code || '',
+          }))
+        : [];
+      setUsers(normalized);
     }
     loadUsers();
   }, [fetchUsers]); 
@@ -87,7 +94,14 @@ const UserManagement = ({ selectedTopbarMenu }) => {
     }
     // refresh list
     const userList = await fetchUsers();
-    setUsers(Array.isArray(userList) ? userList : []);
+    const normalized = Array.isArray(userList)
+      ? userList.map((user) => ({
+          ...user,
+          username: user?.username || user?.userid || '',
+          usercode: user?.usercode || user?.user_code || '',
+        }))
+      : [];
+    setUsers(normalized);
     setIsAddingUser(false);
     setSelectedUser(null);
   };
@@ -112,6 +126,7 @@ const UserManagement = ({ selectedTopbarMenu }) => {
                     <tr className="bg-gray-200">
                       <th className="px-4 py-2 border">Profile</th>
                       <th className="px-4 py-2 border">Username</th>
+                      <th className="px-4 py-2 border">User Code</th>
                       <th className="px-4 py-2 border">First Name</th>
                       <th className="px-4 py-2 border">Last Name</th>
                       <th className="px-4 py-2 border">Edit</th>
@@ -144,7 +159,8 @@ const UserManagement = ({ selectedTopbarMenu }) => {
                             );
                           })()}
                         </td>
-                          <td className="px-4 py-2 border">{user.username}</td>
+                          <td className="px-4 py-2 border">{user.username || user.userid || '-'}</td>
+                        <td className="px-4 py-2 border">{user.usercode || user.user_code || '-'}</td>
                         <td className="px-4 py-2 border">{user.first_name}</td>
                         <td className="px-4 py-2 border">{user.last_name}</td>
                         <td className="px-4 py-2 border">
@@ -185,7 +201,7 @@ const UserManagement = ({ selectedTopbarMenu }) => {
                   <input name="username"
                     type="text"
                     placeholder="Username"
-                    defaultValue={selectedUser?.username || ""}
+                    defaultValue={selectedUser?.username || selectedUser?.userid || ""}
                     className="block w-full p-2 border rounded mb-3"
                     required
                   />
